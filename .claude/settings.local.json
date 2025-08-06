@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(pnpm prebuild:*)",
+      "mcp__sequential-thinking__sequentialthinking_tools",
+      "Bash(git --version)",
+      "Bash(gh:*)",
+      "Bash(git config:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": []
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "displayName": "Marvel Rivals Mod Manager",
+  "name": "marvel-rivals-mod-manager",
+  "description": "Professional mod manager for Marvel Rivals with automatic organization, theme support, and seamless mod installation",
+  "version": "1.1.1",
+  "main": "./node_modules/.dev/main/index.js",
+  "resources": "src/resources",
+  "author": {
+    "name": "Marvel Rivals Mod Manager",
+    "email": "support@marvelrivalsmodmanager.com"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "onlyBuiltDependenciesFile": "./trusted-dependencies-scripts.json"
+  },
+  "scripts": {
+    "start": "electron-vite preview",
+    "predev": "pnpm run clean:dev",
+    "dev": "npx cross-env NODE_ENV=development electron-vite dev --watch",
+    "dev:skip-clean": "npx cross-env NODE_ENV=development electron-vite dev --watch",
+    "compile:app": "electron-vite build && node ./scripts/copy-build-files.js",
+    "compile:packageJSON": "npx tsx ./src/lib/electron-app/release/modules/prebuild.ts",
+    "clean:installers": "node scripts/clean-installers.js",
+    "prebuild": "pnpm run clean:dev && pnpm run compile:app && pnpm run compile:packageJSON && pnpm run clean:installers",
+    "build": "pnpm electron-builder",
+    "postinstall": "pnpm run prebuild && pnpm run install:deps",
+    "install:deps": "npx electron-builder install-app-deps",
+    "make:release": "npx tsx ./src/lib/electron-app/release/modules/release.ts",
+    "release": "npx electron-builder --publish always",
+    "clean:dev": "npx rimraf ./node_modules/.dev",
+    "clean:dev:win": "if exist \"node_modules\\.dev\" rmdir /s /q \"node_modules\\.dev\"",
+    "dev:win": "npm run clean:dev:win && npx cross-env NODE_ENV=development electron-vite dev --watch",
+    "lint": "npx biome lint --no-errors-on-unmatched",
+    "lint:fix": "npx biome lint --write --no-errors-on-unmatched"
+  },
+  "dependencies": {
+    "@radix-ui/react-context-menu": "^2.1.5",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-switch": "^1.0.3",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-tooltip": "^1.0.7",
+    "chokidar": "^3.5.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "electron-router-dom": "^2.1.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.477.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.2.0",
+    "sharp": "^0.34.3",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss-animate": "^1.0.7",
+    "unzipper": "^0.12.1",
+    "yauzl": "^3.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@tailwindcss/vite": "^4.0.9",
+    "@types/node": "^22.13.8",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/semver": "^7.5.8",
+    "@types/unzipper": "^0.10.9",
+    "@types/yauzl": "^2.10.3",
+    "@vitejs/plugin-react": "^4.0.4",
+    "code-inspector-plugin": "^0.20.1",
+    "cross-env": "^7.0.3",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
+    "electron-extension-installer": "^1.2.0",
+    "electron-vite": "^3.0.0",
+    "npm-run-all": "^4.1.5",
+    "open": "^10.1.0",
+    "rimraf": "^6.0.1",
+    "rollup-plugin-inject-process-env": "^1.3.1",
+    "semver": "^7.5.4",
+    "tailwindcss": "^4.0.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.1.6",
+    "vite": "^6.2.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "build": {
+    "appId": "com.marvelrivalsmodmanager.app",
+    "productName": "Marvel Rivals Mod Manager",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      {
+        "from": "dist/main",
+        "to": "main",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "dist/preload",
+        "to": "preload",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "dist/renderer",
+        "to": "renderer",
+        "filter": ["**/*"]
+      },
+      "src/resources/**/*",
+      "Assets/**/*",
+      "CHANGELOG.md",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "main/index.js"
+    },
+    "asarUnpack": [
+      "Assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "verifyUpdateCodeSignature": false,
+      "fileAssociations": [
+        {
+          "ext": "pak",
+          "name": "Marvel Rivals Mod File",
+          "description": "Marvel Rivals Mod Package",
+          "icon": "build/pak-icon.ico",
+          "role": "Editor"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Marvel Rivals Mod Manager",
+      "installerIcon": "build/installer-icon.ico",
+      "uninstallerIcon": "build/uninstaller-icon.ico",
+      "installerHeaderIcon": "build/installer-header.ico",
+      "license": "build/license.txt",
+      "warningsAsErrors": false,
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh",
+      "script": "build/installer.nsi",
+      "artifactName": "Marvel-Rivals-Mod-Manager-Setup.${ext}",
+      "differentialPackage": false
+    },
+    "compression": "maximum",
+    "generateUpdatesFilesForAllChannels": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "marvel-rivals-mod-manager",
+        "repo": "marvel-rivals-mod-manager"
+      }
+    ]
+  }
+}

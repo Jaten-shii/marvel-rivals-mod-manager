@@ -1,0 +1,319 @@
+/* Theme System - Dark & Light Themes for Marvel Rivals Mod Manager */
+
+/* Base theme transitions */
+* {
+  transition: 
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Remove transitions for specific elements that shouldn't animate */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* Root theme variables */
+:root {
+  /* Default (Dark) Theme */
+  --background: 222.2% 84% 4.9%;
+  --foreground: 210% 40% 98%;
+  --card: 222.2% 84% 4.9%;
+  --card-foreground: 210% 40% 98%;
+  --popover: 222.2% 84% 4.9%;
+  --popover-foreground: 210% 40% 98%;
+  --primary: 210% 40% 98%;
+  --primary-foreground: 222.2% 84% 4.9%;
+  --secondary: 217.2% 32.6% 17.5%;
+  --secondary-foreground: 210% 40% 98%;
+  --muted: 217.2% 32.6% 17.5%;
+  --muted-foreground: 215% 20.2% 65.1%;
+  --accent: 217.2% 32.6% 17.5%;
+  --accent-foreground: 210% 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210% 40% 98%;
+  --border: 217.2% 32.6% 17.5%;
+  --input: 217.2% 32.6% 17.5%;
+  --ring: 212.7% 26.8% 83.9%;
+  --radius: 0.5rem;
+  
+  /* Marvel-themed brand colors */
+  --marvel-red: 0 84% 60%;
+  --marvel-blue: 220 91% 50%;
+  --marvel-gold: 45 100% 51%;
+  
+  /* Category colors */
+  --category-ui: 220 91% 60%;
+  --category-audio: 142 76% 36%;
+  --category-skins: 25 95% 53%;
+  --category-gameplay: 0 84% 60%;
+  
+  /* Character role colors */
+  --role-tank: 220 91% 60%;
+  --role-damage: 0 84% 60%;
+  --role-support: 142 76% 36%;
+  
+  /* Toast colors */
+  --toast-background: 220 13% 15%;
+}
+
+/* Light Theme */
+.theme-light {
+  --background: 0 0% 100%;
+  --foreground: 222.2% 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2% 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2% 84% 4.9%;
+  --primary: 222.2% 47.4% 11.2%;
+  --primary-foreground: 210% 40% 98%;
+  --secondary: 210% 40% 96%;
+  --secondary-foreground: 222.2% 84% 4.9%;
+  --muted: 210% 40% 96%;
+  --muted-foreground: 215.4% 16.3% 46.9%;
+  --accent: 210% 40% 96%;
+  --accent-foreground: 222.2% 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210% 40% 98%;
+  --border: 214.3% 31.8% 91.4%;
+  --input: 214.3% 31.8% 91.4%;
+  --ring: 222.2% 84% 4.9%;
+  
+  /* Adjust category colors for light theme */
+  --category-ui: 220 91% 45%;
+  --category-audio: 142 76% 30%;
+  --category-skins: 25 95% 40%;
+  --category-gameplay: 0 84% 45%;
+  
+  /* Toast colors for light theme */
+  --toast-background: 0 0% 95%;
+}
+
+/* Dark Theme (explicit for clarity) */
+.theme-dark {
+  --background: 222.2% 84% 4.9%;
+  --foreground: 210% 40% 98%;
+  --card: 222.2% 84% 4.9%;
+  --card-foreground: 210% 40% 98%;
+  --popover: 222.2% 84% 4.9%;
+  --popover-foreground: 210% 40% 98%;
+  --primary: 210% 40% 98%;
+  --primary-foreground: 222.2% 84% 4.9%;
+  --secondary: 217.2% 32.6% 17.5%;
+  --secondary-foreground: 210% 40% 98%;
+  --muted: 217.2% 32.6% 17.5%;
+  --muted-foreground: 215% 20.2% 65.1%;
+  --accent: 217.2% 32.6% 17.5%;
+  --accent-foreground: 210% 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210% 40% 98%;
+  --border: 217.2% 32.6% 17.5%;
+  --input: 217.2% 32.6% 17.5%;
+  --ring: 212.7% 26.8% 83.9%;
+  
+  /* Toast colors for dark theme */
+  --toast-background: 220 13% 15%;
+}
+
+/* Component-specific theme enhancements */
+
+/* Enhanced card styling with subtle shadows */
+.theme-light .card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.theme-dark .card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+/* Hover effects */
+.theme-light .card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.theme-dark .card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+}
+
+/* Scrollbar theming */
+.theme-light ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.theme-light ::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+.theme-dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.theme-dark ::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.theme-dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Selection colors */
+.theme-light ::selection {
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--primary-foreground));
+}
+
+.theme-dark ::selection {
+  background: hsl(var(--primary) / 0.3);
+  color: hsl(var(--primary-foreground));
+}
+
+/* Focus ring enhancements */
+.theme-light .focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.theme-dark .focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Animation classes for theme transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply animations to components */
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Category-specific colors */
+.category-ui {
+  color: hsl(var(--category-ui));
+}
+
+.category-audio {
+  color: hsl(var(--category-audio));
+}
+
+.category-skins {
+  color: hsl(var(--category-skins));
+}
+
+.category-gameplay {
+  color: hsl(var(--category-gameplay));
+}
+
+/* Badge variants for categories */
+.badge-ui {
+  background-color: hsl(var(--category-ui) / 0.1);
+  color: hsl(var(--category-ui));
+  border: 1px solid hsl(var(--category-ui) / 0.2);
+}
+
+.badge-audio {
+  background-color: hsl(var(--category-audio) / 0.1);
+  color: hsl(var(--category-audio));
+  border: 1px solid hsl(var(--category-audio) / 0.2);
+}
+
+.badge-skins {
+  background-color: hsl(var(--category-skins) / 0.1);
+  color: hsl(var(--category-skins));
+  border: 1px solid hsl(var(--category-skins) / 0.2);
+}
+
+.badge-gameplay {
+  background-color: hsl(var(--category-gameplay) / 0.1);
+  color: hsl(var(--category-gameplay));
+  border: 1px solid hsl(var(--category-gameplay) / 0.2);
+}
+
+/* Marvel-themed accents */
+.marvel-accent {
+  background: linear-gradient(135deg, 
+    hsl(var(--marvel-red)) 0%, 
+    hsl(var(--marvel-blue)) 50%, 
+    hsl(var(--marvel-gold)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 50%;
+    --input: 0 0% 50%;
+  }
+  
+  .theme-light {
+    --border: 0 0% 30%;
+    --input: 0 0% 30%;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
