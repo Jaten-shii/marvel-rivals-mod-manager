@@ -4,6 +4,16 @@ All notable changes to the Marvel Rivals Mod Manager will be documented in this 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-08-07
+
+### Fixed
+- **Add Mod Button** - Multi-mod selection modal now properly appears when using the Add Mod button for archives with multiple mods
+- **File Browser** - Archives containing multiple mod variations now show selection modal instead of auto-installing all
+
+### Improved  
+- **Mod Installation** - Consistent behavior between file browser and other installation methods
+- **User Experience** - All mod installation paths now properly support selective installation from multi-mod archives
+
 ## [1.1.1] - 2025-08-06
 
 ### Improved
@@ -16,9 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 - **Multi-Mod Selection Modal** - Choose which mods to install from archives containing multiple variations
-- **Enhanced Drag & Drop** - Fixed buffer-based processing for archives without file paths to show selection modal
+- **Enhanced File Processing** - Fixed buffer-based processing for archives to show selection modal
 - **Metadata Editor Queue** - Sequential metadata editing for all selected mods with proper queue management
-- **Buffer-based Archive Processing** - Handles drag & drop files even when path property is unavailable
+- **Buffer-based Archive Processing** - Handles archive files even when path property is unavailable
 
 ### Fixed
 - **RAR File Handling** - Multi-mod RAR archives now properly show selection modal instead of installing all variants
@@ -40,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.0.0] - 2025-08-05
 
 ### Added
-- **Seamless Mod Installation** - Drag & drop support for .pak, .zip, and .rar files
+- **Seamless Mod Installation** - File browser support for .pak, .zip, and .rar files
 - **Automatic Organization** - Smart categorization by UI, Audio, Skins, and Gameplay
 - **Character-Based Filtering** - Organize mods by 40+ Marvel Rivals characters
 - **Real-time File Monitoring** - Automatic detection of mod directory changes
