@@ -1,4 +1,4 @@
-import { Plus, Search, Grid3X3, List, Settings, ArrowUpDown, ChevronDown } from 'lucide-react'
+import { Plus, Search, Grid3X3, List, Settings, ArrowUpDown, ChevronDown, ExternalLink } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 import { Button } from './ui/button'
@@ -102,6 +102,20 @@ export function Toolbar({
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Mod
+          </Button>
+
+          <Button
+            onClick={() => {
+              window.electronAPI.system.openExternal('https://www.nexusmods.com/games/marvelrivals')
+            }}
+            variant="outline"
+            className={cn(
+              'bg-card hover:bg-accent/50 text-foreground font-medium border-border',
+              'transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95'
+            )}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Browse Mods
           </Button>
 
         </div>

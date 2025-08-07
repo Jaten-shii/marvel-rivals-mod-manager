@@ -224,7 +224,7 @@ export function ModCard({
             <div className="flex items-center gap-4">
               {/* Thumbnail */}
               <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden border border-border">
+                <div className="w-44 h-24 rounded-lg bg-muted overflow-hidden border border-border">
                   {thumbnailUrl && !thumbnailError ? (
                     <>
                       {thumbnailLoading && (

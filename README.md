@@ -68,7 +68,7 @@
 | 🖥️ **OS** | Windows 10/11 (x64) |
 | 💾 **RAM** | 4GB minimum, 8GB recommended |
 | 💿 **Storage** | 500MB free space |
-| 🎮 **Game** | Marvel Rivals (Steam/Epic) |
+| 🎮 **Game** | Marvel Rivals (Steam) |
 | ⚡ **Runtime** | Auto-installed with app |
 
 ---

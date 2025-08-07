@@ -10,7 +10,7 @@ export async function MainWindow() {
     id: 'main',
     title: displayName,
     width: 1380,
-    height: 850,
+    height: 915,
     minWidth: 1000,
     minHeight: 600,
     show: false,

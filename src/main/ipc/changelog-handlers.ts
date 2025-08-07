@@ -29,6 +29,14 @@ export function registerChangelogHandlers(): void {
       // Return fallback data if changelog can't be read
       const fallbackData = {
         entries: [{
+          version: '1.3.0',
+          date: '2025-08-07',
+          changes: [
+            '**Browse Mods Button** - New button next to "Add Mod" that opens the Nexus Mods website to discover and download new mods',
+            '**Window Size** - Increased app window height for better viewing and navigation of your mod collection',
+            '**List View Thumbnails** - Made mod preview images much larger and clearer when using list view mode'
+          ]
+        }, {
           version: '1.2.1',
           date: '2025-08-07',
           changes: [
@@ -99,7 +107,7 @@ export function registerChangelogHandlers(): void {
             '**Settings** - Customizable preferences and configuration options'
           ]
         }],
-        latestVersion: '1.2.1'
+        latestVersion: '1.3.0'
       }
       console.log('Fallback data:', fallbackData)
       return fallbackData

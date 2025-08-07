@@ -4,6 +4,15 @@ All notable changes to the Marvel Rivals Mod Manager will be documented in this 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-08-07
+
+### Added
+- **Browse Mods Button** - New button next to "Add Mod" that opens the Nexus Mods website to discover and download new mods
+
+### Improved
+- **Window Size** - Increased app window height for better viewing and navigation of your mod collection
+- **List View Thumbnails** - Made mod preview images much larger and clearer when using list view mode
+
 ## [1.2.1] - 2025-08-07
 
 ### Fixed
