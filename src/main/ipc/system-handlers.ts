@@ -205,10 +205,10 @@ export function registerSystemHandlers(): void {
     return settingsManager.importSettings(result.filePaths[0])
   })
 
-  // Check for updates (placeholder for future implementation)
-  ipcMain.handle('system:checkForUpdates', async (): Promise<boolean> => {
-    // TODO: Implement update checking logic
-    return false
+  // Check for updates
+  ipcMain.handle('system:checkForUpdates', async () => {
+    const { updateService } = await import('../services/UpdateService')
+    return updateService.checkForUpdates()
   })
 
   // Get system information

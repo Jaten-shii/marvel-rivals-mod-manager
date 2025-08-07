@@ -23,6 +23,16 @@ export interface ChangelogData {
   latestVersion: string
 }
 
+// Import update types
+export interface UpdateInfo {
+  available: boolean
+  currentVersion: string
+  latestVersion: string
+  releaseNotes?: string
+  downloadUrl?: string
+  publishedAt?: string
+}
+
 declare global {
   interface Window {
     electronAPI: typeof ModManagerAPI
@@ -169,7 +179,7 @@ const ModManagerAPI = {
     importSettings: (): Promise<AppSettings> => ipcRenderer.invoke('system:importSettings'),
     
     // Check for application updates
-    checkForUpdates: (): Promise<boolean> => ipcRenderer.invoke('system:checkForUpdates'),
+    checkForUpdates: (): Promise<UpdateInfo> => ipcRenderer.invoke('system:checkForUpdates'),
     
     // Get system information
     getSystemInfo: (): Promise<any> => ipcRenderer.invoke('system:getSystemInfo'),

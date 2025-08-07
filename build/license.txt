@@ -42,7 +42,7 @@ the right to use and distribute any content they install through this software.
 
 SUPPORT:
 For support and documentation, visit:
-https://github.com/marvel-rivals-mod-manager/marvel-rivals-mod-manager
+https://github.com/Jaten-shii/marvel-rivals-mod-manager
 
 By installing this software, you acknowledge that you have read and understood
 this license and disclaimer, and you agree to use this software at your own risk.

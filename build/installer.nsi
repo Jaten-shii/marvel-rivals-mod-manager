@@ -12,7 +12,7 @@
   !define PRODUCT_PUBLISHER "Marvel Rivals Mod Manager Team"
 !endif
 !ifndef PRODUCT_WEB_SITE
-  !define PRODUCT_WEB_SITE "https://github.com/marvel-rivals-mod-manager/marvel-rivals-mod-manager"
+  !define PRODUCT_WEB_SITE "https://github.com/Jaten-shii/marvel-rivals-mod-manager"
 !endif
 !ifndef PRODUCT_DIR_REGKEY
   !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\MarvelRivalsModManager.exe"

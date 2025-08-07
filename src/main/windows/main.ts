@@ -19,12 +19,12 @@ export async function MainWindow() {
     resizable: true,
     alwaysOnTop: false,
     autoHideMenuBar: true,
+    icon: join(__dirname, '../../build/icon.ico'),
 
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      enableRemoteModule: false,
       webSecurity: false,  // Allow local file access for drag & drop
       allowRunningInsecureContent: true,  // Support local file operations
       navigateOnDragDrop: false,  // Prevent navigation on file drops

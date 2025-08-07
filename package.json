@@ -2,7 +2,7 @@
   "displayName": "Marvel Rivals Mod Manager",
   "name": "marvel-rivals-mod-manager",
   "description": "Professional mod manager for Marvel Rivals with automatic organization, theme support, and seamless mod installation",
-  "version": "1.1.2",
+  "version": "1.2.1",
   "main": "./node_modules/.dev/main/index.js",
   "resources": "src/resources",
   "author": {
@@ -22,7 +22,8 @@
     "compile:app": "electron-vite build && node ./scripts/copy-build-files.js",
     "compile:packageJSON": "npx tsx ./src/lib/electron-app/release/modules/prebuild.ts",
     "clean:installers": "node scripts/clean-installers.js",
-    "prebuild": "pnpm run clean:dev && pnpm run compile:app && pnpm run compile:packageJSON && pnpm run clean:installers",
+    "generate:icons": "node scripts/generate-icon.js",
+    "prebuild": "pnpm run clean:dev && pnpm run generate:icons && pnpm run compile:app && pnpm run compile:packageJSON && pnpm run clean:installers",
     "build": "pnpm electron-builder",
     "postinstall": "pnpm run prebuild && pnpm run install:deps",
     "install:deps": "npx electron-builder install-app-deps",
@@ -77,6 +78,7 @@
     "electron-vite": "^3.0.0",
     "npm-run-all": "^4.1.5",
     "open": "^10.1.0",
+    "png-to-ico": "^2.1.8",
     "rimraf": "^6.0.1",
     "rollup-plugin-inject-process-env": "^1.3.1",
     "semver": "^7.5.4",
@@ -166,7 +168,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "marvel-rivals-mod-manager",
+        "owner": "Jaten-shii",
         "repo": "marvel-rivals-mod-manager"
       }
     ]

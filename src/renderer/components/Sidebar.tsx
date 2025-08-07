@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Gamepad2, Eye, Volume2, Layers, FolderOpen, ExternalLink, RefreshCw, CheckCircle, XCircle, Trash2, Tag } from 'lucide-react'
+import { ChevronDown, ChevronRight, Gamepad2, Eye, Volume2, Layers, FolderOpen, ExternalLink, RefreshCw, CheckCircle, XCircle, Trash2, Tag, Download } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 import { Badge } from './ui/badge'
@@ -6,8 +6,10 @@ import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { cn } from 'renderer/lib/utils'
 import { ChangelogModal } from './ChangelogModal'
+import { UpdateModal } from './UpdateModal'
 
 import type { ModCategory, Character, CategoryStats, CharacterStats } from 'shared/types'
+import type { UpdateInfo } from '../../preload'
 import { CATEGORIES, CHARACTERS } from 'shared/constants'
 
 interface SidebarProps {
@@ -45,6 +47,10 @@ export function Sidebar({
   const [gameDirectory, setGameDirectory] = useState<string>('')
   const [appVersion, setAppVersion] = useState<string>('')
   const [isChangelogOpen, setIsChangelogOpen] = useState(false)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [updateError, setUpdateError] = useState<string | null>(null)
 
   // Fetch game directory and app version on component mount
   useEffect(() => {
@@ -112,6 +118,34 @@ export function Sidebar({
   const getModsPath = () => {
     if (!gameDirectory) return ''
     return `${gameDirectory}\\MarvelGame\\Marvel\\Content\\Paks\\~mods`
+  }
+
+  const handleCheckForUpdates = async () => {
+    try {
+      setIsCheckingUpdates(true)
+      setUpdateError(null) // Clear previous errors
+      setUpdateInfo(null)  // Clear previous results
+      
+      const result = await window.electronAPI.system.checkForUpdates()
+      setUpdateInfo(result)
+      setIsUpdateModalOpen(true)
+    } catch (error) {
+      console.error('Error checking for updates:', error)
+      
+      // Extract user-friendly error message
+      let errorMessage = 'Failed to check for updates. Please try again later.'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      
+      setUpdateError(errorMessage)
+      setUpdateInfo(null)
+      setIsUpdateModalOpen(true)
+    } finally {
+      setIsCheckingUpdates(false)
+    }
   }
 
   return (
@@ -191,6 +225,20 @@ export function Sidebar({
         >
           <Tag className="w-3 h-3" />
           {appVersion ? `v${appVersion}` : 'Loading...'}
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "w-full justify-center gap-2 text-xs border-sidebar-border text-white hover:text-white hover:bg-blue-500/20 hover:border-blue-500/30 transition-all duration-200 hover:scale-105",
+            isCheckingUpdates && 'animate-pulse'
+          )}
+          onClick={handleCheckForUpdates}
+          disabled={isCheckingUpdates}
+        >
+          <Download className={cn('w-3 h-3', isCheckingUpdates && 'animate-pulse')} />
+          {isCheckingUpdates ? 'Checking...' : 'Check for Updates'}
         </Button>
       </div>
 
@@ -313,6 +361,20 @@ export function Sidebar({
       <ChangelogModal 
         isOpen={isChangelogOpen}
         onClose={() => setIsChangelogOpen(false)}
+      />
+      
+      {/* Update Modal */}
+      <UpdateModal 
+        isOpen={isUpdateModalOpen}
+        onClose={() => {
+          setIsUpdateModalOpen(false)
+          setUpdateError(null)
+          setUpdateInfo(null)
+        }}
+        updateInfo={updateInfo}
+        isError={!!updateError}
+        errorMessage={updateError || undefined}
+        onRetry={updateError ? handleCheckForUpdates : undefined}
       />
     </div>
   )

@@ -4,59 +4,70 @@ All notable changes to the Marvel Rivals Mod Manager will be documented in this 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-08-07
+
+### Fixed
+- **Application Icon** - Fixed the cutoff app logo that appeared in the Windows taskbar and window title bar
+
+## [1.2.0] - 2025-08-07
+
+### Added
+- **Check for Updates** - New button in the sidebar to check for new app versions
+- **Update Notifications** - Shows when new versions are available with download links and release notes
+
+### Fixed
+- **Update Checking** - Fixed issues that prevented checking for new versions
+- **Error Messages** - Better error messages when update checking fails
+
 ## [1.1.2] - 2025-08-07
 
 ### Fixed
-- **Add Mod Button** - Multi-mod selection modal now properly appears when using the Add Mod button for archives with multiple mods
-- **File Browser** - Archives containing multiple mod variations now show selection modal instead of auto-installing all
+- **Add Mod Button** - Now properly shows options to choose which mods to install from multi-mod archives
+- **Archive Installation** - Archives with multiple mods now let you choose which ones to install instead of installing all automatically
 
-### Improved  
-- **Mod Installation** - Consistent behavior between file browser and other installation methods
-- **User Experience** - All mod installation paths now properly support selective installation from multi-mod archives
+### Improved
+- **Mod Installation** - All ways of installing mods now work the same way
+- **User Experience** - You can now choose which mods to install from any multi-mod archive
 
 ## [1.1.1] - 2025-08-06
 
 ### Improved
-- **Mod Selection Modal UX** - Cleaner file name display without path clutter in associated files dropdown
-- **Modal Scrolling** - Fixed scrolling behavior when multiple dropdowns are expanded, now uses smooth scrolling
-- **UI Simplification** - Removed redundant move button from mod cards since entire card is draggable
-- **Visual Polish** - Better visual hierarchy and reduced cognitive load in multi-mod selection interface
+- **Mod Selection Window** - Cleaner file names displayed when choosing which mods to install
+- **Scrolling** - Smoother scrolling in the mod selection window
+- **Interface** - Removed unnecessary buttons to make the interface cleaner
+- **Visual Design** - Cleaner and easier to understand mod selection interface
 
 ## [1.1.0] - 2025-08-06
 
 ### Added
-- **Multi-Mod Selection Modal** - Choose which mods to install from archives containing multiple variations
-- **Enhanced File Processing** - Fixed buffer-based processing for archives to show selection modal
-- **Metadata Editor Queue** - Sequential metadata editing for all selected mods with proper queue management
-- **Buffer-based Archive Processing** - Handles archive files even when path property is unavailable
+- **Choose Mods to Install** - When installing archives with multiple mods, you can now pick which ones you want
+- **Edit Multiple Mods** - Edit details for several mods in a row without having to start over each time
 
 ### Fixed
-- **RAR File Handling** - Multi-mod RAR archives now properly show selection modal instead of installing all variants
-- **Metadata Editor Flow** - Cancel/save operations now advance through mod queue instead of canceling entire workflow
-- **Queue Management** - All selected mods are properly added to metadata editor queue for sequential processing
+- **RAR File Support** - RAR archives with multiple mods now let you choose which ones to install
+- **Mod Details Editing** - Fixed issues when editing details for multiple mods in sequence
 
 ## [1.0.2] - 2025-08-05
 
 ### Fixed
-- **Live Metadata Updates** - Mod character and name changes now update immediately in the UI without requiring app restart
+- **Mod Details** - When you change a mod's name or character, the changes appear immediately without needing to restart the app
 
 ## [1.0.1] - 2025-08-05
 
 ### Added
-- **Changelog Viewer** - In-app changelog display with version history and formatted change descriptions
-- **Version Display** - Current version shown in sidebar with clickable access to changelog
-- **Semantic Versioning Support** - Full changelog system with proper version management
+- **View Update History** - See what changed in each version of the app
+- **Version Number** - Current app version is shown in the sidebar and you can click it to see update history
 
 ## [1.0.0] - 2025-08-05
 
 ### Added
-- **Seamless Mod Installation** - File browser support for .pak, .zip, and .rar files
-- **Automatic Organization** - Smart categorization by UI, Audio, Skins, and Gameplay
-- **Character-Based Filtering** - Organize mods by 40+ Marvel Rivals characters
-- **Real-time File Monitoring** - Automatic detection of mod directory changes
-- **Dual Theme System** - Dark and Light themes with smooth CSS animations
-- **Advanced UI Features** - Grid/List view modes, search, filtering, thumbnails, statistics
-- **Professional Windows Integration** - NSIS installer with file associations and context menus
-- **Mod Management** - Enable/disable mods, bulk operations, metadata editing
-- **Game Integration** - Automatic Marvel Rivals game directory detection
-- **Settings System** - Persistent configuration and preferences
+- **Easy Mod Installation** - Install mods by dragging and dropping .pak, .zip, and .rar files
+- **Automatic Organization** - Mods are automatically sorted into categories (UI, Audio, Skins, Gameplay)
+- **Character Filtering** - Filter and organize mods by Marvel Rivals characters
+- **Auto-Detection** - Automatically detects when mods are added or removed from your mod folder
+- **Dark and Light Themes** - Choose between dark and light app themes
+- **Multiple Views** - Switch between grid and list views, search and filter mods, see mod thumbnails and stats
+- **Windows Integration** - Easy installation, file associations, and right-click context menus
+- **Mod Management** - Enable/disable mods, edit mod details, and perform bulk operations
+- **Game Detection** - Automatically finds your Marvel Rivals game installation
+- **Settings** - Customizable preferences and configuration options
