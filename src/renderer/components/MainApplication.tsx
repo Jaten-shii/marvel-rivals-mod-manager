@@ -559,12 +559,23 @@ export function MainApplication({ className }: MainApplicationProps) {
                   // Add to installed list
                   installedMods.push(...selectedMods)
                 } else {
-                  console.log(`[MainApp] Multiple mods detected in file browser - falling back to simple install for now`)
+                  console.log(`[MainApp] Multiple mods detected in file browser, showing selection modal...`)
                   
-                  // Multiple mods - for file browser, fall back to existing method for now
-                  // Future enhancement: could show selection modal here too
-                  const installedMod = await window.electronAPI.mod.install(filePath)
-                  installedMods.push(installedMod)
+                  // Multiple mods - show selection modal (same as drag & drop workflow)
+                  setModSelectionGroups(extractedGroups.groups)
+                  setExtractedTempDir(extractedGroups.tempDirectory)
+                  setIsModSelectionModalOpen(true)
+                  
+                  // Show success notification for multi-mod extraction
+                  showNotification({
+                    type: 'success',
+                    title: 'Multiple mods found',
+                    message: `Found ${extractedGroups.groups.length} mod variations in ${fileName}. Choose which ones to install.`,
+                    duration: 5000,
+                  })
+                  
+                  // Don't continue processing this file - user will select via modal
+                  continue
                 }
               } catch (error) {
                 console.error(`[MainApp] Multi-mod extraction failed for file browser ${fileName}:`, error)

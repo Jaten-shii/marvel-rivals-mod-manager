@@ -83,6 +83,36 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
       // Set fallback data if loading fails
       const fallbackData = {
         entries: [{
+          version: '1.1.2',
+          date: '2025-08-07',
+          changes: [
+            '**Add Mod Button** - Multi-mod selection modal now properly appears when using the Add Mod button for archives with multiple mods',
+            '**File Browser** - Archives containing multiple mod variations now show selection modal instead of auto-installing all',
+            '**Mod Installation** - Consistent behavior between file browser and other installation methods',
+            '**User Experience** - All mod installation paths now properly support selective installation from multi-mod archives'
+          ]
+        }, {
+          version: '1.1.1',
+          date: '2025-08-06',
+          changes: [
+            '**Mod Selection Modal UX** - Cleaner file name display without path clutter in associated files dropdown',
+            '**Modal Scrolling** - Fixed scrolling behavior when multiple dropdowns are expanded, now uses smooth scrolling',
+            '**UI Simplification** - Removed redundant move button from mod cards since entire card is draggable',
+            '**Visual Polish** - Better visual hierarchy and reduced cognitive load in multi-mod selection interface'
+          ]
+        }, {
+          version: '1.1.0',
+          date: '2025-08-06',
+          changes: [
+            '**Multi-Mod Selection Modal** - Choose which mods to install from archives containing multiple variations',
+            '**Enhanced File Processing** - Fixed buffer-based processing for archives to show selection modal',
+            '**Metadata Editor Queue** - Sequential metadata editing for all selected mods with proper queue management',
+            '**Buffer-based Archive Processing** - Handles archive files even when path property is unavailable',
+            '**RAR File Handling** - Multi-mod RAR archives now properly show selection modal instead of installing all variants',
+            '**Metadata Editor Flow** - Cancel/save operations now advance through mod queue instead of canceling entire workflow',
+            '**Queue Management** - All selected mods are properly added to metadata editor queue for sequential processing'
+          ]
+        }, {
           version: '1.0.2',
           date: '2025-08-05',
           changes: [
@@ -100,7 +130,7 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
           version: '1.0.0',
           date: '2025-08-05',
           changes: [
-            '**Seamless Mod Installation** - Drag & drop support for .pak, .zip, and .rar files',
+            '**Seamless Mod Installation** - File browser support for .pak, .zip, and .rar files',
             '**Automatic Organization** - Smart categorization by UI, Audio, Skins, and Gameplay',
             '**Character-Based Filtering** - Organize mods by 40+ Marvel Rivals characters',
             '**Real-time File Monitoring** - Automatic detection of mod directory changes',
@@ -112,11 +142,11 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
             '**Settings System** - Persistent configuration and preferences'
           ]
         }],
-        latestVersion: '1.0.2'
+        latestVersion: '1.1.2'
       }
       console.log('ChangelogModal: Fallback data:', fallbackData)
       setChangelogData(fallbackData)
-      setCurrentVersion('1.0.2')
+      setCurrentVersion('1.1.2')
     } finally {
       setIsLoading(false)
     }
