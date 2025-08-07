@@ -75,27 +75,12 @@
 
 ## 📥 Installation
 
-### 🎯 **Quick Install** (Recommended)
-1. 📩 **Download** the latest `Marvel-Rivals-Mod-Manager-Setup.exe`
-2. 🚀 **Run installer** and follow the setup wizard  
-3. ✅ **Launch** from Start Menu or Desktop shortcut
-4. 🎮 **Auto-detect** your Marvel Rivals installation
-
-### 🔧 **Advanced Setup**
-```bash
-# Clone repository
-git clone https://github.com/Jaten-shii/marvel-rivals-mod-manager.git
-cd marvel-rivals-mod-manager
-
-# Install dependencies
-pnpm install
-
-# Development
-pnpm dev
-
-# Build production
-pnpm build
-```
+### 🎯 **Download & Install**
+1. 📩 **Visit the [Releases page](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases)**
+2. 📥 **Download** the latest `Marvel-Rivals-Mod-Manager-Setup.exe`
+3. 🚀 **Run installer** and follow the setup wizard  
+4. ✅ **Launch** from Start Menu or Desktop shortcut
+5. 🎮 **Auto-detect** your Marvel Rivals installation
 
 ---
 
@@ -145,67 +130,14 @@ pnpm build
 
 ---
 
-## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
-
-### 🐛 **Report Issues**
-- [🔍 Check existing issues](https://github.com/Jaten-shii/marvel-rivals-mod-manager/issues)
-- [📝 Create new issue](https://github.com/Jaten-shii/marvel-rivals-mod-manager/issues/new)
-- 🔥 Include logs and screenshots
-
-### 💻 **Code Contributions**
-```bash
-# 1. Fork the repository
-# 2. Create feature branch
-git checkout -b feature/amazing-feature
-
-# 3. Make changes and test
-pnpm dev
-node validate.js
-
-# 4. Commit your changes
-git commit -m "✨ Add amazing feature"
-
-# 5. Push and create PR
-git push origin feature/amazing-feature
-```
-
-### 📋 **Development Guidelines**
-- ✅ Follow TypeScript best practices
-- 🎨 Use Tailwind CSS for styling
-- 🧪 Test your changes thoroughly  
-- 📝 Update documentation as needed
-- 🎯 Keep PRs focused and atomic
-
----
-
-## 📈 Roadmap
-
-### 🚀 **Coming Soon**
-- [ ] 🌐 **Multi-language Support** - Localization for multiple languages
-- [ ] ☁️ **Cloud Sync** - Sync mod collections across devices
-- [ ] 🎨 **Custom Themes** - Create and share custom themes
-- [ ] 📱 **Mobile Companion** - Remote management app
-- [ ] 🤖 **Auto-Updates** - Automatic mod and app updates
-
-### 🔮 **Future Plans**
-- [ ] 🎮 **Multiple Games** - Support for other games
-- [ ] 🏪 **Mod Store** - Browse and download mods directly
-- [ ] 👥 **Community Features** - Share collections and reviews
-- [ ] 📊 **Advanced Analytics** - Detailed usage statistics
-- [ ] 🔌 **Plugin System** - Extend functionality with plugins
-
----
 
 ## 📞 Support & Links
 
 <div align="center">
 
 ### 📬 **Get Help**
-[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/your-discord)
 [![Issues](https://img.shields.io/badge/GitHub-Issues-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jaten-shii/marvel-rivals-mod-manager/issues)
-[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:support@marvelrivalsmodmanager.com)
 
 ### 📱 **Follow Updates**
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jaten-shii/marvel-rivals-mod-manager)
@@ -220,7 +152,6 @@ git push origin feature/amazing-feature
 If you find this project helpful, please consider:
 
 - ⭐ **Star this repository**
-- 🍴 **Fork and contribute**  
 - 🐛 **Report bugs and issues**
 - 💡 **Suggest new features**
 - 📢 **Share with the community**
