@@ -19,6 +19,7 @@ CLEAN-STATE-RECOVERY.md
 
 # Claude Code Configuration
 .claude/
+CLAUDE.md
 
 # Environment files
 .env
