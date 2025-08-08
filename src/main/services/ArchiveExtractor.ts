@@ -407,10 +407,16 @@ export class ArchiveExtractor {
     const extractedFiles = await this.extractArchive(archivePath, tempDir, onProgress)
     const modGroups = this.groupModFiles(extractedFiles, tempDir)
 
+    // Simple single-mod detection: 1 .pak file = single mod, 2+ .pak files = multiple mods
+    const isSingleMod = modGroups.length === 1
+    
+    console.log(`[ArchiveExtractor] Found ${modGroups.length} mod groups (${modGroups.map(g => g.name).join(', ')})`)
+    console.log(`[ArchiveExtractor] Single-mod detection: ${isSingleMod ? 'SINGLE MOD' : 'MULTIPLE MODS'} (${modGroups.length} .pak files)`)
+
     return {
       groups: modGroups,
       tempDirectory: tempDir,
-      isSingleMod: modGroups.length === 1
+      isSingleMod
     }
   }
 

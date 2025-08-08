@@ -89,7 +89,7 @@
 !endif
 
 ; Custom Welcome/Finish Page Styling
-!define MUI_WELCOMEPAGE_TITLE "Welcome to Marvel Rivals Mod Manager Setup"
+!define MUI_WELCOMEPAGE_TITLE "Welcome to Marvel Rivals Mod Manager ${PRODUCT_VERSION} Setup"
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of Marvel Rivals Mod Manager.$\r$\n$\r$\nThe mod manager provides seamless mod installation, automatic organization, and real-time file monitoring for Marvel Rivals.$\r$\n$\r$\nClick Next to continue."
 
 !define MUI_FINISHPAGE_TITLE "Installation Complete"

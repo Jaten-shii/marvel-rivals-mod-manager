@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { Sidebar } from './Sidebar'
 import { Toolbar } from './Toolbar'
@@ -60,14 +60,11 @@ export function MainApplication({ className }: MainApplicationProps) {
     showDetailsPanel,
     hideDetailsPanel,
     openSettings,
-    isDragOver,
-    setDragOver,
     showNotification,
   } = useUIContext()
 
   const { isWatching } = useFileWatcher()
 
-  const [dragCounter, setDragCounter] = useState(0)
   const [sortBy, setSortBy] = useState<SortBy>('installDate')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingMod, setEditingMod] = useState<ModInfo | null>(null)
@@ -79,6 +76,7 @@ export function MainApplication({ className }: MainApplicationProps) {
   const [extractedTempDir, setExtractedTempDir] = useState<string>('')
 
   const stats = getModStatistics()
+
 
   // Sort the filtered mods based on selected sort option
   const sortedMods = useMemo(() => {
@@ -100,383 +98,7 @@ export function MainApplication({ className }: MainApplicationProps) {
     }
   }, [filteredMods, sortBy])
 
-  // Handle file drag and drop
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    setDragCounter(prev => prev + 1)
-    if (e.dataTransfer.types.includes('Files')) {
-      setDragOver(true)
-    }
-  }
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    setDragCounter(prev => prev - 1)
-    if (dragCounter <= 1) {
-      setDragOver(false)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    setDragOver(false)
-    setDragCounter(0)
-    
-    const files = Array.from(e.dataTransfer.files)
-    const modFiles = files.filter(file => 
-      file.name.toLowerCase().endsWith('.pak') ||
-      file.name.toLowerCase().endsWith('.zip') ||
-      file.name.toLowerCase().endsWith('.rar')
-    )
-    
-    if (modFiles.length > 0) {
-      try {
-        for (const file of modFiles) {
-          const filePath = (file as any).path
-          
-          if (!filePath) {
-            console.warn(`[MainApp] File path not available for ${file.name}, using FileReader approach`)
-            
-            try {
-              // Use FileReader to read the file as buffer when path is not available
-              const fileBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as ArrayBuffer)
-                reader.onerror = () => reject(reader.error)
-                reader.readAsArrayBuffer(file)
-              })
-              
-              console.log(`[MainApp] Successfully read ${file.name} as buffer (${fileBuffer.byteLength} bytes)`)
-              
-              // Send buffer to main process to create temp file
-              const bufferResult = await window.electronAPI.dragDrop.handleFileBuffer({
-                name: file.name,
-                buffer: fileBuffer,
-                size: file.size,
-                type: file.type
-              })
-              
-              console.log(`[MainApp] Buffer processing complete, shouldExtractAndGroup: ${bufferResult.shouldExtractAndGroup}`)
-              
-              if (bufferResult.shouldExtractAndGroup) {
-                // Archive file - use extractAndGroup workflow (same as regular file-based drag drop)
-                console.log(`[MainApp] Processing buffer-based archive: ${file.name}`)
-                
-                try {
-                  const extractedGroups = await window.electronAPI.dragDrop.extractAndGroup(bufferResult.tempFilePath)
-                  
-                  console.log(`[MainApp] Buffer extraction successful! Groups: ${extractedGroups.groups.length}, isSingleMod: ${extractedGroups.isSingleMod}`)
-                  
-                  // Show notification about extraction results
-                  const groupSummary = extractedGroups.groups
-                    .map((group, index) => `${index + 1}. ${group.name}${group.folder ? ` (from ${group.folder})` : ''}`)
-                    .join('\n')
-                  
-                  showNotification({
-                    type: 'info',
-                    title: 'Archive processed',
-                    message: extractedGroups.isSingleMod
-                      ? `Single mod detected: ${extractedGroups.groups[0].name}${extractedGroups.groups[0].folder ? ` from ${extractedGroups.groups[0].folder} folder` : ''}`
-                      : `Found ${extractedGroups.groups.length} mod variations:\n${groupSummary}`,
-                    duration: 8000,
-                  })
-                  
-                  if (extractedGroups.isSingleMod) {
-                    console.log(`[MainApp] Single mod detected in buffer archive, installing directly...`)
-                    
-                    // Single mod - install directly and show metadata editor
-                    const selectedMods = await window.electronAPI.dragDrop.installSelected(
-                      extractedGroups.groups, 
-                      extractedGroups.tempDirectory
-                    )
-                    
-                    console.log(`[MainApp] Buffer installation complete, installed ${selectedMods.length} mods`)
-                    
-                    // Cleanup temp directory
-                    await window.electronAPI.dragDrop.cleanupTemp(extractedGroups.tempDirectory)
-                    
-                    // Refresh mods list
-                    await refreshModsWithFeedback()
-                    
-                    // Add to metadata editing queue
-                    if (selectedMods.length > 0) {
-                      console.log(`[MainApp] Adding buffer-installed mods to edit queue and opening metadata editor`)
-                      setModEditQueue(selectedMods)
-                      setEditingMod(selectedMods[0])
-                      setIsEditModalOpen(true)
-                    }
-                    
-                    // Show success notification
-                    showNotification({
-                      type: 'success',
-                      title: 'Archive installed successfully',
-                      message: `${file.name} extracted and installed using buffer-based processing.`,
-                      duration: 4000,
-                    })
-                  } else {
-                    console.log(`[MainApp] Multiple mods detected in buffer archive, showing selection modal...`)
-                    
-                    // Multiple mods - show selection modal
-                    setModSelectionGroups(extractedGroups.groups)
-                    setExtractedTempDir(extractedGroups.tempDirectory)
-                    setIsModSelectionModalOpen(true)
-                    
-                    // Show success notification for multi-mod extraction
-                    showNotification({
-                      type: 'success',
-                      title: 'Multiple mods found',
-                      message: `Found ${extractedGroups.groups.length} mod variations in ${file.name}. Choose which ones to install.`,
-                      duration: 5000,
-                    })
-                  }
-                } catch (error) {
-                  console.error(`[MainApp] Buffer-based multi-mod extraction failed for ${file.name}:`, error)
-                  
-                  showNotification({
-                    type: 'error',
-                    title: 'Archive Processing Failed',
-                    message: `Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    duration: 6000,
-                  })
-                }
-              } else {
-                // Direct .pak file - already installed by handleFileBuffer
-                console.log(`[MainApp] Buffer-based .pak file installation complete`)
-                
-                // Refresh mods list to show the new mod
-                await refreshModsWithFeedback()
-                
-                // Find the installed mod and add to metadata editing queue
-                const allMods = await window.electronAPI.mod.getAll()
-                const installedMod = allMods.find(mod => mod.filePath.includes(file.name.replace('.pak', '')))
-                
-                if (installedMod) {
-                  console.log(`[MainApp] Adding buffer-installed .pak mod to edit queue`)
-                  setModEditQueue([installedMod])
-                  setEditingMod(installedMod)
-                  setIsEditModalOpen(true)
-                }
-                
-                showNotification({
-                  type: 'success',
-                  title: 'Mod installed successfully',
-                  message: `${file.name} installed using buffer-based processing.`,
-                  duration: 4000,
-                })
-              }
-              
-              continue // Skip the rest of the processing for this file
-            } catch (bufferError) {
-              console.error(`[MainApp] Buffer-based processing failed for ${file.name}:`, bufferError)
-              showNotification({
-                type: 'error',
-                title: 'Installation Failed',
-                message: `Failed to process ${file.name}: File path not available and buffer processing failed.`,
-                duration: 5000,
-              })
-              continue
-            }
-          }
-          
-          const isArchive = file.name.toLowerCase().endsWith('.zip') || 
-                           file.name.toLowerCase().endsWith('.rar')
-          
-          if (isArchive) {
-            console.log(`[MainApp] Processing archive file: ${file.name}`)
-            console.log(`[MainApp] File path: ${filePath}`)
-            
-            try {
-              console.log(`[MainApp] Attempting multi-mod extraction and grouping...`)
-              
-              // Try new multi-mod extraction and grouping
-              const extractedGroups = await window.electronAPI.dragDrop.extractAndGroup(filePath)
-              
-              console.log(`[MainApp] Extraction successful! Groups: ${extractedGroups.groups.length}, isSingleMod: ${extractedGroups.isSingleMod}`)
-              console.log(`[MainApp] Detailed group analysis:`)
-              extractedGroups.groups.forEach((group, index) => {
-                console.log(`  Group ${index + 1}:`)
-                console.log(`    - Name: ${group.name}`)
-                console.log(`    - PAK file: ${group.pakFile}`)
-                console.log(`    - Associated files: ${group.associatedFiles.length}`)
-                console.log(`    - Folder: ${group.folder || 'None'}`)
-                console.log(`    - Size: ${group.size} bytes`)
-                if (group.associatedFiles.length > 0) {
-                  console.log(`    - Associated file list:`, group.associatedFiles)
-                }
-              })
-              console.log(`[MainApp] Decision logic: Groups=${extractedGroups.groups.length} → isSingleMod=${extractedGroups.isSingleMod}`)
-              
-              // Add comprehensive notification showing what was found
-              const groupSummary = extractedGroups.groups.map((group, index) => 
-                `${index + 1}. ${group.name}${group.folder ? ` (in ${group.folder})` : ''} + ${group.associatedFiles.length} files`
-              ).join('\n')
-              
-              showNotification({
-                type: 'info',
-                title: 'Archive Analysis Complete',
-                message: extractedGroups.groups.length === 1 
-                  ? `Single mod detected: ${extractedGroups.groups[0].name}${extractedGroups.groups[0].folder ? ` from ${extractedGroups.groups[0].folder} folder` : ''}`
-                  : `Found ${extractedGroups.groups.length} mod variations:\n${groupSummary}`,
-                duration: 8000,
-              })
-              
-              if (extractedGroups.isSingleMod) {
-                console.log(`[MainApp] Single mod detected, installing directly...`)
-                
-                // Single mod - install directly and show metadata editor
-                const selectedMods = await window.electronAPI.dragDrop.installSelected(
-                  extractedGroups.groups, 
-                  extractedGroups.tempDirectory
-                )
-                
-                console.log(`[MainApp] Installation complete, installed ${selectedMods.length} mods`)
-                
-                // Cleanup temp directory
-                await window.electronAPI.dragDrop.cleanupTemp(extractedGroups.tempDirectory)
-                
-                // Refresh mods list
-                await refreshModsWithFeedback()
-                
-                // Add to metadata editing queue
-                if (selectedMods.length > 0) {
-                  console.log(`[MainApp] Adding mods to edit queue and opening metadata editor`)
-                  setModEditQueue(selectedMods)
-                  setEditingMod(selectedMods[0])
-                  setIsEditModalOpen(true)
-                }
-                
-                // Show success notification for advanced extraction
-                showNotification({
-                  type: 'success',
-                  title: 'Archive extracted successfully',
-                  message: `${file.name} extracted and installed using advanced extraction method.`,
-                  duration: 4000,
-                })
-              } else {
-                console.log(`[MainApp] Multiple mods detected, showing selection modal...`)
-                
-                // Multiple mods - show selection modal
-                setModSelectionGroups(extractedGroups.groups)
-                setExtractedTempDir(extractedGroups.tempDirectory)
-                setIsModSelectionModalOpen(true)
-                
-                // Show success notification for multi-mod extraction
-                showNotification({
-                  type: 'success',
-                  title: 'Multiple mods found',
-                  message: `Found ${extractedGroups.groups.length} mod variations in ${file.name}. Choose which ones to install.`,
-                  duration: 5000,
-                })
-              }
-            } catch (error) {
-              console.error(`[MainApp] Multi-mod extraction failed for ${file.name}:`, error)
-              console.error(`[MainApp] Error details:`, {
-                name: error instanceof Error ? error.name : 'Unknown',
-                message: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined
-              })
-              
-              // Add detailed error notification
-              showNotification({
-                type: 'warning',
-                title: 'Advanced Extraction Failed',
-                message: `Could not process ${file.name} with advanced extraction: ${error instanceof Error ? error.message : 'Unknown error'}. Trying fallback method...`,
-                duration: 6000,
-              })
-              
-              // Fall back to original extraction method
-              try {
-                console.log(`[MainApp] Attempting fallback to legacy extraction method...`)
-                
-                const installedMods = await window.electronAPI.dragDrop.handleDroppedFiles(
-                  (() => {
-                    const dt = new DataTransfer()
-                    dt.items.add(file)
-                    return dt.files
-                  })()
-                )
-                
-                console.log(`[MainApp] Fallback extraction successful, installed ${installedMods.length} mods`)
-                
-                // Refresh mods list
-                await refreshModsWithFeedback()
-                
-                // Add to metadata editing queue
-                if (installedMods.length > 0) {
-                  console.log(`[MainApp] Adding fallback mods to edit queue`)
-                  setModEditQueue(installedMods)
-                  setEditingMod(installedMods[0])
-                  setIsEditModalOpen(true)
-                }
-                
-                // Show notification about extraction method used
-                if (file.name.toLowerCase().endsWith('.rar')) {
-                  showNotification({
-                    type: 'info',
-                    title: 'RAR file installed',
-                    message: 'RAR file installed successfully using basic extraction. Advanced multi-mod selection not available for RAR files.',
-                    duration: 6000,
-                  })
-                } else {
-                  showNotification({
-                    type: 'warning',
-                    title: 'Extraction method changed',
-                    message: 'Advanced extraction failed, but file installed successfully using basic method.',
-                    duration: 5000,
-                  })
-                }
-              } catch (fallbackError) {
-                console.error(`[MainApp] Both extraction methods failed for ${file.name}:`, fallbackError)
-                console.error(`[MainApp] Fallback error details:`, {
-                  name: fallbackError instanceof Error ? fallbackError.name : 'Unknown',
-                  message: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-                  stack: fallbackError instanceof Error ? fallbackError.stack : undefined
-                })
-                throw fallbackError
-              }
-            }
-          } else {
-            // Direct .pak file - use existing flow
-            const installedMods = await window.electronAPI.dragDrop.handleDroppedFiles(
-              (() => {
-                const dt = new DataTransfer()
-                dt.items.add(file)
-                return dt.files
-              })()
-            )
-            
-            // Refresh mods list
-            await refreshModsWithFeedback()
-            
-            // Add to metadata editing queue
-            if (installedMods.length > 0) {
-              setModEditQueue(installedMods)
-              setEditingMod(installedMods[0])
-              setIsEditModalOpen(true)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error installing mods via drag and drop:', error)
-        showNotification({
-          type: 'error',
-          title: 'Installation Failed',
-          message: error instanceof Error ? error.message : 'Failed to install mods',
-        })
-      }
-    }
-  }
 
   const handleAddMod = async () => {
     console.log(`[MainApp] Add mod button clicked`)
@@ -1098,6 +720,7 @@ export function MainApplication({ className }: MainApplicationProps) {
     hideDetailsPanel,
   ])
 
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -1129,34 +752,9 @@ export function MainApplication({ className }: MainApplicationProps) {
     <div 
       className={cn(
         'h-screen flex bg-background text-foreground overflow-hidden transition-colors duration-300',
-        isDragOver && 'bg-accent/10',
         className
       )}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
     >
-      {/* Drag Overlay */}
-      <AnimatePresence>
-        {isDragOver && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <Card className="p-8 text-center border-2 border-dashed border-primary">
-              <div className="space-y-4">
-                <div className="w-16 h-16 border-4 border-primary border-dashed rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-2xl">📦</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Drop mod files here</h3>
-                  <p className="text-muted-foreground">
-                    Supports .pak, .zip, and .rar files
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Sidebar */}
       <Sidebar

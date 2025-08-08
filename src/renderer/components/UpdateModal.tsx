@@ -17,6 +17,79 @@ interface UpdateModalProps {
   onRetry?: () => void
 }
 
+// Enhanced markdown parser for release notes
+function parseReleaseNotes(text: string): JSX.Element {
+  const lines = text.trim().split('\n').filter(line => line.trim())
+  const elements: JSX.Element[] = []
+  
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim()
+    
+    // Skip empty lines
+    if (!trimmedLine) return
+    
+    // Parse headers (### Text)
+    if (trimmedLine.startsWith('### ')) {
+      const headerText = trimmedLine.replace(/^### /, '').trim()
+      elements.push(
+        <h4 key={`header-${index}`} className="text-base font-semibold text-foreground mb-3 mt-4 first:mt-0">
+          {headerText}
+        </h4>
+      )
+      return
+    }
+    
+    // Parse bullet points (- ✨ Text)
+    if (trimmedLine.startsWith('- ')) {
+      const bulletText = trimmedLine.replace(/^- /, '').trim()
+      const parsedText = parseBoldMarkdown(bulletText)
+      elements.push(
+        <div key={`bullet-${index}`} className="flex items-start gap-3 mb-2">
+          <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0" />
+          <div className="text-sm text-muted-foreground flex-1">
+            {parsedText}
+          </div>
+        </div>
+      )
+      return
+    }
+    
+    // Parse regular paragraphs
+    if (trimmedLine && !trimmedLine.startsWith('#')) {
+      const parsedText = parseBoldMarkdown(trimmedLine)
+      elements.push(
+        <p key={`para-${index}`} className="text-sm text-muted-foreground mb-2">
+          {parsedText}
+        </p>
+      )
+    }
+  })
+  
+  return <div className="space-y-1">{elements}</div>
+}
+
+// Helper function to parse markdown bold formatting
+function parseBoldMarkdown(text: string): JSX.Element {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          // Remove the ** and make it bold
+          const boldText = part.slice(2, -2)
+          return (
+            <span key={index} className="font-semibold text-foreground">
+              {boldText}
+            </span>
+          )
+        }
+        return <span key={index}>{part}</span>
+      })}
+    </>
+  )
+}
+
 export function UpdateModal({ 
   isOpen, 
   onClose, 
@@ -160,11 +233,9 @@ export function UpdateModal({
                     {/* Release Notes */}
                     {updateInfo.releaseNotes && (
                       <div>
-                        <h3 className="text-lg font-medium text-foreground mb-3">What's New</h3>
+                        <h3 className="text-lg font-medium text-foreground mb-3">Release Notes</h3>
                         <div className="max-h-48 overflow-y-auto bg-muted/30 rounded-lg border border-border p-4">
-                          <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
-                            {updateInfo.releaseNotes}
-                          </pre>
+                          {parseReleaseNotes(updateInfo.releaseNotes)}
                         </div>
                       </div>
                     )}

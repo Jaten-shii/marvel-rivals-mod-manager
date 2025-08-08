@@ -149,7 +149,9 @@ export function Sidebar({
   }
 
   return (
-    <div className={cn('w-64 h-full flex flex-col bg-sidebar border-r border-sidebar-border', className)}>
+    <div 
+      className={cn('w-64 h-full flex flex-col bg-sidebar border-r border-sidebar-border', className)}
+    >
       {/* Header */}
       <div className="px-4 py-3 border-b border-sidebar-border">
         <h2 className="text-lg font-semibold text-sidebar-foreground">Categories</h2>

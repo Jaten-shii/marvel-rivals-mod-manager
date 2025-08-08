@@ -84,11 +84,13 @@ export function Toolbar({
   }, [sortDropdownOpen])
 
   return (
-    <Card className={cn(
-      'p-4 bg-card border-border backdrop-blur-sm shadow-lg relative z-40 rounded-none',
-      'dark:bg-card dark:border-border',
-      className
-    )}>
+    <Card 
+      className={cn(
+        'p-4 bg-card border-border backdrop-blur-sm shadow-lg relative z-40 rounded-none',
+        'dark:bg-card dark:border-border',
+        className
+      )}
+    >
       <div className="flex items-center gap-4">
         {/* Left Section - Primary Actions */}
         <div className="flex items-center gap-3">
