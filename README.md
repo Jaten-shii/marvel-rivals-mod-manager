@@ -1,94 +1,150 @@
+<div align="center">
+
+![Marvel Rivals Mod Manager Banner](./main%20banner.png)
+
 # Marvel Rivals Mod Manager
 
-A professional, feature-rich desktop application for managing mods in Marvel Rivals. Built with Tauri for a lightweight, secure, and blazingly fast experience.
+### 🎮 Professional Mod Management for Marvel Rivals
+
+[![Latest Release](https://img.shields.io/github/v/release/Jaten-shii/marvel-rivals-mod-manager?style=for-the-badge&color=e5c300)](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows)](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE.md)
+
+A lightweight, blazingly fast desktop application built with Tauri for seamless mod management in Marvel Rivals.
+
+[Download Latest Release](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases) • [Report Bug](https://github.com/Jaten-shii/marvel-rivals-mod-manager/issues) • [Request Feature](https://github.com/Jaten-shii/marvel-rivals-mod-manager/issues)
+
+</div>
+
+---
 
 ## ✨ Features
 
-### Core Functionality
-- **Seamless Mod Installation** - Drag & drop support for `.pak`, `.zip`, and `.rar` files
-- **Automatic Organization** - Smart categorization by UI, Audio, Skins, and Gameplay
-- **Character-Based Filtering** - Organize and browse mods by 40+ Marvel Rivals characters
-- **Real-time File Monitoring** - Automatic detection of mod directory changes
-- **Profile System** - Create and manage multiple mod profiles for different playstyles
+<table>
+<tr>
+<td width="50%">
 
-### Modern UI/UX
-- **Dual Theme System** - Dark and Light themes with smooth animations
-- **Multiple View Modes** - Grid and List layouts for mod browsing
-- **Advanced Search & Filtering** - Quickly find mods by name, category, or character
-- **Mod Details Panel** - View thumbnails, descriptions, and metadata
-- **Statistics Dashboard** - Track your mod collection at a glance
+### 🚀 Core Functionality
+- **Drag & Drop Installation** - Instant mod installation from `.pak`, `.zip`, and `.rar` files
+- **Smart Auto-Organization** - Automatic categorization by UI, Audio, Skins, and Gameplay
+- **Character Filtering** - Browse mods by 40+ Marvel Rivals heroes
+- **Real-Time Monitoring** - Auto-detect changes in mod directory
+- **Profile Management** - Multiple mod configurations for different playstyles
 
-### Advanced Features
-- **In-App Auto-Updater** - Automatic updates with cryptographic signing
-- **Changelog Viewer** - Browse release notes and version history
-- **Custom Thumbnails** - Add custom images to your mods
-- **Bulk Operations** - Enable, disable, or delete multiple mods at once
-- **File Associations** - Open `.pak` files directly with the mod manager
+</td>
+<td width="50%">
 
-## 🎮 Installation
+### 🎨 Modern Interface
+- **Dual Theme System** - Gorgeous Dark and Light themes
+- **Flexible View Modes** - Switch between Grid and List layouts
+- **Advanced Search** - Find mods instantly by name, category, or character
+- **Details Panel** - Rich mod information with custom thumbnails
+- **Live Statistics** - Track your mod collection at a glance
 
-### Download
-Download the latest release from the [Releases page](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases)
+</td>
+</tr>
+</table>
 
-### System Requirements
-- **Platform**: Windows 10/11 (64-bit)
-- **Game**: Marvel Rivals (Steam version)
-- **Disk Space**: ~15 MB for application
+### 🔥 Advanced Features
 
-### First-Time Setup
-1. Run the installer (`Marvel Rivals Mod Manager_x.x.x_x64-setup.exe`)
-2. Launch the application
-3. The mod manager will automatically detect your Marvel Rivals installation
-4. If auto-detection fails, manually set your game directory in Settings
+- **🔄 Auto-Updater** - Seamless app updates with cryptographic signing
+- **📜 Changelog Viewer** - In-app release notes and version history
+- **🖼️ Custom Thumbnails** - Personalize your mods with custom images
+- **⚡ Bulk Operations** - Enable, disable, or remove multiple mods at once
+- **🔗 File Associations** - Double-click `.pak` files to open directly in mod manager
 
-## 🚀 Usage
+---
+
+## 🎮 Getting Started
+
+### 📥 Installation
+
+1. **Download** the latest installer from [Releases](https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases)
+2. **Run** `Marvel Rivals Mod Manager_x.x.x_x64-setup.exe`
+3. **Launch** the application - game directory auto-detection handles the rest!
+
+### 💻 System Requirements
+
+| Requirement | Minimum |
+|------------|---------|
+| **OS** | Windows 10/11 (64-bit) |
+| **Game** | Marvel Rivals (Steam) |
+| **Disk Space** | ~15 MB |
+| **RAM** | 100 MB |
+
+---
+
+## 🎯 How to Use
 
 ### Installing Mods
-1. **Drag & Drop**: Drag mod files directly into the application window
-2. **File Browser**: Click "Browse Files" to select mods from your computer
-3. **Automatic Extraction**: ZIP/RAR archives are automatically extracted
 
-### Managing Mods
-- **Enable/Disable**: Toggle mods with a single click
-- **View Details**: Click any mod to see details in the side panel
-- **Search**: Use the search bar to find specific mods
-- **Filter**: Filter by category (UI, Audio, Skins, Gameplay) or character
-- **Switch Views**: Toggle between Grid and List view modes
+<table>
+<tr>
+<td width="33%">
 
-### Profiles
-- Create different profiles for competitive vs. casual gameplay
-- Switch between profiles instantly
-- Each profile maintains its own enabled/disabled mod states
+**🎯 Drag & Drop**
 
-## 🛠 Built With
+Simply drag mod files into the app window
+
+</td>
+<td width="33%">
+
+**📁 File Browser**
+
+Click "Browse Files" to select mods from your PC
+
+</td>
+<td width="33%">
+
+**📦 Auto-Extract**
+
+ZIP/RAR archives extract automatically
+
+</td>
+</tr>
+</table>
+
+### Managing Your Collection
+
+- **🔍 Search** - Use the search bar to find specific mods instantly
+- **🏷️ Filter** - Sort by category (UI, Audio, Skins, Gameplay) or character
+- **👁️ View Details** - Click any mod to see full information and screenshots
+- **🎚️ Enable/Disable** - Toggle mods on/off with a single click
+- **👥 Profiles** - Create separate mod setups for competitive vs. casual play
+
+---
+
+## 🛠️ Built With
+
+<div align="center">
 
 ### Frontend
-- **React 19** - Modern UI library
-- **TypeScript** - Type-safe development
-- **Tailwind CSS 4** - Utility-first styling
-- **shadcn/ui** - High-quality UI components
-- **Framer Motion** - Smooth animations
-- **Zustand** - State management
+![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
 ### Backend
-- **Tauri 2** - Rust-powered native backend
-- **Rust** - Performance and security
-- **File Watching** - Real-time directory monitoring
-- **Archive Extraction** - ZIP/RAR support
+![Tauri](https://img.shields.io/badge/Tauri_2-FFC131?style=for-the-badge&logo=tauri&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
 
-### Build Tools
-- **Vite** - Lightning-fast development
-- **NSIS** - Professional Windows installer
-- **Electron Builder** - Application packaging
+### UI Components
+shadcn/ui • Framer Motion • Lucide React • Zustand
+
+</div>
+
+---
 
 ## 🔧 Building from Source
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v20+)
-- [Rust](https://rustup.rs/) (latest stable)
-- [pnpm](https://pnpm.io/) (v10+)
 
-### Development
+- [Node.js](https://nodejs.org/) v20+
+- [Rust](https://rustup.rs/) (latest stable)
+- [pnpm](https://pnpm.io/) v10+
+
+### Quick Start
+
 ```bash
 # Clone the repository
 git clone https://github.com/Jaten-shii/marvel-rivals-mod-manager.git
@@ -97,38 +153,60 @@ cd marvel-rivals-mod-manager
 # Install dependencies
 pnpm install
 
-# Start development server
+# Start development server with hot reload
 pnpm dev
 
-# Build for production
+# Build production installer
 pnpm run tauri:build
 ```
 
 ### Project Structure
+
 ```
-src/
-├── components/         # React UI components
-├── hooks/             # Custom React hooks
-├── stores/            # Zustand state management
-├── services/          # API services
-└── screens/           # Application screens
-
-src-tauri/
-├── src/               # Rust backend code
-├── icons/             # Application icons
-└── tauri.conf.json    # Tauri configuration
+marvel-rivals-mod-manager/
+├── src/                    # React frontend
+│   ├── components/         # UI components (ModCard, Sidebar, etc.)
+│   ├── hooks/             # Custom React hooks
+│   ├── stores/            # Zustand state management
+│   ├── services/          # API and business logic
+│   └── screens/           # Application screens
+│
+├── src-tauri/             # Rust backend
+│   ├── src/               # Tauri commands and services
+│   ├── icons/             # Application icons
+│   └── tauri.conf.json    # App configuration
+│
+└── public/                # Static assets
 ```
-
-## 📋 License
-
-This project is licensed under the [MIT](LICENSE.md) license.
-
-## 🙏 Acknowledgments
-
-- Marvel Rivals mod community for inspiration
-- All contributors and testers
-- Open source libraries that made this possible
 
 ---
 
-**Note**: This mod manager is a community project and is not affiliated with or endorsed by NetEase or Marvel.
+## 📋 License
+
+This project is licensed under the **MIT License** - see the [LICENSE.md](LICENSE.md) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- 💜 **Marvel Rivals Mod Community** - For inspiration and feedback
+- 🧪 **Alpha Testers** - For helping iron out the bugs
+- 🔧 **Open Source Contributors** - For the amazing libraries that power this app
+
+---
+
+<div align="center">
+
+### ⚠️ Disclaimer
+
+**Marvel Rivals Mod Manager** is a community-created tool and is **not affiliated with, endorsed by, or associated with NetEase Games or Marvel Entertainment**.
+
+Use mods at your own risk. Always backup your game files before installing mods.
+
+---
+
+**Made with ❤️ by the Marvel Rivals modding community**
+
+[⬆ Back to Top](#marvel-rivals-mod-manager)
+
+</div>
