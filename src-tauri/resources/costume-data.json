@@ -1,0 +1,1894 @@
+{
+  "Adam Warlock": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "adam-warlock/img_icon_adam-warlock.png",
+      "isDefault": true
+    },
+    {
+      "id": "blood-soul",
+      "name": "Blood Soul",
+      "imagePath": "adam-warlock/img_icon_blood-soul.png"
+    },
+    {
+      "id": "guardians-of-the-galaxy-vol-3",
+      "name": "Guardians of the Galaxy Vol. 3",
+      "imagePath": "adam-warlock/img_icon_guardians-of-the-galaxy-vol-3.png"
+    },
+    {
+      "id": "immortal-avatar",
+      "name": "Immortal Avatar",
+      "imagePath": "adam-warlock/img_icon_immortal-avatar.png"
+    },
+    {
+      "id": "king-in-white",
+      "name": "King in White",
+      "imagePath": "adam-warlock/img_icon_king-in-white.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "adam-warlock/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "cosmic-jade",
+      "name": "Cosmic Jade",
+      "imagePath": "adam-warlock/img_icon_cosmic-jade.png"
+    }
+  ],
+  "Angela": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "angela/img_icon_angela.png",
+      "isDefault": true
+    },
+    {
+      "id": "skuld-2099",
+      "name": "Skuld 2099",
+      "imagePath": "angela/img_icon_skuld-2099.png"
+    },
+    {
+      "id": "cerulean-lightbringer",
+      "name": "Cerulean Lightbringer",
+      "imagePath": "angela/img_icon_sirianas-silver.png"
+    },
+    {
+      "id": "sirianas-silver",
+      "name": "Siriana's Silver",
+      "imagePath": "angela/img_icon_sirianas-silver.png"
+    }
+  ],
+  "Black Panther": [
+    {
+      "id": "black-panther",
+      "name": "Default",
+      "imagePath": "black-panther/img_icon_black-panther.png",
+      "isDefault": true
+    },
+    {
+      "id": "basts-chosen",
+      "name": "Bast's Chosen",
+      "imagePath": "black-panther/img_icon_basts-chosen.png"
+    },
+    {
+      "id": "damisa-sarki",
+      "name": "Damisa-Sarki",
+      "imagePath": "black-panther/img_icon_damisa-sarki.png"
+    },
+    {
+      "id": "galactic-claw",
+      "name": "Galactic Claw",
+      "imagePath": "black-panther/img_icon_galactic-claw.png"
+    },
+    {
+      "id": "golden-panther",
+      "name": "Golden Panther",
+      "imagePath": "black-panther/img_icon_golden-panther.png"
+    },
+    {
+      "id": "orisha-blood",
+      "name": "Orisha Blood",
+      "imagePath": "black-panther/img_icon_orisha-blood.png"
+    },
+    {
+      "id": "phoenix-panther",
+      "name": "Phoenix Panther",
+      "imagePath": "black-panther/img_icon_phoenix-panther.png"
+    },
+    {
+      "id": "thrice-cursed-king",
+      "name": "Thrice-Cursed King",
+      "imagePath": "black-panther/img_icon_thrice-cursed-king.png"
+    }
+  ],
+  "Black Widow": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "black-widow/img_icon_black-widow.png",
+      "isDefault": true
+    },
+    {
+      "id": "red-runway-veil",
+      "name": "Red Runway Veil",
+      "imagePath": "black-widow/img_icon_red-runway-veil.png"
+    },
+    {
+      "id": "phoenix-widow",
+      "name": "Phoenix Widow",
+      "imagePath": "black-widow/img_icon_phoenix-widow.png"
+    },
+    {
+      "id": "lions-heartbeat",
+      "name": "Lion's Heartbeat",
+      "imagePath": "black-widow/img_icon_lions-heartbeat.png"
+    },
+    {
+      "id": "white-suit",
+      "name": "White Suit",
+      "imagePath": "black-widow/img_icon_white-suit.png"
+    },
+    {
+      "id": "mrs-barnes",
+      "name": "Mrs. Barnes",
+      "imagePath": "black-widow/img_icon_mrs-barnes.png"
+    },
+    {
+      "id": "lethal-toxicity",
+      "name": "Lethal Toxicity",
+      "imagePath": "black-widow/img_icon_lethal-toxicity.png"
+    }
+  ],
+  "Blade": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "blade/img_icon_blade.png",
+      "isDefault": true
+    },
+    {
+      "id": "polarity-edge",
+      "name": "Polarity Edge",
+      "imagePath": "blade/img_icon_polarity-edge.png"
+    },
+    {
+      "id": "blade-knight",
+      "name": "Blade Knight",
+      "imagePath": "blade/img_icon_blade-knight.png"
+    },
+    {
+      "id": "daybreak",
+      "name": "Daybreak",
+      "imagePath": "blade/img_icon_daybreak.png"
+    },
+    {
+      "id": "emerald-blade",
+      "name": "Emerald Blade",
+      "imagePath": "blade/img_icon_emerald-blade.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "blade/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Captain America": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "captain-america/img_icon_captain-america.png",
+      "isDefault": true
+    },
+    {
+      "id": "avengers-infinity-war",
+      "name": "Avengers: Infinity War",
+      "imagePath": "captain-america/img_icon_avengers-infinity-war.png"
+    },
+    {
+      "id": "star-spangled-style",
+      "name": "Star Spangled Style",
+      "imagePath": "captain-america/img_icon_star-spangled-style.png"
+    },
+    {
+      "id": "galactic-talon",
+      "name": "Galactic Talon",
+      "imagePath": "captain-america/img_icon_galactic-talon.png"
+    },
+    {
+      "id": "captain-gladiator",
+      "name": "Captain Gladiator",
+      "imagePath": "captain-america/img_icon_captain-gladiator.png"
+    },
+    {
+      "id": "captain-klyntar",
+      "name": "Captain Klyntar",
+      "imagePath": "captain-america/img_icon_captain-klyntar.png"
+    },
+    {
+      "id": "golden-age",
+      "name": "Golden Age",
+      "imagePath": "captain-america/img_icon_golden-age.png"
+    },
+    {
+      "id": "captain-aimerica",
+      "name": "Captain A.I.M.erica",
+      "imagePath": "captain-america/img_icon_captain-aimerica.png"
+    }
+  ],
+  "Cloak and Dagger": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "cloak-and-dagger/img_icon_cloak-dagger.png",
+      "isDefault": true
+    },
+    {
+      "id": "dance-partner",
+      "name": "Dance Partner",
+      "imagePath": "cloak-and-dagger/img_icon_dance-partner.png"
+    },
+    {
+      "id": "polarity-bond",
+      "name": "Polarity Bond",
+      "imagePath": "cloak-and-dagger/img_icon_polarity-bond.png"
+    },
+    {
+      "id": "growth-and-decay",
+      "name": "Growth & Decay",
+      "imagePath": "cloak-and-dagger/img_icon_growth-decay.png"
+    },
+    {
+      "id": "twilight-duo",
+      "name": "Twilight Duo",
+      "imagePath": "cloak-and-dagger/img_icon_twilight-duo.png"
+    },
+    {
+      "id": "lemon-lime",
+      "name": "Lemon Lime",
+      "imagePath": "cloak-and-dagger/img_icon_lemon-lime.png"
+    }
+  ],
+  "Daredevil": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "daredevil/img_icon_daredevil (1).png",
+      "isDefault": true
+    },
+    {
+      "id": "devil-2099",
+      "name": "Devil 2099",
+      "imagePath": "daredevil/img_icon_devil-2099.png"
+    },
+    {
+      "id": "aurora-twilight",
+      "name": "Aurora Twilight",
+      "imagePath": "daredevil/img_icon_aurora-twilight.png"
+    },
+    {
+      "id": "fearless-origin",
+      "name": "Fearless Origin",
+      "imagePath": "daredevil/img_icon_fearless-origin.png"
+    },
+    {
+      "id": "shenloongs-creed",
+      "name": "Shenloong's Creed",
+      "imagePath": "daredevil/img_icon_shenloongs-creed.png"
+    }
+  ],
+  "Doctor Strange": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "doctor-strange/img_icon_doctor-strange.png",
+      "isDefault": true
+    },
+    {
+      "id": "doctor-strange-in-the-multiverse-of-madness",
+      "name": "Doctor Strange in the Multiverse of Madness",
+      "imagePath": "doctor-strange/img_icon_doctor-strange-in-the-multiverse-of-madness.png"
+    },
+    {
+      "id": "sorcerer-immortal",
+      "name": "Sorcerer Immortal",
+      "imagePath": "doctor-strange/img_icon_sorcerer-immortal.png"
+    },
+    {
+      "id": "god-of-magic",
+      "name": "God of Magic",
+      "imagePath": "doctor-strange/img_icon_god-of-magic.png"
+    },
+    {
+      "id": "sorcerer-supreme-of-the-galaxy",
+      "name": "Sorcerer Supreme of the Galaxy",
+      "imagePath": "doctor-strange/img_icon_sorcerer-supreme-of-the-galaxy.png"
+    },
+    {
+      "id": "old-man-strange",
+      "name": "Old Man Strange",
+      "imagePath": "doctor-strange/img_icon_old-man-strange.png"
+    },
+    {
+      "id": "astral-wanderer",
+      "name": "Astral Wanderer",
+      "imagePath": "doctor-strange/img_icon_astral-wanderer.png"
+    },
+    {
+      "id": "master-of-black-magic",
+      "name": "Master of Black Magic",
+      "imagePath": "doctor-strange/img_icon_master-of-black-magic.png"
+    }
+  ],
+  "Emma Frost": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "emma-frost/img_icon_emma-frost.png",
+      "isDefault": true
+    },
+    {
+      "id": "hellfire-protocol",
+      "name": "Hellfire Protocol",
+      "imagePath": "emma-frost/img_icon_hellfire-protocol.png"
+    },
+    {
+      "id": "phoenix-diamond",
+      "name": "Phoenix Diamond",
+      "imagePath": "emma-frost/img_icon_phoenix-diamond.png"
+    },
+    {
+      "id": "x-revolution",
+      "name": "X-Revolution",
+      "imagePath": "emma-frost/img_icon_x-revolution.png"
+    },
+    {
+      "id": "blue-sapphire",
+      "name": "Blue Sapphire",
+      "imagePath": "emma-frost/img_icon_blue-sapphire.png"
+    },
+    {
+      "id": "golden-diamond",
+      "name": "Golden Diamond",
+      "imagePath": "emma-frost/img_icon_golden-diamond.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "emma-frost/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Gambit": [
+    {
+      "id": "gambit",
+      "name": "Default",
+      "imagePath": "gambit/img_icon_gambit.png",
+      "isDefault": true
+    },
+    {
+      "id": "crimson-heart",
+      "name": "Crimson Heart",
+      "imagePath": "gambit/img_icon_crimson-heart.png"
+    },
+    {
+      "id": "sacrificial-pawn",
+      "name": "Sacrificial Pawn",
+      "imagePath": "gambit/img_icon_sacrificial-pawn.png"
+    },
+    {
+      "id": "thieves-guildmaster",
+      "name": "Thieves Guildmaster",
+      "imagePath": "gambit/img_icon_thieves-guildmaster.png"
+    }
+  ],
+  "Groot": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "groot/img_icon_groot.png",
+      "isDefault": true
+    },
+    {
+      "id": "yggroot",
+      "name": "Yggroot",
+      "imagePath": "groot/img_icon_yggroot.png"
+    },
+    {
+      "id": "holiday-happiness",
+      "name": "Holiday Happiness",
+      "imagePath": "groot/img_icon_holiday-happiness.png"
+    },
+    {
+      "id": "guardians-of-the-galaxy-vol-3",
+      "name": "Guardians of the Galaxy Vol. 3",
+      "imagePath": "groot/img_icon_guardians-of-the-galaxy-vol-3.png"
+    },
+    {
+      "id": "symbiote-flora",
+      "name": "Symbiote Flora",
+      "imagePath": "groot/img_icon_symbiote-flora.png"
+    },
+    {
+      "id": "carved-traveler",
+      "name": "Carved Traveler",
+      "imagePath": "groot/img_icon_carved-traveler.png"
+    },
+    {
+      "id": "abies-algae",
+      "name": "Abies Algae",
+      "imagePath": "groot/img_icon_abies-algae.png"
+    }
+  ],
+  "Hawkeye": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "hawkeye/img_icon_hawkeye.png",
+      "isDefault": true
+    },
+    {
+      "id": "ronin",
+      "name": "Ronin",
+      "imagePath": "hawkeye/img_icon_ronin.png"
+    },
+    {
+      "id": "old-man-hawkeye",
+      "name": "Old Man Hawkeye",
+      "imagePath": "hawkeye/img_icon_old-man-hawkeye.png"
+    },
+    {
+      "id": "galactic-fangs",
+      "name": "Galactic Fangs",
+      "imagePath": "hawkeye/img_icon_galactic-fangs.png"
+    },
+    {
+      "id": "freefall",
+      "name": "Freefall",
+      "imagePath": "hawkeye/img_icon_freefall.png"
+    },
+    {
+      "id": "binary-arrow",
+      "name": "Binary Arrow",
+      "imagePath": "hawkeye/img_icon_binary-arrow.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "hawkeye/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "tigers-eye",
+      "name": "Tiger's Eye",
+      "imagePath": "hawkeye/img_icon_tigers-eye.png"
+    }
+  ],
+  "Hela": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "hela/img_icon_hela.png",
+      "isDefault": true
+    },
+    {
+      "id": "queen-in-black",
+      "name": "Queen in Black",
+      "imagePath": "hela/img_icon_queen-in-black.png"
+    },
+    {
+      "id": "the-grim-lady",
+      "name": "The Grim Lady",
+      "imagePath": "hela/img_icon_the-grim-lady.png"
+    },
+    {
+      "id": "empress-of-the-cosmos",
+      "name": "Empress of the Cosmos",
+      "imagePath": "hela/img_icon_empress-of-the-cosmos.png"
+    },
+    {
+      "id": "goddess-of-death",
+      "name": "Goddess of Death",
+      "imagePath": "hela/img_icon_goddess-of-death.png"
+    },
+    {
+      "id": "yami-no-karasu",
+      "name": "Yami no Karasu",
+      "imagePath": "hela/img_icon_yami-no-karasu.png"
+    },
+    {
+      "id": "ultimate",
+      "name": "Ultimate",
+      "imagePath": "hela/img_icon_ultimate.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "hela/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Hulk": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "hulk/img_icon_bruce-banner.png",
+      "isDefault": true
+    },
+    {
+      "id": "green-scar",
+      "name": "Green Scar",
+      "imagePath": "hulk/img_icon_green-scar.png"
+    },
+    {
+      "id": "joe-fixit",
+      "name": "Joe Fixit",
+      "imagePath": "hulk/img_icon_joe-fixit.png"
+    },
+    {
+      "id": "maestro",
+      "name": "Maestro",
+      "imagePath": "hulk/img_icon_maestro.png"
+    },
+    {
+      "id": "punk-rage",
+      "name": "Punk Rage",
+      "imagePath": "hulk/img_icon_punk-rage.png"
+    },
+    {
+      "id": "mighty-g-bomb",
+      "name": "Mighty G-Bomb",
+      "imagePath": "hulk/img_icon_mighty-g-bomb.png"
+    }
+  ],
+  "Human Torch": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "human-torch/img_icon_human-torch.png",
+      "isDefault": true
+    },
+    {
+      "id": "future-foundation",
+      "name": "Future Foundation",
+      "imagePath": "human-torch/img_icon_future-foundation.png"
+    },
+    {
+      "id": "negative-zone-gladiator",
+      "name": "Negative Zone Gladiator",
+      "imagePath": "human-torch/img_icon_negative-zone-gladiator.png"
+    },
+    {
+      "id": "sunny-sizzler",
+      "name": "Sunny Sizzler",
+      "imagePath": "human-torch/img_icon_sunny-sizzler.png"
+    },
+    {
+      "id": "the-fantastic-four-first-steps",
+      "name": "The Fantastic Four: First Steps",
+      "imagePath": "human-torch/img_icon_the-fantastic-four-first-steps.png"
+    },
+    {
+      "id": "blood-blaze",
+      "name": "Blood Blaze",
+      "imagePath": "human-torch/img_icon_blood-blaze.png"
+    },
+    {
+      "id": "first-family",
+      "name": "First Family",
+      "imagePath": "human-torch/img_icon_first-family.png"
+    },
+    {
+      "id": "indigo-inferno",
+      "name": "Indigo Inferno",
+      "imagePath": "human-torch/img_icon_indigo-inferno.png"
+    }
+  ],
+  "Invisible Woman": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "invisible-woman/img_icon_invisible-woman.png",
+      "isDefault": true
+    },
+    {
+      "id": "azure-shade",
+      "name": "Azure Shade",
+      "imagePath": "invisible-woman/img_icon_azure-shade.png"
+    },
+    {
+      "id": "lush-luminance",
+      "name": "Lush Luminance",
+      "imagePath": "invisible-woman/img_icon_lush-luminance.png"
+    },
+    {
+      "id": "tangerine-tint",
+      "name": "Tangerine Tint",
+      "imagePath": "invisible-woman/img_icon_tangerine-tint.png"
+    },
+    {
+      "id": "dune-daisy",
+      "name": "Dune Daisy",
+      "imagePath": "invisible-woman/img_icon_dune-daisy.png"
+    },
+    {
+      "id": "midnight-majesty",
+      "name": "Midnight Majesty",
+      "imagePath": "invisible-woman/img_icon_midnight-majesty.png"
+    },
+    {
+      "id": "the-life-fantastic",
+      "name": "The Life Fantastic",
+      "imagePath": "invisible-woman/img_icon_the-life-fantastic.png"
+    },
+    {
+      "id": "future-foundation",
+      "name": "Future Foundation",
+      "imagePath": "invisible-woman/img_icon_future-foundation.png"
+    },
+    {
+      "id": "malice",
+      "name": "Malice",
+      "imagePath": "invisible-woman/img_icon_malice.png"
+    },
+    {
+      "id": "the-fantastic-four-first-steps",
+      "name": "The Fantastic Four: First Steps",
+      "imagePath": "invisible-woman/img_icon_the-fantastic-four-first-steps.png"
+    },
+    {
+      "id": "blood-shield",
+      "name": "Blood Shield",
+      "imagePath": "invisible-woman/img_icon_blood-shield.png"
+    },
+    {
+      "id": "first-family",
+      "name": "First Family",
+      "imagePath": "invisible-woman/img_icon_first-family.png"
+    }
+  ],
+  "Iron Fist": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "iron-fist/img_icon_iron-fist.png",
+      "isDefault": true
+    },
+    {
+      "id": "lions-gaze",
+      "name": "Lion's Gaze",
+      "imagePath": "iron-fist/img_icon_lions-gaze.png"
+    },
+    {
+      "id": "binary-fist",
+      "name": "Binary Fist",
+      "imagePath": "iron-fist/img_icon_binary-fist.png"
+    },
+    {
+      "id": "immortal-weapon-of-agamotto",
+      "name": "Immortal Weapon of Agamotto",
+      "imagePath": "iron-fist/img_icon_immortal-weapon-of-agamotto.png"
+    },
+    {
+      "id": "phoenix-fist",
+      "name": "Phoenix Fist",
+      "imagePath": "iron-fist/img_icon_phoenix-fist.png"
+    },
+    {
+      "id": "sword-master",
+      "name": "Sword Master",
+      "imagePath": "iron-fist/img_icon_sword-master.png"
+    },
+    {
+      "id": "martial-arts-savant",
+      "name": "Martial Arts Savant",
+      "imagePath": "iron-fist/img_icon_martial-arts-savant.png"
+    }
+  ],
+  "Iron Man": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "iron-man/img_icon_iron-man.png",
+      "isDefault": true
+    },
+    {
+      "id": "avengers-endgame",
+      "name": "Avengers: Endgame",
+      "imagePath": "iron-man/img_icon_avengers-endgame.png"
+    },
+    {
+      "id": "big-shot",
+      "name": "Big Shot",
+      "imagePath": "iron-man/img_icon_big-shot.png"
+    },
+    {
+      "id": "extrembiote-armor",
+      "name": "Extrembiote Armor",
+      "imagePath": "iron-man/img_icon_extrembiote-armor.png"
+    },
+    {
+      "id": "blood-edge-armor",
+      "name": "Blood Edge Armor",
+      "imagePath": "iron-man/img_icon_blood-edge-armor.png"
+    },
+    {
+      "id": "steam-power",
+      "name": "Steam Power",
+      "imagePath": "iron-man/img_icon_steam-power.png"
+    },
+    {
+      "id": "superior-iron-man",
+      "name": "Superior Iron Man",
+      "imagePath": "iron-man/img_icon_superior-iron-man.png"
+    },
+    {
+      "id": "armor-model-42",
+      "name": "Armor Model 42",
+      "imagePath": "iron-man/img_icon_armor-model-42.png"
+    }
+  ],
+  "Jeff the Land Shark": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "jeff-the-land-shark/img_icon_jeff-the-land-shark.png",
+      "isDefault": true
+    },
+    {
+      "id": "devouring-duo",
+      "name": "Devouring Duo",
+      "imagePath": "jeff-the-land-shark/img_icon_devouring-duo.png"
+    },
+    {
+      "id": "jeff-olantern",
+      "name": "Jeff O'Lantern",
+      "imagePath": "jeff-the-land-shark/img_icon_jeff-olantern.png"
+    },
+    {
+      "id": "sunshine-land-shark",
+      "name": "Sunshine Land Shark",
+      "imagePath": "jeff-the-land-shark/img_icon_sunshine-land-shark.png"
+    },
+    {
+      "id": "cuddly-fuzzlefin",
+      "name": "Cuddly Fuzzlefin",
+      "imagePath": "jeff-the-land-shark/img_icon_cuddly-fuzzlefin.png"
+    },
+    {
+      "id": "incognito-dolphin",
+      "name": "Incognito Dolphin",
+      "imagePath": "jeff-the-land-shark/img_icon_incognito-dolphin.png"
+    },
+    {
+      "id": "adopted-avenger",
+      "name": "Adopted Avenger",
+      "imagePath": "jeff-the-land-shark/img_icon_adopted-avenger.png"
+    },
+    {
+      "id": "blue-barrage",
+      "name": "Blue Barrage",
+      "imagePath": "jeff-the-land-shark/img_icon_blue-barrage.png"
+    },
+    {
+      "id": "verdant-vortex",
+      "name": "Verdant Vortex",
+      "imagePath": "jeff-the-land-shark/img_icon_verdant-vortex.png"
+    }
+  ],
+  "Loki": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "loki/img_icon_loki.png",
+      "isDefault": true
+    },
+    {
+      "id": "all-butcher",
+      "name": "All-Butcher",
+      "imagePath": "loki/img_icon_all-butcher.png"
+    },
+    {
+      "id": "shin-sagi-shi",
+      "name": "Shin Sagi-Shi",
+      "imagePath": "loki/img_icon_shin-sagi-shi.png"
+    },
+    {
+      "id": "crane-deceiver",
+      "name": "Crane Deceiver",
+      "imagePath": "loki/img_icon_immortal-firebird.png"
+    },
+    {
+      "id": "loki-season-2",
+      "name": "Loki Season 2",
+      "imagePath": "loki/img_icon_loki-season-2.png"
+    },
+    {
+      "id": "presidential-attire",
+      "name": "Presidential Attire",
+      "imagePath": "loki/img_icon_presidential-attire.png"
+    },
+    {
+      "id": "robe-of-relaxation",
+      "name": "Robe of Relaxation",
+      "imagePath": "loki/img_icon_robe-of-relaxation.png"
+    },
+    {
+      "id": "tidal-trickery",
+      "name": "Tidal Trickery",
+      "imagePath": "loki/img_icon_tidal-trickery.png"
+    },
+    {
+      "id": "frost-giant",
+      "name": "Frost Giant",
+      "imagePath": "loki/img_icon_frost-giant.png"
+    },
+    {
+      "id": "ignite-loki-2025",
+      "name": "IGNITE Loki (2025)",
+      "imagePath": "loki/img_icon_ignite-loki-2025.png"
+    }
+  ],
+  "Luna Snow": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "luna-snow/img_icon_luna-snow.png",
+      "isDefault": true
+    },
+    {
+      "id": "abyssal-glow",
+      "name": "Abyssal Glow",
+      "imagePath": "luna-snow/img_icon_abyssal-glow.png"
+    },
+    {
+      "id": "cool-summer",
+      "name": "Cool Summer",
+      "imagePath": "luna-snow/img_icon_cool-summer.png"
+    },
+    {
+      "id": "prismatic-pulse",
+      "name": "Prismatic Pulse",
+      "imagePath": "luna-snow/img_icon_prismatic-pulse.png"
+    },
+    {
+      "id": "radiant-radiance",
+      "name": "Radiant Radiance",
+      "imagePath": "luna-snow/img_icon_radiant-radiance.png"
+    },
+    {
+      "id": "mirae-2099",
+      "name": "Mirae 2099",
+      "imagePath": "luna-snow/img_icon_mirae-2099.png"
+    },
+    {
+      "id": "plasma-pulse",
+      "name": "Plasma Pulse",
+      "imagePath": "luna-snow/img_icon_plasma-pulse.png"
+    },
+    {
+      "id": "shining-star",
+      "name": "Shining Star",
+      "imagePath": "luna-snow/img_icon_shining-star.png"
+    },
+    {
+      "id": "nolaehaneun-manyeo",
+      "name": "Nolaehaneun Manyeo",
+      "imagePath": "luna-snow/img_icon_nolaehaneun-manyeo.png"
+    },
+    {
+      "id": "minty-beats",
+      "name": "Minty Beats",
+      "imagePath": "luna-snow/img_icon_minty-beats.png"
+    }
+  ],
+  "Magik": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "magik/img_icon_magik.png",
+      "isDefault": true
+    },
+    {
+      "id": "punkchild",
+      "name": "Punkchild",
+      "imagePath": "magik/img_icon_punkchild.png"
+    },
+    {
+      "id": "rosy-resilience",
+      "name": "Rosy Resilience",
+      "imagePath": "magik/img_icon_rosy-resilience.png"
+    },
+    {
+      "id": "eldritch-armor",
+      "name": "Eldritch Armor",
+      "imagePath": "magik/img_icon_eldritch-armor.png"
+    },
+    {
+      "id": "frozen-demon",
+      "name": "Frozen Demon",
+      "imagePath": "magik/img_icon_frozen-demon.png"
+    },
+    {
+      "id": "phoenix-demon",
+      "name": "Phoenix Demon",
+      "imagePath": "magik/img_icon_phoenix-demon.png"
+    },
+    {
+      "id": "retro-x-uniform",
+      "name": "Retro X-Uniform",
+      "imagePath": "magik/img_icon_retro-x-uniform.png"
+    },
+    {
+      "id": "amethyst-armor",
+      "name": "Amethyst Armor",
+      "imagePath": "magik/img_icon_amethyst-armor.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "magik/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Magneto": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "magneto/img_icon_magneto.png",
+      "isDefault": true
+    },
+    {
+      "id": "uncanny-blacksteel",
+      "name": "Uncanny Blacksteel",
+      "imagePath": "magneto/img_icon_uncanny-blacksteel.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "magneto/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "master-of-magnetism",
+      "name": "Master of Magnetism",
+      "imagePath": "magneto/img_icon_master-of-magnetism.png"
+    },
+    {
+      "id": "the-trial-of-magneto",
+      "name": "The Trial of Magneto",
+      "imagePath": "magneto/img_icon_the-trial-of-magneto.png"
+    },
+    {
+      "id": "king-magnus",
+      "name": "King Magnus",
+      "imagePath": "magneto/img_icon_king-magnus.png"
+    },
+    {
+      "id": "binary-sword",
+      "name": "Binary Sword",
+      "imagePath": "magneto/img_icon_binary-sword.png"
+    }
+  ],
+  "Mantis": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "mantis/img_icon_mantis.png",
+      "isDefault": true
+    },
+    {
+      "id": "knowhere-corp",
+      "name": "Knowhere Corp",
+      "imagePath": "mantis/img_icon_knowhere-corp.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "mantis/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "jade-maiden",
+      "name": "Jade Maiden",
+      "imagePath": "mantis/img_icon_jade-maiden.png"
+    },
+    {
+      "id": "guardians-of-the-galaxy-vol-3",
+      "name": "Guardians of the Galaxy Vol. 3",
+      "imagePath": "mantis/img_icon_guardians-of-the-galaxy-vol-3.png"
+    },
+    {
+      "id": "flora-maiden",
+      "name": "Flora Maiden",
+      "imagePath": "mantis/img_icon_flora-maiden.png"
+    },
+    {
+      "id": "oceanic-harmony",
+      "name": "Oceanic Harmony",
+      "imagePath": "mantis/img_icon_oceanic-harmony.png"
+    },
+    {
+      "id": "blue-breeze",
+      "name": "Blue Breeze",
+      "imagePath": "mantis/img_icon_blue-breeze.png"
+    },
+    {
+      "id": "citrus-sunrise",
+      "name": "Citrus Sunrise",
+      "imagePath": "mantis/img_icon_citrus-sunrise.png"
+    },
+    {
+      "id": "galactic-wings",
+      "name": "Galactic Wings",
+      "imagePath": "mantis/img_icon_galactic-wings.png"
+    }
+  ],
+  "Mister Fantastic": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "mister-fantastic/img_icon_mister-fantastic.png",
+      "isDefault": true
+    },
+    {
+      "id": "the-life-fantastic",
+      "name": "The Life Fantastic",
+      "imagePath": "mister-fantastic/img_icon_the-life-fantastic.png"
+    },
+    {
+      "id": "future-foundation",
+      "name": "Future Foundation",
+      "imagePath": "mister-fantastic/img_icon_future-foundation.png"
+    },
+    {
+      "id": "the-fantastic-four-first-steps",
+      "name": "The Fantastic Four: First Steps",
+      "imagePath": "mister-fantastic/img_icon_the-fantastic-four-first-steps.png"
+    },
+    {
+      "id": "the-maker",
+      "name": "The Maker",
+      "imagePath": "mister-fantastic/img_icon_the-maker.png"
+    },
+    {
+      "id": "first-family",
+      "name": "First Family",
+      "imagePath": "mister-fantastic/img_icon_first-family.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "mister-fantastic/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Moon Knight": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "moon-knight/img_icon_moon-knight.png",
+      "isDefault": true
+    },
+    {
+      "id": "golden-moonlight",
+      "name": "Golden Moonlight",
+      "imagePath": "moon-knight/img_icon_golden-moonlight.png"
+    },
+    {
+      "id": "blood-moon-knight",
+      "name": "Blood Moon Knight",
+      "imagePath": "moon-knight/img_icon_blood-moon-knight.png"
+    },
+    {
+      "id": "mister-knight",
+      "name": "Mister Knight",
+      "imagePath": "moon-knight/img_icon_mister-knight.png"
+    },
+    {
+      "id": "phoenix-knight",
+      "name": "Phoenix Knight",
+      "imagePath": "moon-knight/img_icon_phoenix-knight.png"
+    },
+    {
+      "id": "fist-of-vengeance",
+      "name": "Fist Of Vengeance",
+      "imagePath": "moon-knight/img_icon_fist-of-vengeance.png"
+    },
+    {
+      "id": "lunar-general",
+      "name": "Lunar General",
+      "imagePath": "moon-knight/img_icon_lunar-general.png"
+    },
+    {
+      "id": "moon-knight-mech",
+      "name": "Moon Knight Mech",
+      "imagePath": "moon-knight/img_icon_moon-knight-mech.png"
+    }
+  ],
+  "Namor": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "namor/img_icon_namor.png",
+      "isDefault": true
+    },
+    {
+      "id": "phantom-tide",
+      "name": "Phantom Tide",
+      "imagePath": "namor/img_icon_phantom-tide.png"
+    },
+    {
+      "id": "black-panther-wakanda-forever",
+      "name": "Black Panther: Wakanda Forever",
+      "imagePath": "namor/img_icon_black-panther-wakanda-forever.png"
+    },
+    {
+      "id": "phoenix-king",
+      "name": "Phoenix King",
+      "imagePath": "namor/img_icon_phoenix-king.png"
+    },
+    {
+      "id": "retro-x-uniform",
+      "name": "Retro X-Uniform",
+      "imagePath": "namor/img_icon_retro-x-uniform.png"
+    },
+    {
+      "id": "savage-sub-mariner",
+      "name": "Savage Sub-Mariner",
+      "imagePath": "namor/img_icon_savage-sub-mariner.png"
+    },
+    {
+      "id": "mauve-sub-mariner",
+      "name": "Mauve Sub-Mariner",
+      "imagePath": "namor/img_icon_mauve-sub-mariner.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "namor/img_icon_will-of-galacta.png"
+    }
+  ],
+  "Peni Parker": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "peni-parker/img_icon_peni-parker.png",
+      "isDefault": true
+    },
+    {
+      "id": "floral-frights",
+      "name": "Floral Frights",
+      "imagePath": "peni-parker/img_icon_floral-frights.png"
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "imagePath": "peni-parker/img_icon_skeleton.png"
+    },
+    {
+      "id": "venm",
+      "name": "VEN#m",
+      "imagePath": "peni-parker/img_icon_venm.png"
+    },
+    {
+      "id": "wasteland-mech",
+      "name": "Wasteland Mech",
+      "imagePath": "peni-parker/img_icon_wasteland-mech.png"
+    },
+    {
+      "id": "yatsukahagi",
+      "name": "Yatsukahagi",
+      "imagePath": "peni-parker/img_icon_yatsukahagi.png"
+    },
+    {
+      "id": "blue-tarantula",
+      "name": "Blue Tarantula",
+      "imagePath": "peni-parker/img_icon_blue-tarantula.png"
+    },
+    {
+      "id": "olive-skimmer",
+      "name": "Olive Skimmer",
+      "imagePath": "peni-parker/img_icon_olive-skimmer.png"
+    }
+  ],
+  "Phoenix": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "phoenix/img_icon_phoenix.png",
+      "isDefault": true
+    },
+    {
+      "id": "chaos-phoenix",
+      "name": "Chaos Phoenix",
+      "imagePath": "phoenix/img_icon_chaos-phoenix.png"
+    },
+    {
+      "id": "dark-phoenix",
+      "name": "Dark Phoenix",
+      "imagePath": "phoenix/img_icon_dark-phoenix.png"
+    },
+    {
+      "id": "emerald-flames",
+      "name": "Emerald Flames",
+      "imagePath": "phoenix/img_icon_emerald-flames.png"
+    },
+    {
+      "id": "the-return-of-jean-grey",
+      "name": "The Return of Jean Grey",
+      "imagePath": "phoenix/img_icon_the-return-of-jean-grey.png"
+    }
+  ],
+  "Psylocke": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "psylocke/img_icon_psylocke.png",
+      "isDefault": true
+    },
+    {
+      "id": "breezy-butterfly",
+      "name": "Breezy Butterfly",
+      "imagePath": "psylocke/img_icon_breezy-butterfly.png"
+    },
+    {
+      "id": "fleeting-butterfly",
+      "name": "Fleeting Butterfly",
+      "imagePath": "psylocke/img_icon_fleeting-butterfly.png"
+    },
+    {
+      "id": "blood-kariudo",
+      "name": "Blood Kariudo",
+      "imagePath": "psylocke/img_icon_blood-kariudo.png"
+    },
+    {
+      "id": "vengeance",
+      "name": "Vengeance",
+      "imagePath": "psylocke/img_icon_vengeance.png"
+    },
+    {
+      "id": "retro-x-uniform",
+      "name": "Retro X-Uniform",
+      "imagePath": "psylocke/img_icon_retro-x-uniform.png"
+    },
+    {
+      "id": "kirisaki-sakura",
+      "name": "Kirisaki Sakura",
+      "imagePath": "psylocke/img_icon_kirisaki-sakura.png"
+    },
+    {
+      "id": "moonlit-mirage",
+      "name": "Moonlit Mirage",
+      "imagePath": "psylocke/img_icon_moonlit-mirage.png"
+    },
+    {
+      "id": "violet-veil",
+      "name": "Violet Veil",
+      "imagePath": "psylocke/img_icon_violet-veil.png"
+    },
+    {
+      "id": "blue-bolt",
+      "name": "Blue Bolt",
+      "imagePath": "psylocke/img_icon_blue-bolt.png"
+    },
+    {
+      "id": "orange-edge",
+      "name": "Orange Edge",
+      "imagePath": "psylocke/img_icon_orange-edge.png"
+    },
+    {
+      "id": "phantom-purple",
+      "name": "Phantom Purple",
+      "imagePath": "psylocke/img_icon_phantom-purple.png"
+    }
+  ],
+  "Rocket Raccoon": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "rocket-raccoon/img_icon_rocket-raccoon.png",
+      "isDefault": true
+    },
+    {
+      "id": "rocky",
+      "name": "Rocky",
+      "imagePath": "rocket-raccoon/img_icon_rocky.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "rocket-raccoon/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "bounty-hunter",
+      "name": "Bounty Hunter",
+      "imagePath": "rocket-raccoon/img_icon_bounty-hunter.png"
+    },
+    {
+      "id": "wild-winter",
+      "name": "Wild Winter",
+      "imagePath": "rocket-raccoon/img_icon_wild-winter.png"
+    },
+    {
+      "id": "symbiote-raccoon",
+      "name": "Symbiote Raccoon",
+      "imagePath": "rocket-raccoon/img_icon_symbiote-raccoon.png"
+    },
+    {
+      "id": "guardians-of-the-galaxy-vol-3",
+      "name": "Guardians of the Galaxy Vol. 3",
+      "imagePath": "rocket-raccoon/img_icon_guardians-of-the-galaxy-vol-3.png"
+    },
+    {
+      "id": "sunshine-raccoon",
+      "name": "Sunshine Raccoon",
+      "imagePath": "rocket-raccoon/img_icon_sunshine-raccoon.png"
+    },
+    {
+      "id": "bluebell-breeze",
+      "name": "Bluebell Breeze",
+      "imagePath": "rocket-raccoon/img_icon_bluebell-breeze.png"
+    },
+    {
+      "id": "radiant-reef",
+      "name": "Radiant Reef",
+      "imagePath": "rocket-raccoon/img_icon_radiant-reef.png"
+    }
+  ],
+  "Scarlet Witch": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "scarlet-witch/img_icon_scarlet-witch.png",
+      "isDefault": true
+    },
+    {
+      "id": "immortal-sovereign",
+      "name": "Immortal Sovereign",
+      "imagePath": "scarlet-witch/img_icon_immortal-sovereign.png"
+    },
+    {
+      "id": "majestic-mauve",
+      "name": "Majestic Mauve",
+      "imagePath": "scarlet-witch/img_icon_majestic-mauve.png"
+    },
+    {
+      "id": "neon-nimbus",
+      "name": "Neon Nimbus",
+      "imagePath": "scarlet-witch/img_icon_neon-nimbus.png"
+    },
+    {
+      "id": "phoenix-chaos",
+      "name": "Phoenix Chaos",
+      "imagePath": "scarlet-witch/img_icon_phoenix-chaos.png"
+    },
+    {
+      "id": "chaos-gown",
+      "name": "Chaos Gown",
+      "imagePath": "scarlet-witch/img_icon_chaos-gown.png"
+    },
+    {
+      "id": "doctor-strange-in-the-multiverse-of-madness",
+      "name": "Doctor Strange in the Multiverse of Madness",
+      "imagePath": "scarlet-witch/img_icon_doctor-strange-in-the-multiverse-of-madness.png"
+    },
+    {
+      "id": "emporium-matron",
+      "name": "Emporium Matron",
+      "imagePath": "scarlet-witch/img_icon_emporium-matron.png"
+    },
+    {
+      "id": "the-queen-of-the-dead",
+      "name": "The Queen of the Dead",
+      "imagePath": "scarlet-witch/img_icon_the-queen-of-the-dead.png"
+    },
+    {
+      "id": "nyx-weaver",
+      "name": "Nyx Weaver",
+      "imagePath": "scarlet-witch/img_icon_nyx-weaver.png"
+    },
+    {
+      "id": "white-witch",
+      "name": "White Witch",
+      "imagePath": "scarlet-witch/img_icon_white-witch.png"
+    }
+  ],
+  "Spider-Man": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "spider-man/img_icon_spider-man.png",
+      "isDefault": true
+    },
+    {
+      "id": "spider-man-no-way-home",
+      "name": "Spider-Man: No Way Home",
+      "imagePath": "spider-man/img_icon_spider-man-no-way-home.png"
+    },
+    {
+      "id": "spider-oni",
+      "name": "Spider-Oni",
+      "imagePath": "spider-man/img_icon_spider-oni.png"
+    },
+    {
+      "id": "spider-punk-2099",
+      "name": "Spider-Punk 2099",
+      "imagePath": "spider-man/img_icon_spider-punk-2099.png"
+    },
+    {
+      "id": "bag-man-beyond",
+      "name": "Bag-Man Beyond",
+      "imagePath": "spider-man/img_icon_bag-man-beyond.png"
+    },
+    {
+      "id": "black-suit",
+      "name": "Black Suit",
+      "imagePath": "spider-man/img_icon_black-suit.png"
+    },
+    {
+      "id": "future-foundation",
+      "name": "Future Foundation",
+      "imagePath": "spider-man/img_icon_future-foundation.png"
+    },
+    {
+      "id": "man-spider",
+      "name": "Man-Spider",
+      "imagePath": "spider-man/img_icon_man-spider.png"
+    },
+    {
+      "id": "marvels-spider-man-2",
+      "name": "Marvel's Spider-Man 2",
+      "imagePath": "spider-man/img_icon_marvels-spider-man-2.png"
+    },
+    {
+      "id": "black-and-gold",
+      "name": "Black & Gold",
+      "imagePath": "spider-man/img_icon_black-gold.png"
+    },
+    {
+      "id": "chasm",
+      "name": "Chasm",
+      "imagePath": "spider-man/img_icon_chasm.png"
+    },
+    {
+      "id": "scarlet-spider",
+      "name": "Scarlet Spider",
+      "imagePath": "spider-man/img_icon_scarlet-spider.png"
+    }
+  ],
+  "Squirrel Girl": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "squirrel-girl/img_icon_squirrel-girl.png",
+      "isDefault": true
+    },
+    {
+      "id": "symbiote-squirrel",
+      "name": "Symbiote Squirrel",
+      "imagePath": "squirrel-girl/img_icon_symbiote-squirrel.png"
+    },
+    {
+      "id": "turbo-tailwind",
+      "name": "Turbo Tailwind",
+      "imagePath": "squirrel-girl/img_icon_turbo-tailwind.png"
+    },
+    {
+      "id": "cheerful-dragoness",
+      "name": "Cheerful Dragoness",
+      "imagePath": "squirrel-girl/img_icon_cheerful-dragoness.png"
+    },
+    {
+      "id": "nut-rocker",
+      "name": "Nut Rocker",
+      "imagePath": "squirrel-girl/img_icon_nut-rocker.png"
+    },
+    {
+      "id": "sunshine-squirrel",
+      "name": "Sunshine Squirrel",
+      "imagePath": "squirrel-girl/img_icon_sunshine-squirrel.png"
+    },
+    {
+      "id": "urban-hunter",
+      "name": "Urban Hunter",
+      "imagePath": "squirrel-girl/img_icon_urban-hunter.png"
+    },
+    {
+      "id": "arctic-lemmus",
+      "name": "Arctic Lemmus",
+      "imagePath": "squirrel-girl/img_icon_arctic-lemmus.png"
+    }
+  ],
+  "Star-Lord": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "star-lord/img_icon_star-lord.png",
+      "isDefault": true
+    },
+    {
+      "id": "jovial-star",
+      "name": "Jovial Star",
+      "imagePath": "star-lord/img_icon_jovial-star.png"
+    },
+    {
+      "id": "ignite-star-lord-2025",
+      "name": "IGNITE Star-Lord (2025)",
+      "imagePath": "star-lord/img_icon_ignite-star-lord-2025.png"
+    },
+    {
+      "id": "king-of-spartax",
+      "name": "King of Spartax",
+      "imagePath": "star-lord/img_icon_king-of-spartax.png"
+    },
+    {
+      "id": "master-of-the-sun",
+      "name": "Master of the Sun",
+      "imagePath": "star-lord/img_icon_master-of-the-sun.png"
+    },
+    {
+      "id": "guardians-of-the-galaxy-vol-3",
+      "name": "Guardians of the Galaxy Vol. 3",
+      "imagePath": "star-lord/img_icon_guardians-of-the-galaxy-vol-3.png"
+    },
+    {
+      "id": "lions-mane",
+      "name": "Lion's Mane",
+      "imagePath": "star-lord/img_icon_lions-mane.png"
+    },
+    {
+      "id": "starlit-outlaw",
+      "name": "Starlit Outlaw",
+      "imagePath": "star-lord/img_icon_starlit-outlaw.png"
+    }
+  ],
+  "Storm": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "storm/img_icon_storm.png",
+      "isDefault": true
+    },
+    {
+      "id": "goddess-of-thunder",
+      "name": "Goddess of Thunder",
+      "imagePath": "storm/img_icon_goddess-of-thunder.png"
+    },
+    {
+      "id": "mohawk-rock",
+      "name": "Mohawk Rock",
+      "imagePath": "storm/img_icon_mohawk-rock.png"
+    },
+    {
+      "id": "queen-of-orphans",
+      "name": "Queen of Orphans",
+      "imagePath": "storm/img_icon_judicator-xiezhi.png"
+    },
+    {
+      "id": "symbiote-storm",
+      "name": "Symbiote Storm",
+      "imagePath": "storm/img_icon_symbiote-storm.png"
+    },
+    {
+      "id": "ultimate-wind-rider",
+      "name": "Ultimate Wind-Rider",
+      "imagePath": "storm/img_icon_ultimate-wind-rider.png"
+    },
+    {
+      "id": "ivory-breeze",
+      "name": "Ivory Breeze",
+      "imagePath": "storm/img_icon_ivory-breeze.png"
+    }
+  ],
+  "The Punisher": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "the-punisher/img_icon_the-punisher.png",
+      "isDefault": true
+    },
+    {
+      "id": "camo",
+      "name": "Camo",
+      "imagePath": "the-punisher/img_icon_camo.png"
+    },
+    {
+      "id": "thunderbolts",
+      "name": "Thunderbolts",
+      "imagePath": "the-punisher/img_icon_thunderbolts.png"
+    },
+    {
+      "id": "punisher-2099",
+      "name": "Punisher 2099",
+      "imagePath": "the-punisher/img_icon_punisher-2099.png"
+    },
+    {
+      "id": "daredevil-born-again",
+      "name": "Daredevil: Born Again",
+      "imagePath": "the-punisher/img_icon_daredevil-born-again.png"
+    },
+    {
+      "id": "dangan-ronin",
+      "name": "Dangan Ronin",
+      "imagePath": "the-punisher/img_icon_dangan-ronin.png"
+    },
+    {
+      "id": "aqua-arsenal",
+      "name": "Aqua Arsenal",
+      "imagePath": "the-punisher/img_icon_aqua-arsenal.png"
+    },
+    {
+      "id": "amber-annihilator",
+      "name": "Amber Annihilator",
+      "imagePath": "the-punisher/img_icon_amber-annihilator.png"
+    },
+    {
+      "id": "emerald-executioner",
+      "name": "Emerald Executioner",
+      "imagePath": "the-punisher/img_icon_emerald-executioner.png"
+    }
+  ],
+  "The Thing": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "the-thing/img_icon_the-thing.png",
+      "isDefault": true
+    },
+    {
+      "id": "future-foundation",
+      "name": "Future Foundation",
+      "imagePath": "the-thing/img_icon_future-foundation.png"
+    },
+    {
+      "id": "rocky-tide",
+      "name": "Rocky Tide",
+      "imagePath": "the-thing/img_icon_rocky-tide.png"
+    },
+    {
+      "id": "sunshine-thing",
+      "name": "Sunshine Thing",
+      "imagePath": "the-thing/img_icon_sunshine-thing.png"
+    },
+    {
+      "id": "symbiote-thing",
+      "name": "Symbiote-Thing",
+      "imagePath": "the-thing/img_icon_symbiote-thing.png"
+    },
+    {
+      "id": "the-fantastic-four-first-steps",
+      "name": "The Fantastic Four: First Steps",
+      "imagePath": "the-thing/img_icon_the-fantastic-four-first-steps.png"
+    },
+    {
+      "id": "trench-coat",
+      "name": "Trench Coat",
+      "imagePath": "the-thing/img_icon_trench-coat.png"
+    },
+    {
+      "id": "first-family",
+      "name": "First Family",
+      "imagePath": "the-thing/img_icon_first-family.png"
+    },
+    {
+      "id": "the-unlimited",
+      "name": "The Unlimited",
+      "imagePath": "the-thing/img_icon_the-unlimited.png"
+    },
+    {
+      "id": "verdant-vanguard",
+      "name": "Verdant Vanguard",
+      "imagePath": "the-thing/img_icon_verdant-vanguard.png"
+    }
+  ],
+  "Thor": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "thor/img_icon_thor.png",
+      "isDefault": true
+    },
+    {
+      "id": "majestic-raiment",
+      "name": "Majestic Raiment",
+      "imagePath": "thor/img_icon_majestic-raiment.png"
+    },
+    {
+      "id": "thor-love-and-thunder",
+      "name": "Thor: Love and Thunder",
+      "imagePath": "thor/img_icon_thor-love-and-thunder.png"
+    },
+    {
+      "id": "herald-of-thunder",
+      "name": "Herald of Thunder",
+      "imagePath": "thor/img_icon_herald-of-thunder.png"
+    },
+    {
+      "id": "lightning-fast",
+      "name": "Lightning Fast",
+      "imagePath": "thor/img_icon_lightning-fast.png"
+    },
+    {
+      "id": "lord-of-asgard",
+      "name": "Lord of Asgard",
+      "imagePath": "thor/img_icon_rune-king.png"
+    },
+    {
+      "id": "worthy-waves",
+      "name": "Worthy Waves",
+      "imagePath": "thor/img_icon_worthy-waves.png"
+    },
+    {
+      "id": "reborn-from-ragnarok",
+      "name": "Reborn from Ragnarok",
+      "imagePath": "thor/img_icon_reborn-from-ragnarok.png"
+    },
+    {
+      "id": "midgard-umber",
+      "name": "Midgard Umber",
+      "imagePath": "thor/img_icon_midgard-umber.png"
+    },
+    {
+      "id": "azure-skies",
+      "name": "Azure Skies",
+      "imagePath": "thor/img_icon_azure-skies.png"
+    }
+  ],
+  "Ultron": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "ultron/img_icon_ultron.png",
+      "isDefault": true
+    },
+    {
+      "id": "wasteland-robot",
+      "name": "Wasteland Robot",
+      "imagePath": "ultron/img_icon_wasteland-robot.png"
+    },
+    {
+      "id": "x-tron",
+      "name": "X-Tron",
+      "imagePath": "ultron/img_icon_x-tron.png"
+    },
+    {
+      "id": "golden-ultron",
+      "name": "Golden Ultron",
+      "imagePath": "ultron/img_icon_golden-ultron.png"
+    },
+    {
+      "id": "mechanical-phantom",
+      "name": "Mechanical Phantom",
+      "imagePath": "ultron/img_icon_mechanical-phantom.png"
+    }
+  ],
+  "Venom": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "venom/img_icon_venom.png",
+      "isDefault": true
+    },
+    {
+      "id": "anti-venom",
+      "name": "Anti-Venom",
+      "imagePath": "venom/img_icon_anti-venom.png"
+    },
+    {
+      "id": "cyan-clash",
+      "name": "Cyan Clash",
+      "imagePath": "venom/img_icon_cyan-clash.png"
+    },
+    {
+      "id": "hyper-orange",
+      "name": "Hyper Orange",
+      "imagePath": "venom/img_icon_hyper-orange.png"
+    },
+    {
+      "id": "pink-bubble",
+      "name": "Pink Bubble",
+      "imagePath": "venom/img_icon_pink-bubble.png"
+    },
+    {
+      "id": "lingering-imprint",
+      "name": "Lingering Imprint",
+      "imagePath": "venom/img_icon_lingering-imprint.png"
+    },
+    {
+      "id": "space-knight",
+      "name": "Space Knight",
+      "imagePath": "venom/img_icon_space-knight.png"
+    },
+    {
+      "id": "snow-symbiote",
+      "name": "Snow Symbiote",
+      "imagePath": "venom/img_icon_snow-symbiote.png"
+    },
+    {
+      "id": "reborn-king-in-black",
+      "name": "Reborn King in Black",
+      "imagePath": "venom/img_icon_reborn-king-in-black.png"
+    }
+  ],
+  "Winter Soldier": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "winter-soldier/img_icon_winter-soldier.png",
+      "isDefault": true
+    },
+    {
+      "id": "navy-trooper",
+      "name": "Navy Trooper",
+      "imagePath": "winter-soldier/img_icon_navy-trooper.png"
+    },
+    {
+      "id": "winters-veil",
+      "name": "Winter's Veil",
+      "imagePath": "winter-soldier/img_icon_winters-veil.png"
+    },
+    {
+      "id": "blood-soldier",
+      "name": "Blood Soldier",
+      "imagePath": "winter-soldier/img_icon_blood-soldier.png"
+    },
+    {
+      "id": "winters-wrath",
+      "name": "Winter's Wrath",
+      "imagePath": "winter-soldier/img_icon_winters-wrath.png"
+    },
+    {
+      "id": "revolution",
+      "name": "Revolution",
+      "imagePath": "winter-soldier/img_icon_revolution.png"
+    },
+    {
+      "id": "thunderbolts",
+      "name": "Thunderbolts*",
+      "imagePath": "winter-soldier/img_icon_thunderbolts.png"
+    },
+    {
+      "id": "polarity-soldier",
+      "name": "Polarity Soldier",
+      "imagePath": "winter-soldier/img_icon_polarity-soldier.png"
+    }
+  ],
+  "Wolverine": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "wolverine/img_icon_wolverine.png",
+      "isDefault": true
+    },
+    {
+      "id": "blood-berserker",
+      "name": "Blood Berserker",
+      "imagePath": "wolverine/img_icon_blood-berserker.png"
+    },
+    {
+      "id": "weapon-phoenix",
+      "name": "Weapon PhoeniX",
+      "imagePath": "wolverine/img_icon_weapon-phoenix.png"
+    },
+    {
+      "id": "deadpool-and-wolverine",
+      "name": "Deadpool & Wolverine",
+      "imagePath": "wolverine/img_icon_deadpool-wolverine.png"
+    },
+    {
+      "id": "dog-brother-x",
+      "name": "Dog Brother X",
+      "imagePath": "wolverine/img_icon_dog-brother-x.png"
+    },
+    {
+      "id": "weapon-x",
+      "name": "Weapon X",
+      "imagePath": "wolverine/img_icon_weapon-x.png"
+    },
+    {
+      "id": "patch",
+      "name": "Patch",
+      "imagePath": "wolverine/img_icon_patch.png"
+    },
+    {
+      "id": "lone-wolf",
+      "name": "Lone Wolf",
+      "imagePath": "wolverine/img_icon_lone-wolf.png"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+*.local.*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Tauri signing keys - NEVER commit these!
+*.key
+*.key.pub
+.tauri/
+**/*.key
+**/*.key.pub
+
+# Environment variables with secrets
+.env.local
+.env.*.local
+
+# Build scripts with credentials
+*.bat
+build-*.sh
+
+# AI assistant configurations (personal settings)
+.claude/
+.cursor/
+.cursorignore
+.windsurf/
+.continue/
+claude.md
+gemini.md
+cursor.md
+aider.md
+copilot.md
+CLAUDE.md
+GEMINI.md
+.ai/
+.aider/
+
+# AI helper files and setup documentation
+git-commands.txt
+INSTALLER_SETUP.md
