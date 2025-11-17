@@ -43,6 +43,7 @@ export const GeneralPane: React.FC = () => {
   const [gameDirectory, setGameDirectory] = useState('')
   const [autoOrganize, setAutoOrganize] = useState(true)
   const [autoDetectGameDir, setAutoDetectGameDir] = useState(true)
+  const [autoCheckUpdates, setAutoCheckUpdates] = useState(true)
 
   // Sync local state with loaded settings
   useEffect(() => {
@@ -50,6 +51,7 @@ export const GeneralPane: React.FC = () => {
       setGameDirectory(settings.gameDirectory || '')
       setAutoOrganize(settings.autoOrganize)
       setAutoDetectGameDir(settings.autoDetectGameDir)
+      setAutoCheckUpdates(settings.autoCheckUpdates)
     }
   }, [settings])
 
@@ -63,7 +65,7 @@ export const GeneralPane: React.FC = () => {
 
       if (selected && typeof selected === 'string') {
         setGameDirectory(selected)
-        await handleSave(selected, autoOrganize, autoDetectGameDir)
+        await handleSave(selected, autoOrganize, autoDetectGameDir, autoCheckUpdates)
       }
     } catch (error) {
       console.error('Failed to open directory picker:', error)
@@ -74,7 +76,8 @@ export const GeneralPane: React.FC = () => {
   const handleSave = async (
     gameDir: string,
     organize: boolean,
-    autoDetect: boolean
+    autoDetect: boolean,
+    autoUpdates: boolean
   ) => {
     try {
       await saveSettings.mutateAsync({
@@ -83,6 +86,7 @@ export const GeneralPane: React.FC = () => {
         theme: settings?.theme || 'dark',
         autoOrganize: organize,
         autoDetectGameDir: autoDetect,
+        autoCheckUpdates: autoUpdates,
       })
       toast.success('Settings saved successfully')
     } catch (error) {
@@ -93,12 +97,17 @@ export const GeneralPane: React.FC = () => {
 
   const handleToggleAutoOrganize = async (checked: boolean) => {
     setAutoOrganize(checked)
-    await handleSave(gameDirectory, checked, autoDetectGameDir)
+    await handleSave(gameDirectory, checked, autoDetectGameDir, autoCheckUpdates)
   }
 
   const handleToggleAutoDetect = async (checked: boolean) => {
     setAutoDetectGameDir(checked)
-    await handleSave(gameDirectory, autoOrganize, checked)
+    await handleSave(gameDirectory, autoOrganize, checked, autoCheckUpdates)
+  }
+
+  const handleToggleAutoCheckUpdates = async (checked: boolean) => {
+    setAutoCheckUpdates(checked)
+    await handleSave(gameDirectory, autoOrganize, autoDetectGameDir, checked)
   }
 
   const handleOpenModsDirectory = async () => {
@@ -111,6 +120,16 @@ export const GeneralPane: React.FC = () => {
     } catch (error) {
       console.error('Failed to open mods directory:', error)
       toast.error('Failed to open mods directory')
+    }
+  }
+
+  const handleOpenMetadataDirectory = async () => {
+    try {
+      const metadataPath = await invoke<string>('get_metadata_directory')
+      await invoke('plugin:opener|open_path', { path: metadataPath })
+    } catch (error) {
+      console.error('Failed to open metadata directory:', error)
+      toast.error('Failed to open metadata directory')
     }
   }
 
@@ -155,6 +174,22 @@ export const GeneralPane: React.FC = () => {
             </div>
           </SettingsField>
         )}
+
+        <SettingsField
+          label="Metadata & Thumbnails Directory"
+          description="Where mod metadata and custom thumbnails are stored"
+        >
+          <div className="flex gap-2">
+            <Input
+              value="C:\\Users\\{username}\\AppData\\Roaming\\com.marvelrivalsmodmanager.app\\metadata"
+              readOnly
+              className="flex-1 bg-muted/50 text-muted-foreground italic"
+            />
+            <Button onClick={handleOpenMetadataDirectory} variant="outline">
+              Open
+            </Button>
+          </div>
+        </SettingsField>
       </SettingsSection>
 
       <SettingsSection title="Mod Management">
@@ -186,6 +221,24 @@ export const GeneralPane: React.FC = () => {
             />
             <Label htmlFor="auto-detect" className="text-sm">
               {autoDetectGameDir ? 'Enabled' : 'Disabled'}
+            </Label>
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Updates">
+        <SettingsField
+          label="Automatic Update Checks"
+          description="Automatically check for updates when the app starts (use 'App Version' in sidebar to manually check)"
+        >
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="auto-check-updates"
+              checked={autoCheckUpdates}
+              onCheckedChange={handleToggleAutoCheckUpdates}
+            />
+            <Label htmlFor="auto-check-updates" className="text-sm">
+              {autoCheckUpdates ? 'Enabled' : 'Disabled'}
             </Label>
           </div>
         </SettingsField>

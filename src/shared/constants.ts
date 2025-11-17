@@ -1,7 +1,7 @@
 import type { Character, ModCategory } from '../types/mod.types';
 
 // App version (synchronized with package.json)
-export const APP_VERSION = '3.0.0';
+export const APP_VERSION = '3.5.0';
 
 // All Marvel Rivals characters in alphabetical order
 export const ALL_CHARACTERS: Character[] = [

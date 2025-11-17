@@ -39,10 +39,40 @@ impl ThumbnailService {
         Self { metadata_dir }
     }
 
-    /// Downloads an image from a URL
+    /// Downloads an image from a URL (supports both HTTP URLs and data URLs)
     pub async fn download_image(&self, url: &str) -> Result<DynamicImage, ThumbnailError> {
-        // Download image bytes
-        let response = reqwest::get(url)
+        // Check if this is a data URL (e.g., data:image/png;base64,...)
+        if url.starts_with("data:") {
+            // Parse data URL
+            let parts: Vec<&str> = url.splitn(2, ',').collect();
+            if parts.len() != 2 {
+                return Err(ThumbnailError::DownloadFailed(
+                    "Invalid data URL format".to_string()
+                ));
+            }
+
+            // Decode base64 data
+            use base64::{Engine as _, engine::general_purpose};
+            let bytes = general_purpose::STANDARD
+                .decode(parts[1])
+                .map_err(|e| ThumbnailError::DownloadFailed(format!("Failed to decode base64: {}", e)))?;
+
+            // Load image from bytes
+            let img = image::load_from_memory(&bytes)
+                .map_err(|e| ThumbnailError::ImageProcessingFailed(e.to_string()))?;
+
+            return Ok(img);
+        }
+
+        // Regular HTTP/HTTPS URL - download it
+        // Create HTTP client with custom Accept header
+        // Request formats we support (no AVIF) so server sends compatible format
+        let client = reqwest::Client::new();
+        let response = client
+            .get(url)
+            .header("Accept", "image/webp,image/png,image/jpeg,image/*;q=0.9,*/*;q=0.8")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .send()
             .await
             .map_err(|e| ThumbnailError::DownloadFailed(e.to_string()))?;
 

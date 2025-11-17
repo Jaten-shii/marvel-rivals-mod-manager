@@ -331,10 +331,16 @@ pub struct AppSettings {
     pub font: String,
     pub auto_organize: bool,
     pub auto_detect_game_dir: bool,
+    #[serde(default = "default_auto_check_updates")]
+    pub auto_check_updates: bool,
 }
 
 fn default_font() -> String {
     "quicksand".to_string()
+}
+
+fn default_auto_check_updates() -> bool {
+    true
 }
 
 impl Default for AppSettings {
@@ -346,6 +352,7 @@ impl Default for AppSettings {
             font: "quicksand".to_string(),
             auto_organize: true,
             auto_detect_game_dir: true,
+            auto_check_updates: true,
         }
     }
 }

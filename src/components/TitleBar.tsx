@@ -1,6 +1,5 @@
 import { Window } from '@tauri-apps/api/window';
-
-const APP_VERSION = '3.0.0';
+import { APP_VERSION } from '../shared/constants';
 
 export function TitleBar() {
   const appWindow = Window.getCurrent();

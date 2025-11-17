@@ -16,7 +16,7 @@ interface UseUpdaterReturn {
   downloadProgress: number;
   availableUpdate: UpdateInfo | null;
   currentVersion: string;
-  checkForUpdates: () => Promise<void>;
+  checkForUpdates: (silent?: boolean) => Promise<void>;
   downloadAndInstall: () => Promise<void>;
   restartApp: () => Promise<void>;
 }
@@ -31,7 +31,7 @@ export function useUpdater(): UseUpdaterReturn {
   // Get current version from constants
   const currentVersion = APP_VERSION;
 
-  const checkForUpdates = async () => {
+  const checkForUpdates = async (silent = false) => {
     setIsChecking(true);
     setAvailableUpdate(null);
 
@@ -48,20 +48,26 @@ export function useUpdater(): UseUpdaterReturn {
           body: update.body || null,
         });
         toast.success(`Update available: v${update.version}`, {
-          description: 'Click "Download & Install" in the changelog dialog to update',
+          description: 'Click "Check for Updates" in the sidebar to install',
           duration: 5000,
         });
       } else {
         console.log('[Updater] No updates available');
-        toast.info('You are running the latest version', {
-          description: `Current version: v${currentVersion}`,
-        });
+        // Only show "latest version" toast when manually checking (not silent)
+        if (!silent) {
+          toast.info('You are running the latest version', {
+            description: `Current version: v${currentVersion}`,
+          });
+        }
       }
     } catch (error) {
       console.error('[Updater] Failed to check for updates:', error);
-      toast.error('Failed to check for updates', {
-        description: String(error),
-      });
+      // Only show error toast when manually checking (not silent)
+      if (!silent) {
+        toast.error('Failed to check for updates', {
+          description: String(error),
+        });
+      }
     } finally {
       setIsChecking(false);
     }

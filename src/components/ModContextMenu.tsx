@@ -4,8 +4,17 @@ import { useDeleteMod, useToggleModEnabled, useToggleFavorite, useUpdateModMetad
 import type { ModInfo } from '../types/mod.types';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { dirname } from '@tauri-apps/api/path';
-import { Tag, ChevronRight } from 'lucide-react';
+import { Tag, ChevronRight, AlertTriangle } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface ModContextMenuProps {
   mod: ModInfo;
@@ -51,6 +60,7 @@ export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState({ x, y });
   const [showProfileSubmenu, setShowProfileSubmenu] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     // Adjust position if menu would go off screen
@@ -121,11 +131,19 @@ export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
     onClose();
   };
 
-  const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete "${mod.name}"?`)) {
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
       await deleteMod.mutateAsync(mod.id);
+      setShowDeleteDialog(false);
+      onClose();
+    } catch (error) {
+      // Error is already handled by the mutation's onError
+      setShowDeleteDialog(false);
     }
-    onClose();
   };
 
   const handleToggleProfile = async (profileId: string) => {
@@ -151,6 +169,7 @@ export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
   };
 
   return (
+    <>
     <div
       ref={menuRef}
       className="fixed bg-card border border-border rounded-md shadow-lg z-50 min-w-[200px] py-1"
@@ -312,5 +331,51 @@ export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
         <div className="opacity-70">{mod.category}</div>
       </div>
     </div>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent className="sm:max-w-xl">
+        <AlertDialogHeader>
+          {/* Red flashing alert icon */}
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
+              <div className="relative bg-red-500/10 p-4 rounded-full border-2 border-red-500/50">
+                <AlertTriangle className="w-12 h-12 text-red-500" />
+              </div>
+            </div>
+          </div>
+
+          <AlertDialogTitle className="text-center text-xl font-bold text-foreground">
+            Delete Mod
+          </AlertDialogTitle>
+
+          <AlertDialogDescription className="text-center text-base text-foreground/80 pt-2">
+            Are you sure you want to delete <span className="font-semibold text-foreground">"{mod.name}"</span>?
+            <br />
+            <span className="text-red-400 font-medium">This action cannot be undone.</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <AlertDialogFooter className="flex-row gap-3 sm:gap-3">
+          <AlertDialogCancel className="flex-1 m-0 h-9 text-sm font-semibold bg-[#191F24] text-white border border-border transition-all duration-200 hover:bg-[#252D35] hover:border-primary/40 hover:scale-105 hover:shadow-lg">
+            Cancel
+          </AlertDialogCancel>
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              confirmDelete();
+            }}
+            disabled={deleteMod.isPending}
+            className="flex-1 h-9 inline-flex items-center justify-center rounded-md bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 border-2 border-red-500 transition-all duration-200 hover:bg-red-500/30 hover:text-red-400 hover:border-red-400 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
+          >
+            {deleteMod.isPending ? 'Deleting...' : 'Delete'}
+          </button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

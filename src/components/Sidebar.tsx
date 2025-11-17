@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Folder, Monitor, Volume2, Shirt, Gamepad2, FolderOpen, Settings, CircleCheck, CircleX, Trash2, Tag, Plus, Star, FolderCog, Info, BookOpen, RefreshCw } from 'lucide-react'
+import { ChevronDown, Folder, Monitor, Volume2, Shirt, Gamepad2, FolderOpen, Settings, CircleCheck, CircleX, Trash2, Tag, Plus, Star, FolderCog, Info, BookOpen, RefreshCw, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ScrollArea } from './ui/scroll-area'
 import { useUIStore } from '@/stores'
@@ -699,11 +699,13 @@ export function Sidebar() {
             {/* Alert badge when update is available */}
             {availableUpdate && (
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-              />
+                initial={{ opacity: 1 }}
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-1 -right-1"
+              >
+                <AlertCircle className="h-3.5 w-3.5 text-red-500 fill-red-500" />
+              </motion.div>
             )}
           </div>
           <span className="flex-1 text-left font-medium">App Version</span>
@@ -745,11 +747,13 @@ export function Sidebar() {
                     {/* Alert badge when update is available */}
                     {availableUpdate && (
                       <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-                      />
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute -top-1 -right-1"
+                      >
+                        <AlertCircle className="h-3.5 w-3.5 text-red-500 fill-red-500" />
+                      </motion.div>
                     )}
                   </div>
                   <span className="flex-1 text-left">Check for Updates</span>

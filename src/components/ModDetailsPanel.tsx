@@ -2,11 +2,14 @@ import { useUIStore } from '../stores';
 import { useGetMods, useDeleteMod, useToggleModEnabled, useToggleFavorite, useGetAllCostumes } from '../hooks/useMods';
 import type { Costume } from '../types/mod.types';
 import { ScrollArea } from './ui/scroll-area';
-import { X, Edit, Trash2, FolderOpen, Power, PowerOff, Star, Monitor, Volume2, Shirt, Gamepad2 } from 'lucide-react';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { X, Edit, Trash2, FolderOpen, Power, PowerOff, Star, Monitor, Volume2, Shirt, Gamepad2, Copy, Check } from 'lucide-react';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { dirname } from '@tauri-apps/api/path';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper function to get character icon path
 function getCharacterIconPath(character: string): string {
@@ -69,6 +72,11 @@ export function ModDetailsPanel() {
   const toggleEnabled = useToggleModEnabled();
   const toggleFavorite = useToggleFavorite();
   const { data: allCostumes } = useGetAllCostumes();
+  const queryClient = useQueryClient();
+
+  const [isEditingId, setIsEditingId] = useState(false);
+  const [oldModId, setOldModId] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
 
   const mod = mods?.find((m) => m.id === selectedModId);
 
@@ -105,6 +113,42 @@ export function ModDetailsPanel() {
       await openPath(dir);
     } catch (error) {
       console.error('Failed to open folder:', error);
+    }
+  };
+
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(mod.id);
+      setIsCopied(true);
+      toast.success('Mod ID copied to clipboard');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy ID:', error);
+      toast.error('Failed to copy ID to clipboard');
+    }
+  };
+
+  const handleRestoreFromOldId = async () => {
+    if (!oldModId.trim()) {
+      toast.error('Please enter an old mod ID');
+      return;
+    }
+
+    try {
+      await invoke('copy_metadata_from_old_id', {
+        currentModId: mod.id,
+        oldModId: oldModId.trim(),
+      });
+
+      // Refresh the mod list to show updated metadata
+      queryClient.invalidateQueries({ queryKey: ['mods', 'list'] });
+
+      toast.success('Successfully restored metadata from old ID!');
+      setIsEditingId(false);
+      setOldModId('');
+    } catch (error) {
+      console.error('Failed to restore metadata:', error);
+      toast.error(String(error));
     }
   };
 
@@ -281,7 +325,7 @@ export function ModDetailsPanel() {
           </div>
 
           {/* Associated Files */}
-          <div className="space-y-2">
+          <div className="space-y-2 pb-4 border-b border-border">
             <h4 className="text-sm font-semibold text-foreground">Associated Files:</h4>
             <div className="space-y-1">
               {mod.associatedFiles.map((filePath, index) => {
@@ -295,6 +339,82 @@ export function ModDetailsPanel() {
               })}
             </div>
           </div>
+
+          {/* Mod ID Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-foreground">Mod ID:</h4>
+              <button
+                onClick={handleCopyId}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+              <code className="text-xs text-foreground/70 break-all">{mod.id}</code>
+            </div>
+
+            {/* Restore from Old ID */}
+            {!isEditingId ? (
+              <button
+                onClick={() => setIsEditingId(true)}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <Edit className="w-3 h-3" />
+                Restore metadata from old ID
+              </button>
+            ) : (
+              <div className="space-y-2 mt-2">
+                <input
+                  type="text"
+                  value={oldModId}
+                  onChange={(e) => setOldModId(e.target.value)}
+                  placeholder="Enter old mod ID (e.g., f9394fe2370df8de)"
+                  className="w-full h-8 px-2 text-xs font-sans bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRestoreFromOldId();
+                    if (e.key === 'Escape') {
+                      setIsEditingId(false);
+                      setOldModId('');
+                    }
+                  }}
+                />
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs text-muted-foreground flex-1">
+                    This will copy all metadata and thumbnails from the old ID to this mod.
+                  </p>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setIsEditingId(false);
+                        setOldModId('');
+                      }}
+                      className="h-8 px-3 text-xs font-sans bg-background border border-border rounded-md hover:bg-accent transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRestoreFromOldId}
+                      className="h-8 px-3 text-xs font-sans bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           </motion.div>
           </AnimatePresence>
         </ScrollArea>
@@ -304,52 +424,52 @@ export function ModDetailsPanel() {
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={handleEditMetadata}
-            className="h-8 rounded-md gap-1.5 px-3 border bg-background text-white flex items-center justify-center gap-2 group transition-all duration-200 hover:bg-primary/20 hover:text-primary hover:border-primary/40"
+            className="h-7 text-xs font-sans rounded-md gap-1 px-2.5 border bg-background text-white flex items-center justify-center group transition-all duration-200 hover:bg-primary/20 hover:text-primary hover:border-primary/40"
           >
-            <Edit className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+            <Edit className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12" />
             Edit
           </button>
           <button
             onClick={handleToggleFavorite}
-            className={`h-8 rounded-md gap-1.5 px-3 border bg-background flex items-center justify-center gap-2 group transition-all duration-200 ${
+            className={`h-7 text-xs font-sans rounded-md gap-1 px-2.5 border bg-background flex items-center justify-center group transition-all duration-200 ${
               mod.isFavorite
                 ? 'text-yellow-400 border-yellow-400 hover:bg-yellow-400/20 hover:text-yellow-300 hover:border-yellow-300'
                 : 'text-white hover:bg-yellow-400/20 hover:text-yellow-400 hover:border-yellow-400/40'
             }`}
           >
-            <Star className={`w-4 h-4 transition-transform duration-200 group-hover:rotate-12 ${mod.isFavorite ? 'fill-yellow-400' : ''}`} />
+            <Star className={`w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12 ${mod.isFavorite ? 'fill-yellow-400' : ''}`} />
             {mod.isFavorite ? 'Unfavorite' : 'Favorite'}
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={handleToggleEnabled}
-            className={`h-8 rounded-md gap-1.5 px-3 border bg-background text-white flex items-center justify-center gap-2 group transition-all duration-200 ${
+            className={`h-7 text-xs font-sans rounded-md gap-1 px-2.5 border bg-background text-white flex items-center justify-center group transition-all duration-200 ${
               mod.enabled
                 ? 'hover:bg-red-400/20 hover:text-red-400 hover:border-red-400/40'
                 : 'hover:bg-green-400/20 hover:text-green-400 hover:border-green-400/40'
             }`}
           >
             {mod.enabled
-              ? <PowerOff className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
-              : <Power className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+              ? <PowerOff className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12" />
+              : <Power className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12" />
             }
             {mod.enabled ? 'Disable' : 'Enable'}
           </button>
           <button
             onClick={handleShowInFolder}
-            className="h-8 rounded-md gap-1.5 px-3 border bg-background text-white flex items-center justify-center gap-2 group transition-all duration-200 hover:bg-primary/20 hover:text-primary hover:border-primary/40"
+            className="h-7 text-xs font-sans rounded-md gap-1 px-2.5 border bg-background text-white flex items-center justify-center group transition-all duration-200 hover:bg-primary/20 hover:text-primary hover:border-primary/40"
           >
-            <FolderOpen className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+            <FolderOpen className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12" />
             Show in Folder
           </button>
         </div>
         <button
           onClick={handleDelete}
           disabled={deleteMod.isPending}
-          className="w-full h-8 rounded-md gap-1.5 px-3 border bg-background text-white flex items-center justify-center gap-2 group transition-all duration-200 hover:bg-red-400/20 hover:text-red-400 hover:border-red-400/40 disabled:opacity-50 disabled:pointer-events-none"
+          className="w-full h-7 text-xs font-sans rounded-md gap-1 px-2.5 border bg-background text-white flex items-center justify-center group transition-all duration-200 hover:bg-red-400/20 hover:text-red-400 hover:border-red-400/40 disabled:opacity-50 disabled:pointer-events-none"
         >
-          <Trash2 className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+          <Trash2 className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-12" />
           {deleteMod.isPending ? 'Deleting...' : 'Delete Mod'}
         </button>
       </div>

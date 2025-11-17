@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
@@ -31,10 +31,36 @@ function getFileName(path: string | undefined): string {
   return parts[parts.length - 1] || path;
 }
 
+// Extract folder path (without filename) for context
+// Only shows the relevant folders from the archive, skipping temp directory paths
+function getFolderPath(path: string | undefined): string | null {
+  if (!path) return null;
+  const parts = path.split(/[\\/]/);
+
+  // Remove the filename (last part)
+  parts.pop();
+
+  if (parts.length === 0) return null;
+
+  // Skip temp directory paths and only show the last 2 meaningful folder levels
+  // This shows the folder structure within the archive, not the system temp path
+  const meaningfulParts = parts.slice(-2);
+
+  const folderPath = meaningfulParts.join(' / ');
+  return folderPath || null;
+}
+
 export function ModSelectionDialog({ open, onOpenChange, detectedMods, onConfirm }: ModSelectionDialogProps) {
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
-    new Set(detectedMods.map((_, index) => index))
-  );
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+
+  // Reset selection when dialog opens or detectedMods changes
+  useEffect(() => {
+    if (open && detectedMods.length > 0) {
+      console.log('[ModSelectionDialog] Resetting selection for', detectedMods.length, 'mods');
+      // Start with nothing selected - let user choose what they want
+      setSelectedIndices(new Set());
+    }
+  }, [open, detectedMods]);
 
   const toggleSelection = (index: number) => {
     const newSelection = new Set(selectedIndices);
@@ -62,11 +88,11 @@ export function ModSelectionDialog({ open, onOpenChange, detectedMods, onConfirm
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="!max-w-4xl w-[80vw] max-h-[92vh]">
         <DialogHeader>
           <DialogTitle>Select Mods to Install</DialogTitle>
           <DialogDescription>
-            This archive contains {detectedMods.length} mod{detectedMods.length !== 1 ? 's' : ''}. Select which ones you want to install.
+            This archive contains {detectedMods.length} mod{detectedMods.length !== 1 ? 's' : ''}. Choose which ones you want to install (none selected by default).
           </DialogDescription>
         </DialogHeader>
 
@@ -95,11 +121,12 @@ export function ModSelectionDialog({ open, onOpenChange, detectedMods, onConfirm
           </div>
 
           {/* Mod list */}
-          <ScrollArea className="h-[400px] rounded-md border border-border">
+          <ScrollArea className="h-[50vh] rounded-md border border-border">
             <div className="p-4 space-y-2">
               {detectedMods.map((mod, index) => {
                 const isSelected = selectedIndices.has(index);
                 const fileName = getFileName(mod.pakFile);
+                const folderPath = getFolderPath(mod.pakFile);
                 const hasAssociatedFiles = mod.associatedFiles.length > 0;
 
                 return (
@@ -121,6 +148,11 @@ export function ModSelectionDialog({ open, onOpenChange, detectedMods, onConfirm
                       <div className="font-medium text-sm text-foreground truncate">
                         {fileName}
                       </div>
+                      {folderPath && (
+                        <div className="text-xs text-blue-400/80 mt-0.5 truncate font-mono">
+                          📁 {folderPath}
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground mt-1">
                         Size: {formatFileSize(mod.size)}
                         {hasAssociatedFiles && (

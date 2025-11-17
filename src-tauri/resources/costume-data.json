@@ -50,9 +50,14 @@
       "imagePath": "angela/img_icon_skuld-2099.png"
     },
     {
-      "id": "cerulean-lightbringer",
-      "name": "Cerulean Lightbringer",
-      "imagePath": "angela/img_icon_sirianas-silver.png"
+      "id": "odins-beautiful-daughter",
+      "name": "Odin's Beautiful Daughter",
+      "imagePath": "angela/img_icon_odins-beautiful-daughter.png"
+    },
+    {
+      "id": "divine-dragon-wing",
+      "name": "Divine Dragon Wing",
+      "imagePath": "angela/img_icon_divine-dragon-wing.png"
     },
     {
       "id": "sirianas-silver",
@@ -134,6 +139,11 @@
       "id": "mrs-barnes",
       "name": "Mrs. Barnes",
       "imagePath": "black-widow/img_icon_mrs-barnes.png"
+    },
+    {
+      "id": "midnight-suspense",
+      "name": "Midnight Suspense",
+      "imagePath": "black-widow/img_icon_midnight-suspense.png"
     },
     {
       "id": "lethal-toxicity",

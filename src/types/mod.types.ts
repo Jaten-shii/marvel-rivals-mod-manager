@@ -110,6 +110,7 @@ export interface AppSettings {
   theme: string;
   autoOrganize: boolean;
   autoDetectGameDir: boolean;
+  autoCheckUpdates: boolean;
 }
 
 // ===== Progress Types =====

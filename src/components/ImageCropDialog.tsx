@@ -63,6 +63,21 @@ export function ImageCropDialog({ imageUrl, onCropComplete, onCancel }: ImageCro
         height: Math.round(crop.height * scaleY),
       };
 
+      // Validate and clamp crop dimensions to image bounds
+      const naturalWidth = imgRef.current.naturalWidth;
+      const naturalHeight = imgRef.current.naturalHeight;
+
+      // Ensure coordinates are within bounds
+      cropData.x = Math.max(0, Math.min(cropData.x, naturalWidth - 1));
+      cropData.y = Math.max(0, Math.min(cropData.y, naturalHeight - 1));
+
+      // Ensure width and height don't exceed image bounds
+      cropData.width = Math.min(cropData.width, naturalWidth - cropData.x);
+      cropData.height = Math.min(cropData.height, naturalHeight - cropData.y);
+
+      console.log('[ImageCropDialog] Crop data (scaled and validated):', cropData);
+      console.log('[ImageCropDialog] Image natural size:', { width: naturalWidth, height: naturalHeight });
+
       onCropComplete(cropData);
     }
   };
@@ -71,30 +86,31 @@ export function ImageCropDialog({ imageUrl, onCropComplete, onCancel }: ImageCro
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 pointer-events-auto"
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto"
         onClick={onCancel}
       />
 
       {/* Dialog */}
       <div
-        className="relative z-10 bg-card border border-border rounded-lg shadow-2xl w-[900px] h-[80vh] flex flex-col pointer-events-auto"
+        className="relative z-10 bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-700/50 rounded-xl shadow-2xl w-[900px] h-[80vh] flex flex-col pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-          <h2 className="text-lg font-semibold text-foreground">Crop Thumbnail</h2>
+        <div className="flex items-center justify-between p-5 border-b border-neutral-700/50 flex-shrink-0 bg-gradient-to-r from-neutral-800/50 to-neutral-900/50">
+          <h2 className="text-xl font-bold text-white">Crop Thumbnail</h2>
           <button
             onClick={onCancel}
-            className="p-1 rounded-md hover:bg-accent transition-colors"
+            className="p-1.5 rounded-md hover:bg-neutral-700/50 transition-colors text-neutral-300 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 flex flex-col items-center gap-3 min-h-0">
-          <div className="text-sm text-muted-foreground flex-shrink-0">
-            Crop your thumbnail to a 16:9 aspect ratio (600x337px)
+        <div className="flex-1 p-6 flex flex-col items-center gap-4 min-h-0">
+          <div className="flex-shrink-0 text-center space-y-2">
+            <div className="text-base text-neutral-300">Crop your thumbnail to a 16:9 aspect ratio (600x337px)</div>
+            <div className="text-sm text-white font-medium">Click and drag on the image to create or adjust the crop box</div>
           </div>
 
           <div className="flex-1 flex items-center justify-center min-h-0 w-full">
@@ -108,18 +124,19 @@ export function ImageCropDialog({ imageUrl, onCropComplete, onCancel }: ImageCro
                 ref={imgRef}
                 src={imageUrl}
                 alt="Crop preview"
-                className="max-h-full max-w-full w-auto h-auto"
+                className="max-h-full max-w-full w-auto h-auto border-2 border-neutral-400 rounded-sm shadow-2xl"
                 style={{
                   maxHeight: 'calc(80vh - 200px)',
                   imageRendering: '-webkit-optimize-contrast',
                   backfaceVisibility: 'hidden',
                   transform: 'translateZ(0)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(163, 163, 163, 0.3)',
                 }}
               />
             </ReactCrop>
           </div>
 
-          <div className="text-xs text-muted-foreground flex-shrink-0">
+          <div className="text-sm text-neutral-400 flex-shrink-0 font-medium">
             {completedCrop && (
               <span>
                 Selected area: {Math.round(completedCrop.width)} x {Math.round(completedCrop.height)} pixels
@@ -129,11 +146,11 @@ export function ImageCropDialog({ imageUrl, onCropComplete, onCancel }: ImageCro
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-border flex-shrink-0">
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-neutral-700/50 flex-shrink-0 bg-gradient-to-r from-neutral-800/50 to-neutral-900/50">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-md text-sm text-foreground bg-background border border-border hover:bg-accent transition-colors"
+            className="px-5 py-2.5 rounded-lg text-sm text-neutral-300 bg-neutral-800/20 border border-neutral-500/30 hover:bg-neutral-700/30 hover:text-white hover:shadow-[0_0_20px_rgba(163,163,163,0.4)] transition-all backdrop-blur-sm"
           >
             Cancel
           </button>
@@ -141,7 +158,7 @@ export function ImageCropDialog({ imageUrl, onCropComplete, onCancel }: ImageCro
             type="button"
             onClick={handleCropComplete}
             disabled={!completedCrop}
-            className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="px-5 py-2.5 rounded-lg text-sm bg-primary/20 text-primary-foreground border border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.4)] hover:bg-primary/30 hover:shadow-[0_0_30px_hsl(var(--primary)/0.7)] disabled:opacity-50 disabled:pointer-events-none transition-all backdrop-blur-sm"
           >
             Apply Crop
           </button>

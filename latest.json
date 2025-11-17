@@ -1,0 +1,11 @@
+{
+  "version": "v3.5.0",
+  "notes": "# Marvel Rivals Mod Manager v3.5.0\n\n## What's New\n\nSee full release notes on GitHub!\n\n## Installation\n- Download and run the installer\n- Existing users will receive automatic update notifications",
+  "pub_date": "2025-11-17T05:13:56.134Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWFByakFPOXJYbk5qdmY3aHo3UzAzYXRab0p1NGxZUS9vN0daalpyZUlyL2k2cGtPZVh0RUVSUzBJWUM1aXBFc3hSeG9mZ2QwVFJidzZQK0E5cWI2ZmtzYmp0TFYrWFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzU2NDM0CWZpbGU6TWFydmVsLVJpdmFscy1Nb2QtTWFuYWdlcl8zLjUuMF94NjQtc2V0dXAuZXhlCm9Ga24xekhXMHY0c3VYSFZ4VlNSdUxiRXBvWWh4VnNPZUd4WkxkOFg4NUZOUEdmMGlxaHhucHVvSkVmRkNWdVlSbitFNzFYemFiczZZaDg2RVFBdURBPT0K",
+      "url": "https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases/download/v3.5.0/Marvel-Rivals-Mod-Manager_3.5.0_x64-setup.exe"
+    }
+  }
+}

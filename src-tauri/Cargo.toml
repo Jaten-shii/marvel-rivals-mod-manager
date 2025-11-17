@@ -1,6 +1,6 @@
 [package]
 name = "marvel-rivals-mod-manager"
-version = "3.0.0"
+version = "3.5.0"
 description = "Professional mod manager for Marvel Rivals"
 authors = ["Marvel Rivals Mod Manager"]
 edition = "2021"
@@ -44,6 +44,7 @@ walkdir = "2"                                   # Directory traversal
 chrono = { version = "0.4", features = ["serde"] }  # Date/time handling
 uuid = { version = "1", features = ["v4", "serde"] }  # UUID generation
 image = { version = "0.25", features = ["png", "jpeg", "webp"] }  # Image processing for thumbnails
+base64 = "0.22"  # Base64 encoding/decoding
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"

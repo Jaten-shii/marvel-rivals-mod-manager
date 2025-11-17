@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import type { ModCategory, Character } from '../types/mod.types';
 import { ALL_CHARACTERS, MOD_CATEGORIES } from '../shared/constants';
-import { Upload, Download, Image as ImageIcon, FileText, Users, Check, Monitor, Volume2, Shirt, Gamepad2, Loader2 } from 'lucide-react';
+import { Upload, Download, Clipboard, Image as ImageIcon, FileText, Users, Check, Monitor, Volume2, Shirt, Gamepad2, Loader2 } from 'lucide-react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
@@ -99,7 +99,10 @@ export function MetadataDialog() {
 
   // Load mod data when dialog opens (only when dialog opens, not on every mod update)
   useEffect(() => {
+    console.log('[MetadataDialog] Effect fired - dialogOpen:', metadataDialogOpen, 'modId:', metadataDialogModId, 'mod found:', !!mod);
+
     if (metadataDialogOpen && mod) {
+      console.log('[MetadataDialog] Loading data for mod:', mod.id, mod.name);
       setTitle(mod.metadata.title || mod.name);
       setAuthor(mod.metadata.author || '');
       setVersion(mod.metadata.version || '');
@@ -115,8 +118,10 @@ export function MetadataDialog() {
       setShowCropDialog(false);
       setCropImageUrl('');
       setCropImageFile(null);
+    } else if (metadataDialogOpen && !mod) {
+      console.warn('[MetadataDialog] Dialog is open but mod not found! ModId:', metadataDialogModId);
     }
-  }, [metadataDialogOpen, metadataDialogModId]);
+  }, [metadataDialogOpen, metadataDialogModId, mod?.id]);
 
   // Clear costume when character changes
   useEffect(() => {
@@ -164,10 +169,42 @@ export function MetadataDialog() {
       },
     });
 
+    // The backend's update_metadata already handles folder reorganization
+    // when character/category/title changes, so we don't need to call organize_mods
+
     setMetadataDialogOpen(false);
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // If user is canceling during a multi-mod installation and hasn't made changes,
+    // we should delete the mod that was just installed (orphaned files)
+    if (mod && !hasChanges) {
+      console.log('[MetadataDialog] Closing without changes - checking if this is a fresh install...');
+
+      // Check if this mod was just installed (metadata is still mostly default)
+      // Fresh installs have: no author, no description, no tags, default category (Skins), no character
+      const isFreshInstall =
+        !mod.metadata.author &&
+        !mod.metadata.description &&
+        (!mod.metadata.tags || mod.metadata.tags.length === 0) &&
+        mod.category === 'Skins' &&
+        !mod.character;
+
+      if (isFreshInstall) {
+        console.log('[MetadataDialog] Fresh install detected - deleting orphaned mod:', mod.id);
+        try {
+          await invoke('delete_mod', { modId: mod.id });
+          // Remove from cache using optimistic update (same query key as useGetMods)
+          queryClient.setQueryData(['mods', 'list'], (oldMods: any[] = []) => {
+            return oldMods.filter(m => m.id !== mod.id);
+          });
+          toast.info('Cancelled installation - mod removed');
+        } catch (error) {
+          console.error('[MetadataDialog] Failed to delete orphaned mod:', error);
+        }
+      }
+    }
+
     setMetadataDialogOpen(false);
   };
 
@@ -218,6 +255,50 @@ export function MetadataDialog() {
     } catch (error) {
       console.error('Invalid URL:', error);
       toast.error('Invalid URL format');
+    }
+  };
+
+  // Handle paste image from clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      // Check if clipboard API is supported
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        toast.error('Clipboard access not supported in your browser');
+        return;
+      }
+
+      // Read clipboard
+      const clipboardItems = await navigator.clipboard.read();
+
+      for (const item of clipboardItems) {
+        // Find image type
+        const imageType = item.types.find(type => type.startsWith('image/'));
+
+        if (imageType) {
+          const blob = await item.getType(imageType);
+
+          // Convert blob to data URL so Rust can download it
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+
+            // Show crop dialog with the data URL
+            setCropImageUrl(dataUrl);
+            setCropImageFile(null);
+            setShowCropDialog(true);
+
+            console.log('[MetadataDialog] Pasted image from clipboard:', imageType, blob.size, 'bytes');
+          };
+          reader.readAsDataURL(blob);
+
+          return;
+        }
+      }
+
+      toast.error('No image found in clipboard');
+    } catch (error) {
+      console.error('Failed to paste from clipboard:', error);
+      toast.error('Failed to paste image. Make sure you have copied an image.');
     }
   };
 
@@ -281,22 +362,20 @@ export function MetadataDialog() {
     setCropImageFile(null);
   };
 
-  if (!mod) return null;
-
-  const thumbnailSrc = mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
+  const thumbnailSrc = mod?.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
   const thumbnailSrcWithCache = thumbnailSrc ? `${thumbnailSrc}?t=${thumbnailTimestamp}` : null;
-
-  console.log('[MetadataDialog] Rendering with thumbnail:', {
-    modId: mod.id,
-    rawPath: mod.thumbnailPath,
-    convertedSrc: thumbnailSrc,
-    withCache: thumbnailSrcWithCache,
-  });
 
   return (
     <>
     <Dialog open={metadataDialogOpen && !showCropDialog} onOpenChange={handleClose}>
       <DialogContent className="w-[90vw] sm:max-w-[1200px] max-h-[90vh] p-0 overflow-hidden bg-[#1a1f2e] overflow-x-hidden">
+        {!mod ? (
+          <div className="p-12 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+            <p className="text-gray-400">Loading mod data...</p>
+          </div>
+        ) : (
+          <>
         {/* Header */}
         <div className="p-6 pb-4 border-b border-border">
           <DialogTitle className="text-2xl font-bold text-white">Edit Mod Metadata</DialogTitle>
@@ -334,19 +413,34 @@ export function MetadataDialog() {
                 )}
               </div>
 
-              {/* Upload Button */}
-              <button
-                onClick={handleUploadImage}
-                disabled={isUploadingThumbnail}
-                className="w-full px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {isUploadingThumbnail ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
-                )}
-                {isUploadingThumbnail ? 'Uploading...' : 'Upload Image'}
-              </button>
+              {/* Upload and Paste Buttons (Side by Side) */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleUploadImage}
+                  disabled={isUploadingThumbnail}
+                  className="px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isUploadingThumbnail ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+                  )}
+                  {isUploadingThumbnail ? 'Uploading...' : 'Upload Image'}
+                </button>
+
+                <button
+                  onClick={handlePasteFromClipboard}
+                  disabled={isUploadingThumbnail}
+                  className="px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isUploadingThumbnail ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Clipboard className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                  )}
+                  {isUploadingThumbnail ? 'Processing...' : 'Paste Clipboard'}
+                </button>
+              </div>
 
               {/* OR Divider */}
               <div className="flex items-center gap-3">
@@ -648,6 +742,8 @@ export function MetadataDialog() {
             </Button>
           </div>
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
 

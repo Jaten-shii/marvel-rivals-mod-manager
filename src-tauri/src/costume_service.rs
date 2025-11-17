@@ -11,43 +11,21 @@ static COSTUME_DATA: Mutex<Option<CostumeDatabase>> = Mutex::new(None);
 
 /// Initialize the costume service by loading costume data from the JSON file
 pub fn initialize_costume_service() -> Result<(), String> {
-    eprintln!("============================================");
-    eprintln!("[CostumeService] STARTING INITIALIZATION");
-    eprintln!("============================================");
-    log::info!("[CostumeService] Initializing costume service...");
-
     // Load costume data from embedded resource
-    eprintln!("[CostumeService] Loading embedded JSON...");
     let costume_json = include_str!("../resources/costume-data.json");
-    eprintln!("[CostumeService] JSON loaded, {} bytes", costume_json.len());
 
     // Parse JSON
-    eprintln!("[CostumeService] Parsing JSON...");
     let costume_data: CostumeDatabase = serde_json::from_str(costume_json)
-        .map_err(|e| {
-            let err_msg = format!("Failed to parse costume data: {}", e);
-            eprintln!("[CostumeService] ERROR: {}", err_msg);
-            err_msg
-        })?;
+        .map_err(|e| format!("Failed to parse costume data: {}", e))?;
 
-    // Count total costumes
+    // Count total costumes and characters before moving the data
     let total_costumes: usize = costume_data.values().map(|v| v.len()).sum();
-    eprintln!(
-        "[CostumeService] ✓ Successfully loaded {} costumes for {} characters",
-        total_costumes,
-        costume_data.len()
-    );
-    log::info!(
-        "[CostumeService] Loaded {} costumes for {} characters",
-        total_costumes,
-        costume_data.len()
-    );
+    let character_count = costume_data.len();
 
     // Store in global state
-    eprintln!("[CostumeService] Storing in global state...");
     *COSTUME_DATA.lock().unwrap() = Some(costume_data);
-    eprintln!("[CostumeService] ✓ Initialization complete!");
-    eprintln!("============================================");
+
+    log::info!("👗 Loaded {} costumes for {} characters", total_costumes, character_count);
 
     Ok(())
 }
@@ -99,18 +77,10 @@ pub fn get_costumes_for_character(character: String) -> Result<Vec<Costume>, Str
 /// Get all costumes for all characters (used for caching on frontend)
 #[tauri::command]
 pub fn get_all_costumes() -> Result<HashMap<String, Vec<Costume>>, String> {
-    log::debug!("[CostumeService] Getting all costumes");
-
     let data = COSTUME_DATA.lock().unwrap();
 
     match data.as_ref() {
-        Some(costume_db) => {
-            log::debug!(
-                "[CostumeService] Returning costumes for {} characters",
-                costume_db.len()
-            );
-            Ok(costume_db.clone())
-        }
+        Some(costume_db) => Ok(costume_db.clone()),
         None => Err("Costume data not initialized".to_string()),
     }
 }

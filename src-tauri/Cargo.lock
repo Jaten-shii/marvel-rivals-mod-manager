@@ -2780,8 +2780,9 @@ dependencies = [
 
 [[package]]
 name = "marvel-rivals-mod-manager"
-version = "3.0.0"
+version = "3.5.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "image",
  "log",

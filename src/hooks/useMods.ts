@@ -50,10 +50,16 @@ export function useInstallMod() {
       console.log('[useMods] Installing mod from:', filePath)
       return await invoke<ModInfo>('install_mod', { filePath })
     },
-    onSuccess: (mod) => {
-      console.log('[useMods] Mod installed successfully:', mod.name)
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
-      toast.success(`Mod "${mod.name}" installed successfully`)
+    onSuccess: (newMod) => {
+      console.log('[useMods] Mod installed successfully:', newMod.name)
+
+      // Optimistic update: add new mod to existing list instead of invalidating
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        // Add new mod to the beginning of the list
+        return [newMod, ...oldMods]
+      })
+
+      toast.success(`Mod "${newMod.name}" installed successfully`)
     },
     onError: (error: Error) => {
       console.error('[useMods] Failed to install mod:', error)
@@ -79,11 +85,19 @@ export function useToggleMod() {
       }
 
       await invoke('enable_mod', { modId, enabled })
+      return { modId, enabled }
     },
-    onSuccess: (_, variables) => {
-      const action = variables.enabled ? 'enabled' : 'disabled'
+    onSuccess: (data) => {
+      const action = data.enabled ? 'enabled' : 'disabled'
       console.log('[useMods] Mod', action, 'successfully')
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+
+      // Optimistic update: update specific mod instead of invalidating all
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        return oldMods.map(mod =>
+          mod.id === data.modId ? { ...mod, enabled: data.enabled } : mod
+        )
+      })
+
       toast.success(`Mod ${action} successfully`)
     },
     onError: (error: Error) => {
@@ -123,10 +137,16 @@ export function useDeleteMod() {
       }
 
       await invoke('delete_mod', { modId })
+      return modId
     },
-    onSuccess: () => {
+    onSuccess: (modId) => {
       console.log('[useMods] Mod deleted successfully')
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+
+      // Optimistic update: remove mod from list
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        return oldMods.filter(mod => mod.id !== modId)
+      })
+
       toast.success('Mod deleted successfully')
     },
     onError: (error: Error) => {
@@ -161,12 +181,23 @@ export function useToggleModEnabled() {
         throw new Error('Mod not found')
       }
 
+      const newEnabledState = !mod.enabled
+
       // Toggle enabled state
-      await invoke('enable_mod', { modId, enabled: !mod.enabled })
+      await invoke('enable_mod', { modId, enabled: newEnabledState })
+
+      return { modId, enabled: newEnabledState }
     },
-    onSuccess: (_) => {
+    onSuccess: (data) => {
       console.log('[useMods] Mod enabled state toggled successfully')
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+
+      // Optimistic update: update specific mod
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        return oldMods.map(mod =>
+          mod.id === data.modId ? { ...mod, enabled: data.enabled } : mod
+        )
+      })
+
       toast.success('Mod status updated')
     },
     onError: (error: Error) => {
@@ -202,10 +233,17 @@ export function useToggleFavorite() {
 
       return await invoke<ModInfo>('update_mod_metadata', { modId, metadata: updatedMetadata })
     },
-    onSuccess: (mod) => {
-      const action = mod.isFavorite ? 'added to' : 'removed from'
+    onSuccess: (updatedMod) => {
+      const action = updatedMod.isFavorite ? 'added to' : 'removed from'
       console.log(`[useMods] Mod ${action} favorites successfully`)
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+
+      // Optimistic update: update specific mod
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        return oldMods.map(mod =>
+          mod.id === updatedMod.id ? updatedMod : mod
+        )
+      })
+
       toast.success(`Mod ${action} favorites`)
     },
     onError: (error: Error) => {
@@ -226,9 +264,16 @@ export function useUpdateModMetadata() {
       console.log('[useMods] Updating mod metadata:', modId)
       return await invoke<ModInfo>('update_mod_metadata', { modId, metadata })
     },
-    onSuccess: (mod) => {
-      console.log('[useMods] Metadata updated successfully:', mod.name)
-      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+    onSuccess: (updatedMod) => {
+      console.log('[useMods] Metadata updated successfully:', updatedMod.name)
+
+      // Optimistic update: update specific mod
+      queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
+        return oldMods.map(mod =>
+          mod.id === updatedMod.id ? updatedMod : mod
+        )
+      })
+
       toast.success('Mod metadata updated successfully')
     },
     onError: (error: Error) => {

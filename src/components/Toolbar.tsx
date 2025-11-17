@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useUIStore as useUIStoreOld } from '@/store/ui-store';
 import { useUIStore, type SortOption } from '../stores';
 import { open } from '@tauri-apps/plugin-dialog';
+import * as opener from '@tauri-apps/plugin-opener';
 import { toast } from 'sonner';
 
 interface ToolbarProps {
@@ -36,18 +37,38 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
     }
   };
 
+  // Handle Browse NexusMods button click
+  const handleBrowseNexusMods = async () => {
+    try {
+      await opener.openUrl('https://www.nexusmods.com/marvelrivals');
+    } catch (error) {
+      console.error('Failed to open NexusMods:', error);
+      toast.error('Failed to open NexusMods');
+    }
+  };
+
   return (
     <div className="border-b border-border bg-card px-3 py-2.5">
       <div className="flex items-center gap-2">
         {/* Left: Action Buttons */}
         <button
           onClick={handleAddModClick}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium text-sm hover:brightness-110 active:brightness-95 transition-all flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium text-sm hover:brightness-110 active:brightness-95 transition-all flex items-center gap-2 cursor-pointer group"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Mod
+        </button>
+
+        <button
+          onClick={handleBrowseNexusMods}
+          className="px-4 py-2 bg-[#191F24] text-white rounded-md font-medium text-sm border border-transparent transition-all duration-200 flex items-center gap-2 cursor-pointer hover:bg-primary/20 hover:text-primary hover:border-primary/40 group"
+        >
+          <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 01 9-9" />
+          </svg>
+          Browse Nexus Mods
         </button>
 
         {/* Center: Search */}
@@ -70,13 +91,13 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           <div className="relative">
             <button
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className="px-3 py-2 bg-[#191F24] text-foreground rounded-md text-sm hover:bg-[#2a2a2a] hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+              className="px-3 py-2 bg-[#191F24] text-foreground rounded-md text-sm hover:bg-[#2a2a2a] hover:text-white transition-all flex items-center gap-2 cursor-pointer group"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
               Sort by {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -115,28 +136,28 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           {/* View Mode Toggles */}
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition-all cursor-pointer ${
+            className={`p-2 rounded-md transition-all cursor-pointer group ${
               viewMode === 'grid'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-[#191F24] text-foreground hover:bg-[#2a2a2a] hover:text-white'
             }`}
             title="Grid View"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
           </button>
 
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md transition-all cursor-pointer ${
+            className={`p-2 rounded-md transition-all cursor-pointer group ${
               viewMode === 'list'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-[#191F24] text-foreground hover:bg-[#2a2a2a] hover:text-white'
             }`}
             title="List View"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
@@ -144,7 +165,7 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           {/* NSFW Toggle Button */}
           <button
             onClick={() => setFilters({ showNsfw: !filters.showNsfw })}
-            className={`p-2 rounded-md transition-all cursor-pointer ${
+            className={`p-2 rounded-md transition-all cursor-pointer group ${
               filters.showNsfw
                 ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                 : 'bg-[#191F24] text-foreground hover:bg-red-500/20 hover:text-red-400 hover:border hover:border-red-500/30'
@@ -153,12 +174,12 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           >
             {filters.showNsfw ? (
               // Unlocked icon (NSFW shown)
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
               </svg>
             ) : (
               // Locked icon (NSFW hidden)
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             )}
@@ -167,10 +188,10 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           {/* Settings */}
           <button
             onClick={() => setPreferencesOpen(true)}
-            className="p-2 bg-[#191F24] text-foreground rounded-md hover:bg-[#2a2a2a] hover:text-white transition-all cursor-pointer"
+            className="p-2 bg-[#191F24] text-foreground rounded-md hover:bg-[#2a2a2a] hover:text-white transition-all cursor-pointer group"
             title="Settings"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>

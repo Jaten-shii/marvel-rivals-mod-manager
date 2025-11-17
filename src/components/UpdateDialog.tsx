@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
@@ -19,12 +19,22 @@ export function UpdateDialog() {
     restartApp,
   } = useUpdater();
 
-  // Auto-check for updates when dialog opens
+  const hasCheckedInDialog = useRef(false);
+
+  // Auto-check for updates when dialog opens (only once per dialog session)
   useEffect(() => {
-    if (updateDialogOpen && !availableUpdate && !isChecking) {
-      checkForUpdates();
+    if (updateDialogOpen) {
+      // Reset check flag when dialog opens
+      hasCheckedInDialog.current = false;
     }
   }, [updateDialogOpen]);
+
+  useEffect(() => {
+    if (updateDialogOpen && !availableUpdate && !isChecking && !hasCheckedInDialog.current) {
+      hasCheckedInDialog.current = true;
+      checkForUpdates(false); // Explicitly not silent - show toast
+    }
+  }, [updateDialogOpen, availableUpdate, isChecking]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -153,7 +163,7 @@ export function UpdateDialog() {
                 </p>
               </div>
               <Button
-                onClick={checkForUpdates}
+                onClick={() => checkForUpdates()}
                 className="gap-2 bg-[#191F24] hover:bg-primary/20 text-foreground hover:text-primary border border-border hover:border-primary/40 transition-all duration-200"
               >
                 <RefreshCw className="w-4 h-4" />

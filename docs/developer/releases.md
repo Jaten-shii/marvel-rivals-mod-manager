@@ -113,47 +113,73 @@ git push origin main --tags
 
 The auto-updater provides:
 
-- **Automatic update checks** 5 seconds after app launch
-- **User-friendly dialogs** for update notifications
+- **Optional automatic update checks** on app startup (configurable in Settings)
+- **Styled update dialogs** using the app's design system
 - **Background downloads** with progress tracking
 - **Seamless installation** with restart prompts
-- **Silent error handling** for network issues
+- **Silent mode** for auto-checks (no spam notifications)
+- **Visual indicators** with blinking red exclamation points when updates are available
 
 ### How It Works
 
-1. App waits 5 seconds after launch
-2. Silently checks for updates using `@tauri-apps/plugin-updater`
-3. If update available, shows browser `confirm()` dialog
-4. Downloads and installs in background with progress logging
-5. Shows completion dialog with restart option
-6. Uses `@tauri-apps/plugin-process` to restart if user agrees
+1. **On Startup** (if enabled in Settings):
+   - Waits 5 seconds after app launch
+   - Silently checks for updates using `@tauri-apps/plugin-updater`
+   - Only shows notification if update is actually available
+   - Runs once per session to avoid spam
+
+2. **Manual Check** (via sidebar):
+   - User clicks "Check for Updates" in App Version dropdown
+   - Shows styled dialog with full update information
+   - Provides feedback for all scenarios (up-to-date, update available, errors)
+
+3. **Visual Indicators**:
+   - Blinking red exclamation point appears when update is available
+   - Appears on both "App Version" button and "Check for Updates" button
+   - Uses Framer Motion for smooth animations
+
+4. **Installation Flow**:
+   - Downloads and installs in background with progress tracking
+   - Shows completion notification
+   - Offers restart option using `@tauri-apps/plugin-process`
 
 ### Implementation
 
-The auto-updater is implemented in `src/App.tsx`:
+The auto-updater is implemented across multiple components:
 
+**`src/hooks/useUpdater.ts`** - Core update logic:
 ```typescript
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 
-// Inside useEffect:
-const checkForUpdates = async () => {
-  try {
-    const update = await check()
-    if (update) {
-      const shouldUpdate = confirm(`Update available: ${update.version}...`)
-      if (shouldUpdate) {
-        await update.downloadAndInstall(/* progress callback */)
-        const shouldRestart = confirm('Update completed successfully!...')
-        if (shouldRestart) await relaunch()
-      }
-    }
-  } catch (error) {
-    // Silent fail - don't bother user with network issues
-    logger.error('Update check failed:', error)
+const checkForUpdates = async (silent = false) => {
+  const update = await check()
+  if (update?.available) {
+    // Always show update available toast
+    toast.success(`Update available: v${update.version}`)
+  } else if (!silent) {
+    // Only show "latest version" when manual check
+    toast.info('You are running the latest version')
   }
 }
 ```
+
+**`src/components/layout/MainWindow.tsx`** - Startup check:
+```typescript
+// Check once per session if enabled in settings
+const hasCheckedForUpdates = useRef(false)
+
+useEffect(() => {
+  if (settings?.autoCheckUpdates && !hasCheckedForUpdates.current) {
+    hasCheckedForUpdates.current = true
+    setTimeout(() => checkForUpdates(true), 5000) // silent mode
+  }
+}, [settings?.autoCheckUpdates])
+```
+
+**`src/components/Sidebar.tsx`** - Visual indicators and manual check button
+
+**`src/components/UpdateDialog.tsx`** - Styled update dialog with progress tracking
 
 ### Configuration
 

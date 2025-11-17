@@ -109,7 +109,6 @@ fn get_preferences_path(app: &AppHandle) -> Result<PathBuf, String> {
 
 #[tauri::command]
 async fn load_preferences(app: AppHandle) -> Result<AppPreferences, String> {
-    log::debug!("Loading preferences from disk");
     let prefs_path = get_preferences_path(&app)?;
 
     if !prefs_path.exists() {
@@ -127,7 +126,6 @@ async fn load_preferences(app: AppHandle) -> Result<AppPreferences, String> {
         format!("Failed to parse preferences: {e}")
     })?;
 
-    log::info!("Successfully loaded preferences");
     Ok(preferences)
 }
 
@@ -284,8 +282,6 @@ async fn load_emergency_data(app: AppHandle, filename: String) -> Result<Value, 
 
 #[tauri::command]
 async fn cleanup_old_recovery_files(app: AppHandle) -> Result<u32, String> {
-    log::info!("Cleaning up old recovery files");
-
     let recovery_dir = get_recovery_dir(&app)?;
     let mut removed_count = 0;
 
@@ -357,7 +353,9 @@ async fn cleanup_old_recovery_files(app: AppHandle) -> Result<u32, String> {
         }
     }
 
-    log::info!("Cleanup complete. Removed {removed_count} old recovery files");
+    if removed_count > 0 {
+        log::info!("🗑️  Cleaned up {} old recovery file(s)", removed_count);
+    }
     Ok(removed_count)
 }
 
@@ -560,7 +558,6 @@ fn get_mod_service(app: &AppHandle) -> Result<ModService, String> {
 
 #[tauri::command]
 async fn get_all_mods(app: AppHandle) -> Result<Vec<ModInfo>, String> {
-    log::info!("Getting all mods");
     let service = get_mod_service(&app)?;
     service.get_all_mods()
 }
@@ -577,6 +574,18 @@ async fn install_mod_to_folder(app: AppHandle, file_path: String, folder_name: S
     log::info!("Installing mod from {} to folder: {}", file_path, folder_name);
     let service = get_mod_service(&app)?;
     service.install_mod_to_folder(PathBuf::from(file_path).as_path(), &folder_name)
+}
+
+#[tauri::command]
+async fn install_mod_to_folder_with_metadata(
+    app: AppHandle,
+    file_path: String,
+    folder_name: String,
+    metadata: ModMetadata,
+) -> Result<ModInfo, String> {
+    log::info!("Installing mod from {} to folder {} with custom metadata", file_path, folder_name);
+    let service = get_mod_service(&app)?;
+    service.install_mod_to_folder_with_metadata(PathBuf::from(file_path).as_path(), &folder_name, metadata)
 }
 
 #[tauri::command]
@@ -609,9 +618,62 @@ async fn remove_profile_from_all_mods(app: AppHandle, profile_id: String) -> Res
 
 #[tauri::command]
 async fn organize_mods(app: AppHandle) -> Result<usize, String> {
-    log::info!("Organizing loose mods into proper folder structure");
     let service = get_mod_service(&app)?;
     service.organize_loose_mods()
+}
+
+#[tauri::command]
+async fn merge_duplicate_folders(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.merge_duplicate_folders()
+}
+
+#[tauri::command]
+async fn migrate_metadata_to_path_ids(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.migrate_metadata_to_path_ids()
+}
+
+#[tauri::command]
+async fn log_total_mods_found(app: AppHandle) -> Result<(), String> {
+    let service = get_mod_service(&app)?;
+    let mods = service.get_all_mods()?;
+    let active_count = mods.iter().filter(|m| m.enabled).count();
+    let disabled_count = mods.len() - active_count;
+
+    log::info!("");
+    if disabled_count > 0 {
+        log::info!("📦 Found {} mod(s) total ({} active, {} disabled)", mods.len(), active_count, disabled_count);
+    } else {
+        log::info!("📦 Found {} mod(s) total", mods.len());
+    }
+    log::info!("");
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_metadata_directory(app: AppHandle) -> Result<String, String> {
+    let metadata_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?
+        .join("metadata");
+
+    metadata_dir
+        .to_str()
+        .ok_or("Invalid path".to_string())
+        .map(|s| s.to_string())
+}
+
+#[tauri::command]
+async fn copy_metadata_from_old_id(
+    app: AppHandle,
+    current_mod_id: String,
+    old_mod_id: String,
+) -> Result<(), String> {
+    let service = get_mod_service(&app)?;
+    service.copy_metadata_from_old_id(&current_mod_id, &old_mod_id)
 }
 
 // ===== THUMBNAIL COMMANDS =====
@@ -699,6 +761,53 @@ async fn delete_thumbnail(app: AppHandle, mod_id: String) -> Result<(), String> 
         .map_err(|e| format!("Failed to delete thumbnail: {}", e))
 }
 
+#[tauri::command]
+async fn get_temp_file_path(app: AppHandle, file_name: String) -> Result<String, String> {
+    let temp_dir = app
+        .path()
+        .temp_dir()
+        .map_err(|e| format!("Failed to get temp directory: {}", e))?;
+
+    let temp_file = temp_dir.join(file_name);
+
+    Ok(temp_file
+        .to_str()
+        .ok_or("Invalid temp file path")?
+        .to_string())
+}
+
+#[tauri::command]
+async fn save_thumbnail_from_base64(
+    app: AppHandle,
+    mod_id: String,
+    base64_data: String,
+) -> Result<String, String> {
+    use base64::{Engine as _, engine::general_purpose};
+
+    log::info!("Saving thumbnail for mod: {} from base64 data ({} bytes)", mod_id, base64_data.len());
+
+    // Decode base64 to bytes
+    let image_bytes = general_purpose::STANDARD
+        .decode(&base64_data)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    // Load image from bytes
+    let img = image::load_from_memory(&image_bytes)
+        .map_err(|e| format!("Failed to load image: {}", e))?;
+
+    // Save thumbnail
+    let service = get_thumbnail_service(&app)?;
+    let thumbnail_path = service
+        .save_thumbnail(&mod_id, &img)
+        .await
+        .map_err(|e| format!("Failed to save thumbnail: {}", e))?;
+
+    Ok(thumbnail_path
+        .to_str()
+        .ok_or("Invalid thumbnail path")?
+        .to_string())
+}
+
 // ===== SETTINGS COMMANDS =====
 
 fn get_settings_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -765,7 +874,6 @@ fn save_app_settings_internal(app: &AppHandle, settings: &AppSettings) -> Result
 
 #[tauri::command]
 async fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
-    log::info!("Loading app settings");
     load_app_settings(&app)
 }
 
@@ -844,7 +952,7 @@ async fn is_game_running() -> Result<bool, String> {
 
 // Create the native menu system
 fn create_app_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    log::info!("Setting up native menu system");
+    log::info!("📋 Setting up native menu system");
 
     // Build the main application submenu
     let app_submenu = SubmenuBuilder::new(app, "Tauri Template")
@@ -888,7 +996,7 @@ fn create_app_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     // Set the menu for the app
     app.set_menu(menu)?;
 
-    log::info!("Native menu system initialized successfully");
+    log::info!("   ✅ Menu system ready");
     Ok(())
 }
 
@@ -905,6 +1013,13 @@ pub fn run() {
                     log::LevelFilter::Debug
                 } else {
                     log::LevelFilter::Info
+                })
+                .format(|out, message, record| {
+                    out.finish(format_args!(
+                        "[{}] {}",
+                        record.level(),
+                        message
+                    ))
                 })
                 .targets([
                     // Always log to stdout for development
@@ -926,11 +1041,11 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            log::info!("🚀 Application starting up");
-            log::debug!(
-                "App handle initialized for package: {}",
-                app.package_info().name
-            );
+            log::info!("");
+            log::info!("==========================================================");
+            log::info!("🚀 Marvel Rivals Mod Manager - Starting Up");
+            log::info!("==========================================================");
+            log::info!("");
 
             // Set up native menu system
             if let Err(e) = create_app_menu(app) {
@@ -939,11 +1054,17 @@ pub fn run() {
             }
 
             // Initialize costume service
+            log::info!("");
             if let Err(e) = initialize_costume_service() {
                 log::error!("Failed to initialize costume service: {e}");
                 // Don't fail app startup if costume data fails to load
                 // The app can still function without costume data
             }
+
+            log::info!("");
+            log::info!("✅ Application initialized successfully");
+            log::info!("==========================================================");
+            log::info!("");
 
             // Set up menu event handlers
             app.on_menu_event(move |app, event| {
@@ -1004,13 +1125,6 @@ pub fn run() {
                 }
             });
 
-            // Example of different log levels
-            log::trace!("This is a trace message (most verbose)");
-            log::debug!("This is a debug message (development only)");
-            log::info!("This is an info message (production)");
-            log::warn!("This is a warning message");
-            // log::error!("This is an error message");
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -1027,6 +1141,7 @@ pub fn run() {
             get_all_mods,
             install_mod,
             install_mod_to_folder,
+            install_mod_to_folder_with_metadata,
             enable_mod,
             delete_mod,
             update_mod_metadata,
@@ -1040,8 +1155,10 @@ pub fn run() {
             // Thumbnails
             download_and_save_thumbnail,
             save_thumbnail_from_file,
+            save_thumbnail_from_base64,
             get_thumbnail_path,
             delete_thumbnail,
+            get_temp_file_path,
             // Settings
             get_app_settings,
             save_app_settings,
@@ -1053,7 +1170,12 @@ pub fn run() {
             detect_mods_in_archive,
             extract_and_detect_mods,
             // Folder organization
-            organize_mods
+            organize_mods,
+            merge_duplicate_folders,
+            migrate_metadata_to_path_ids,
+            log_total_mods_found,
+            get_metadata_directory,
+            copy_metadata_from_old_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

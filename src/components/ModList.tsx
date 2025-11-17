@@ -145,7 +145,38 @@ export function ModList() {
         if (aChar !== bChar) {
           return aChar.localeCompare(bChar);
         }
-        // Secondary sort by name within character
+
+        // Within same character, prioritize default skins first, then sort by costume
+        const aCostumeLower = (a.metadata.costume || '').trim().toLowerCase();
+        const bCostumeLower = (b.metadata.costume || '').trim().toLowerCase();
+        const aIsDefault = !a.metadata.costume || aCostumeLower === 'default' || aCostumeLower === '';
+        const bIsDefault = !b.metadata.costume || bCostumeLower === 'default' || bCostumeLower === '';
+
+        if (aIsDefault !== bIsDefault) {
+          return aIsDefault ? -1 : 1; // Default skins first
+        }
+
+        // Sort by costume name (group same costumes together)
+        const aCostume = a.metadata.costume || '';
+        const bCostume = b.metadata.costume || '';
+        if (aCostume !== bCostume) {
+          return aCostume.localeCompare(bCostume);
+        }
+
+        // Within same character and costume, sort by category: Skins -> UI -> Audio -> Gameplay
+        const categoryOrder: Record<string, number> = {
+          'Skins': 1,
+          'UI': 2,
+          'Audio': 3,
+          'Gameplay': 4,
+        };
+        const aCategoryOrder = categoryOrder[a.category] || 999;
+        const bCategoryOrder = categoryOrder[b.category] || 999;
+        if (aCategoryOrder !== bCategoryOrder) {
+          return aCategoryOrder - bCategoryOrder;
+        }
+
+        // Final sort by mod name
         return (a.metadata.title || a.name).localeCompare(b.metadata.title || b.name);
       case 'updated':
         // Sort by last updated date descending (newest first)
@@ -331,9 +362,6 @@ function ModCard({
       className={`group relative border border-border rounded-lg overflow-hidden cursor-pointer hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-card ${
         !mod.enabled ? 'opacity-50 grayscale' : ''
       }`}
-      style={{
-        willChange: 'transform',
-      }}
     >
       {/* Disabled Overlay */}
       {!mod.enabled && (
@@ -582,9 +610,6 @@ function ModListItem({
       className={`group border border-border rounded-lg p-3 cursor-pointer hover:border-primary/50 hover:shadow-md hover:-translate-y-1 transition-all duration-200 bg-card relative ${
         !mod.enabled ? 'opacity-50 grayscale' : ''
       }`}
-      style={{
-        willChange: 'transform',
-      }}
     >
       {/* Disabled Overlay */}
       {!mod.enabled && (
