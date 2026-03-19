@@ -52,7 +52,8 @@ const iconComponents: Record<string, React.ComponentType<{ className?: string }>
 }
 
 export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
-  const { setMetadataDialogOpen, profiles } = useUIStore();
+  const setMetadataDialogOpen = useUIStore((state) => state.setMetadataDialogOpen);
+  const profiles = useUIStore((state) => state.profiles);
   const deleteMod = useDeleteMod();
   const toggleEnabled = useToggleModEnabled();
   const toggleFavorite = useToggleFavorite();

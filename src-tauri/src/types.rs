@@ -46,6 +46,7 @@ pub enum Character {
     Magneto,
     #[serde(rename = "Peni Parker")]
     PeniParker,
+    Rogue,
     #[serde(rename = "The Thing")]
     TheThing,
     Thor,
@@ -59,6 +60,7 @@ pub enum Character {
     #[serde(rename = "Black Widow")]
     BlackWidow,
     Daredevil,
+    Deadpool,
     #[serde(rename = "Emma Frost")]
     EmmaFrost,
     Gambit,
@@ -109,6 +111,13 @@ pub enum Character {
     Mantis,
     #[serde(rename = "Rocket Raccoon")]
     RocketRaccoon,
+
+    #[serde(rename = "Elsa Bloodstone")]
+    ElsaBloodstone,
+
+    // Special
+    #[serde(rename = "All Characters")]
+    AllCharacters,
 }
 
 impl Character {
@@ -121,6 +130,7 @@ impl Character {
             Character::Hulk,
             Character::Magneto,
             Character::PeniParker,
+            Character::Rogue,
             Character::TheThing,
             Character::Thor,
             Character::Venom,
@@ -129,6 +139,7 @@ impl Character {
             Character::BlackPanther,
             Character::BlackWidow,
             Character::Daredevil,
+            Character::Deadpool,
             Character::EmmaFrost,
             Character::Gambit,
             Character::Hawkeye,
@@ -159,6 +170,8 @@ impl Character {
             Character::LunaSnow,
             Character::Mantis,
             Character::RocketRaccoon,
+            Character::ElsaBloodstone,
+            Character::AllCharacters,
         ]
     }
 
@@ -170,6 +183,7 @@ impl Character {
             Character::Hulk => &["hulk", "banner", "bruce"],
             Character::Magneto => &["magneto", "erik", "max"],
             Character::PeniParker => &["peni", "parker", "peniparker"],
+            Character::Rogue => &["rogue"],
             Character::TheThing => &["thing", "ben", "grimm"],
             Character::Thor => &["thor", "odinson"],
             Character::Venom => &["venom", "symbiote", "eddie"],
@@ -178,6 +192,7 @@ impl Character {
             Character::BlackPanther => &["blackpanther", "panther", "tchalla"],
             Character::BlackWidow => &["blackwidow", "widow", "natasha", "romanoff"],
             Character::Daredevil => &["daredevil", "matt", "murdock"],
+            Character::Deadpool => &["deadpool", "wade", "wilson", "merc", "mouth"],
             Character::EmmaFrost => &["emma", "frost", "emmafrost", "white", "queen"],
             Character::Gambit => &["gambit", "remy", "lebeau"],
             Character::Hawkeye => &["hawkeye", "clint", "barton"],
@@ -208,6 +223,8 @@ impl Character {
             Character::LunaSnow => &["lunasnow", "luna", "snow"],
             Character::Mantis => &["mantis"],
             Character::RocketRaccoon => &["rocketraccoon", "rocket", "raccoon"],
+            Character::ElsaBloodstone => &["elsabloodstone", "elsa", "bloodstone"],
+            Character::AllCharacters => &["allcharacters", "all", "everyone", "every"],
         }
     }
 }
@@ -221,6 +238,7 @@ impl std::fmt::Display for Character {
             Character::Hulk => "Hulk",
             Character::Magneto => "Magneto",
             Character::PeniParker => "Peni Parker",
+            Character::Rogue => "Rogue",
             Character::TheThing => "The Thing",
             Character::Thor => "Thor",
             Character::Venom => "Venom",
@@ -229,6 +247,7 @@ impl std::fmt::Display for Character {
             Character::BlackPanther => "Black Panther",
             Character::BlackWidow => "Black Widow",
             Character::Daredevil => "Daredevil",
+            Character::Deadpool => "Deadpool",
             Character::EmmaFrost => "Emma Frost",
             Character::Gambit => "Gambit",
             Character::Hawkeye => "Hawkeye",
@@ -259,6 +278,8 @@ impl std::fmt::Display for Character {
             Character::LunaSnow => "Luna Snow",
             Character::Mantis => "Mantis",
             Character::RocketRaccoon => "Rocket Raccoon",
+            Character::ElsaBloodstone => "Elsa Bloodstone",
+            Character::AllCharacters => "All Characters",
         };
         write!(f, "{}", name)
     }
@@ -280,6 +301,7 @@ pub struct Costume {
 #[serde(rename_all = "camelCase")]
 pub struct ModMetadata {
     pub title: String,
+    pub subtitle: Option<String>, // Optional subtitle shown under the title
     pub description: String,
     pub author: Option<String>,
     pub version: Option<String>,
@@ -298,6 +320,10 @@ pub struct ModMetadata {
     pub nexus_mod_id: Option<i32>,
     pub nexus_file_id: Option<i32>,
     pub nexus_version: Option<String>,
+
+    // Folder structure tracking (for disable/enable operations)
+    // Stores the relative path from ~mods root (e.g., "Skins/Magik/Classic-Eldritch-Armor")
+    pub original_folder_path: Option<String>,
 }
 
 // ===== Mod Info =====
@@ -415,4 +441,12 @@ pub struct CharacterStats {
     pub count: usize,
     pub enabled: usize,
     pub disabled: usize,
+}
+
+// ===== Skip Intros Status =====
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkipIntrosStatus {
+    pub installed: bool,
+    pub has_backup: bool,
 }

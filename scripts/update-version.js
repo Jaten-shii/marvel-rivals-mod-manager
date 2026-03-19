@@ -6,6 +6,7 @@
  * Updates version across all files in the project:
  * - package.json
  * - src-tauri/tauri.conf.json (controls installer version)
+ * - src-tauri/Cargo.toml (Rust package version)
  * - src/shared/constants.ts
  *
  * Usage:
@@ -27,6 +28,7 @@ const rootDir = join(__dirname, '..');
 const FILES = {
   packageJson: join(rootDir, 'package.json'),
   tauriConfig: join(rootDir, 'src-tauri', 'tauri.conf.json'),
+  cargoToml: join(rootDir, 'src-tauri', 'Cargo.toml'),
   constants: join(rootDir, 'src', 'shared', 'constants.ts'),
 };
 
@@ -78,6 +80,17 @@ function updateTauriConfig(newVersion) {
   console.log(`✓ Updated src-tauri/tauri.conf.json → ${newVersion}`);
 }
 
+function updateCargoToml(newVersion) {
+  const content = readFileSync(FILES.cargoToml, 'utf-8');
+  // Only replace version in [package] section (first occurrence)
+  const updated = content.replace(
+    /^(version = )["'][^"']+["']/m,
+    `$1"${newVersion}"`
+  );
+  writeFileSync(FILES.cargoToml, updated, 'utf-8');
+  console.log(`✓ Updated src-tauri/Cargo.toml → ${newVersion}`);
+}
+
 function updateConstants(newVersion) {
   const content = readFileSync(FILES.constants, 'utf-8');
   const updated = content.replace(
@@ -118,6 +131,7 @@ function main() {
   try {
     updatePackageJson(newVersion);
     updateTauriConfig(newVersion);
+    updateCargoToml(newVersion);
     updateConstants(newVersion);
 
     console.log(`\n✅ Successfully updated all files to version ${newVersion}!`);

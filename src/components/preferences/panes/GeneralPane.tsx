@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -8,31 +7,37 @@ import { useGetAppSettings, useSaveAppSettings } from '@/hooks/useSettings'
 import { open } from '@tauri-apps/plugin-dialog'
 import { invoke } from '@tauri-apps/api/core'
 import { toast } from 'sonner'
-
-const SettingsField: React.FC<{
-  label: string
-  children: React.ReactNode
-  description?: string
-}> = ({ label, children, description }) => (
-  <div className="space-y-2">
-    <Label className="text-sm font-medium text-foreground">{label}</Label>
-    {children}
-    {description && (
-      <p className="text-sm text-muted-foreground">{description}</p>
-    )}
-  </div>
-)
+import { FolderOpen, HardDrive, Settings2, RefreshCw } from 'lucide-react'
 
 const SettingsSection: React.FC<{
   title: string
+  icon?: React.ReactNode
   children: React.ReactNode
-}> = ({ title, children }) => (
-  <div className="space-y-4">
-    <div>
-      <h3 className="text-lg font-medium text-foreground">{title}</h3>
-      <Separator className="mt-2" />
+}> = ({ title, icon, children }) => (
+  <div className="space-y-3">
+    <div className="flex items-center gap-2 px-1">
+      {icon && <span className="text-muted-foreground/70">{icon}</span>}
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
     </div>
-    <div className="space-y-4">{children}</div>
+    <div className="space-y-2">{children}</div>
+  </div>
+)
+
+const ToggleRow: React.FC<{
+  id: string
+  label: string
+  description: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}> = ({ id, label, description, checked, onCheckedChange }) => (
+  <div className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/30 transition-colors">
+    <div className="space-y-0.5">
+      <Label htmlFor={id} className="text-sm font-medium text-foreground cursor-pointer">
+        {label}
+      </Label>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+    <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
   </div>
 )
 
@@ -134,115 +139,115 @@ export const GeneralPane: React.FC = () => {
   }
 
   if (isLoading) {
-    return <div>Loading settings...</div>
+    return <div className="flex items-center justify-center p-8 text-muted-foreground">Loading settings...</div>
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsSection title="Marvel Rivals Configuration">
-        <SettingsField
-          label="Game Installation Directory"
-          description="The directory where Marvel Rivals is installed. Default: C:\Program Files (x86)\Steam\steamapps\common\MarvelRivals"
-        >
-          <div className="flex gap-2">
-            <Input
-              value={gameDirectory}
-              onChange={e => setGameDirectory(e.target.value)}
-              placeholder="Select game directory..."
-              className="flex-1"
-            />
-            <Button onClick={handleBrowseDirectory} variant="outline">
-              Browse
-            </Button>
-          </div>
-        </SettingsField>
-
-        {gameDirectory && (
-          <SettingsField
-            label="Mods Directory"
-            description="The directory where mods are stored (read-only, based on game directory)"
-          >
+    <div className="space-y-8">
+      {/* Directories Section */}
+      <SettingsSection title="Directories" icon={<FolderOpen className="w-4 h-4" />}>
+        <div className="space-y-1 rounded-xl bg-muted/20 p-1">
+          {/* Game Directory */}
+          <div className="p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <HardDrive className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <Label className="text-sm font-medium text-foreground">Game Installation</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3 pl-5.5">
+              Where Marvel Rivals is installed
+            </p>
             <div className="flex gap-2">
               <Input
-                value={`${gameDirectory}\\MarvelGame\\Marvel\\Content\\Paks\\~mods`}
-                readOnly
-                className="flex-1 bg-muted/50"
+                value={gameDirectory}
+                onChange={e => setGameDirectory(e.target.value)}
+                placeholder="C:\Program Files (x86)\Steam\steamapps\common\MarvelRivals"
+                className="flex-1 text-sm"
               />
-              <Button onClick={handleOpenModsDirectory} variant="outline">
+              <Button onClick={handleBrowseDirectory} variant="outline" size="sm">
+                Browse
+              </Button>
+            </div>
+          </div>
+
+          {/* Mods Directory - only show if game directory is set */}
+          {gameDirectory && (
+            <div className="p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />
+                <Label className="text-sm font-medium text-foreground">Mods Folder</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3 pl-5.5">
+                Where game mods are installed (auto-generated from game directory)
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={`${gameDirectory}\\MarvelGame\\Marvel\\Content\\Paks\\~mods`}
+                  readOnly
+                  className="flex-1 text-sm bg-muted/30 text-muted-foreground"
+                />
+                <Button onClick={handleOpenModsDirectory} variant="outline" size="sm">
+                  Open
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Metadata Directory */}
+          <div className="p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <Label className="text-sm font-medium text-foreground">Metadata & Thumbnails</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3 pl-5.5">
+              Where mod metadata and custom thumbnails are stored
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value="AppData\Roaming\com.marvelrivalsmodmanager.app\metadata"
+                readOnly
+                className="flex-1 text-sm bg-muted/30 text-muted-foreground italic"
+              />
+              <Button onClick={handleOpenMetadataDirectory} variant="outline" size="sm">
                 Open
               </Button>
             </div>
-          </SettingsField>
-        )}
-
-        <SettingsField
-          label="Metadata & Thumbnails Directory"
-          description="Where mod metadata and custom thumbnails are stored"
-        >
-          <div className="flex gap-2">
-            <Input
-              value="C:\\Users\\{username}\\AppData\\Roaming\\com.marvelrivalsmodmanager.app\\metadata"
-              readOnly
-              className="flex-1 bg-muted/50 text-muted-foreground italic"
-            />
-            <Button onClick={handleOpenMetadataDirectory} variant="outline">
-              Open
-            </Button>
           </div>
-        </SettingsField>
+        </div>
       </SettingsSection>
 
-      <SettingsSection title="Mod Management">
-        <SettingsField
-          label="Auto-organize Mods"
-          description="Automatically organize mods by category when installing"
-        >
-          <div className="flex items-center space-x-2">
-            <Switch
+      {/* Behavior Section - Side by side toggles */}
+      <div className="grid grid-cols-2 gap-8">
+        <SettingsSection title="Mod Management" icon={<Settings2 className="w-4 h-4" />}>
+          <div className="rounded-xl bg-muted/20 p-1">
+            <ToggleRow
               id="auto-organize"
+              label="Auto-organize Mods"
+              description="Organize mods by category when installing"
               checked={autoOrganize}
               onCheckedChange={handleToggleAutoOrganize}
             />
-            <Label htmlFor="auto-organize" className="text-sm">
-              {autoOrganize ? 'Enabled' : 'Disabled'}
-            </Label>
-          </div>
-        </SettingsField>
-
-        <SettingsField
-          label="Auto-detect Game Directory"
-          description="Automatically detect Marvel Rivals installation on startup"
-        >
-          <div className="flex items-center space-x-2">
-            <Switch
+            <ToggleRow
               id="auto-detect"
+              label="Auto-detect Game Directory"
+              description="Find Marvel Rivals installation on startup"
               checked={autoDetectGameDir}
               onCheckedChange={handleToggleAutoDetect}
             />
-            <Label htmlFor="auto-detect" className="text-sm">
-              {autoDetectGameDir ? 'Enabled' : 'Disabled'}
-            </Label>
           </div>
-        </SettingsField>
-      </SettingsSection>
+        </SettingsSection>
 
-      <SettingsSection title="Updates">
-        <SettingsField
-          label="Automatic Update Checks"
-          description="Automatically check for updates when the app starts (use 'App Version' in sidebar to manually check)"
-        >
-          <div className="flex items-center space-x-2">
-            <Switch
+        <SettingsSection title="Updates" icon={<RefreshCw className="w-4 h-4" />}>
+          <div className="rounded-xl bg-muted/20 p-1">
+            <ToggleRow
               id="auto-check-updates"
+              label="Automatic Update Checks"
+              description="Check for updates when the app starts"
               checked={autoCheckUpdates}
               onCheckedChange={handleToggleAutoCheckUpdates}
             />
-            <Label htmlFor="auto-check-updates" className="text-sm">
-              {autoCheckUpdates ? 'Enabled' : 'Disabled'}
-            </Label>
           </div>
-        </SettingsField>
-      </SettingsSection>
+        </SettingsSection>
+      </div>
     </div>
   )
 }

@@ -6,8 +6,8 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import type { ModCategory, Character } from '../types/mod.types';
 import { ALL_CHARACTERS, MOD_CATEGORIES } from '../shared/constants';
-import { useGetCostumesForCharacter } from '../hooks/useMods';
-import { Monitor, Volume2, Shirt, Gamepad2 } from 'lucide-react';
+import { useGetCostumesForCharacter, useGetMods } from '../hooks/useMods';
+import { Monitor, Volume2, Shirt, Gamepad2, AlertTriangle } from 'lucide-react';
 import { sanitizeFolderName, extractModNameFromPath } from '../utils/sanitize';
 
 // Helper function to get category icon
@@ -55,6 +55,17 @@ export function InitialModSetupDialog({
   // Fetch costumes for selected character
   const { data: costumes = [] } = useGetCostumesForCharacter(character === 'none' ? null : character);
 
+  // Fetch existing mods to check for duplicates
+  const { data: existingMods = [] } = useGetMods();
+
+  // Check for duplicate mods with same name + character + costume
+  const duplicateMod = existingMods.find((m) => {
+    const sameTitle = m.metadata.title.toLowerCase() === modName.trim().toLowerCase();
+    const sameCharacter = (m.character || '') === (character === 'none' ? '' : character);
+    const sameCostume = (m.metadata.costume || '') === (costume === 'none' ? '' : costume);
+    return sameTitle && sameCharacter && sameCostume;
+  });
+
   // Reset state when dialog opens with new pak file
   useEffect(() => {
     if (open) {
@@ -66,12 +77,18 @@ export function InitialModSetupDialog({
     }
   }, [open, pakFileName]);
 
-  // Clear costume when character changes
+  // Auto-select Default costume when character changes, or clear if no character
   useEffect(() => {
     if (character === 'none') {
       setCostume('none');
+    } else if (costumes.length > 0) {
+      // Find the default costume (marked with isDefault) or first costume
+      const defaultCostume = costumes.find(c => c.isDefault);
+      if (defaultCostume) {
+        setCostume(defaultCostume.id);
+      }
     }
-  }, [character]);
+  }, [character, costumes]);
 
   const handleConfirm = () => {
     onConfirm({
@@ -189,7 +206,7 @@ export function InitialModSetupDialog({
               <p className="text-xs font-medium text-foreground mb-1">Installation Path</p>
               <p className="text-xs text-muted-foreground font-mono">
                 {character !== 'none'
-                  ? `~mods/${category}/${character}/${sanitizedName}/`
+                  ? `~mods/${category}/${character}/${sanitizedName}${costume !== 'none' ? `-${costumes.find(c => c.id === costume)?.name || costume}` : ''}/`
                   : `~mods/${category}/${sanitizedName}/`
                 }
               </p>
@@ -197,13 +214,22 @@ export function InitialModSetupDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={!modName.trim()}>
-            Continue
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {/* Duplicate warning */}
+          {duplicateMod && (
+            <div className="flex items-center gap-2 text-amber-500 text-sm mr-auto">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <span>A mod with this name already exists{character !== 'none' ? ` for ${character}` : ''}{costume !== 'none' ? ` (${costumes.find(c => c.id === costume)?.name || costume})` : ''}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} disabled={!modName.trim()}>
+              Continue
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

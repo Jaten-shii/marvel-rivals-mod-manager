@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { toast } from 'sonner';
 import { APP_VERSION } from '../shared/constants';
+import { useUIStore, type UpdateInfo } from '../stores/useUIStore';
 
-interface UpdateInfo {
-  version: string;
-  date: string;
-  body: string | null;
-}
+// Module-level variable to store the update handle
+// This persists across all hook instances and component remounts
+let updateHandle: Update | null = null;
 
 interface UseUpdaterReturn {
   isChecking: boolean;
@@ -25,34 +24,42 @@ export function useUpdater(): UseUpdaterReturn {
   const [isChecking, setIsChecking] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [availableUpdate, setAvailableUpdate] = useState<UpdateInfo | null>(null);
-  const [updateHandle, setUpdateHandle] = useState<Update | null>(null);
+
+  // Use shared state from Zustand store instead of local useState
+  const availableUpdate = useUIStore((state) => state.availableUpdate);
+  const setAvailableUpdate = useUIStore((state) => state.setAvailableUpdate);
 
   // Get current version from constants
   const currentVersion = APP_VERSION;
 
-  const checkForUpdates = async (silent = false) => {
+  const checkForUpdates = useCallback(async (silent = false) => {
+    console.log('[Updater] checkForUpdates called - silent:', silent);
     setIsChecking(true);
     setAvailableUpdate(null);
 
     try {
-      console.log('[Updater] Checking for updates...');
+      console.log('[Updater] Checking for updates from Tauri plugin...');
       const update = await check();
+      console.log('[Updater] Check response:', update);
 
       if (update?.available) {
-        console.log('[Updater] Update available:', update.version);
-        setUpdateHandle(update);
-        setAvailableUpdate({
+        console.log('[Updater] ✅ Update available:', update.version);
+        console.log('[Updater] Setting availableUpdate in Zustand store...');
+        updateHandle = update;
+        const updateInfo = {
           version: update.version,
           date: update.date || new Date().toISOString(),
           body: update.body || null,
-        });
+        };
+        setAvailableUpdate(updateInfo);
+        console.log('[Updater] Update state set:', updateInfo);
+        console.log('[Updater] Showing update toast notification...');
         toast.success(`Update available: v${update.version}`, {
           description: 'Click "Check for Updates" in the sidebar to install',
           duration: 5000,
         });
       } else {
-        console.log('[Updater] No updates available');
+        console.log('[Updater] ℹ️ No updates available - running latest version');
         // Only show "latest version" toast when manually checking (not silent)
         if (!silent) {
           toast.info('You are running the latest version', {
@@ -61,7 +68,7 @@ export function useUpdater(): UseUpdaterReturn {
         }
       }
     } catch (error) {
-      console.error('[Updater] Failed to check for updates:', error);
+      console.error('[Updater] ❌ Failed to check for updates:', error);
       // Only show error toast when manually checking (not silent)
       if (!silent) {
         toast.error('Failed to check for updates', {
@@ -70,13 +77,26 @@ export function useUpdater(): UseUpdaterReturn {
       }
     } finally {
       setIsChecking(false);
+      console.log('[Updater] checkForUpdates completed');
     }
-  };
+  }, [currentVersion, setAvailableUpdate]);
 
-  const downloadAndInstall = async () => {
+  const downloadAndInstall = useCallback(async () => {
     if (!updateHandle) {
-      toast.error('No update available to install');
-      return;
+      console.log('[Updater] No update handle available, re-checking for updates...');
+      // Try to re-check for updates if handle is missing
+      try {
+        const update = await check();
+        if (update?.available) {
+          updateHandle = update;
+        } else {
+          toast.error('No update available to install');
+          return;
+        }
+      } catch {
+        toast.error('No update available to install');
+        return;
+      }
     }
 
     setIsDownloading(true);
@@ -119,9 +139,9 @@ export function useUpdater(): UseUpdaterReturn {
       setIsDownloading(false);
       setDownloadProgress(0);
     }
-  };
+  }, []);
 
-  const restartApp = async () => {
+  const restartApp = useCallback(async () => {
     try {
       console.log('[Updater] Restarting application...');
       await relaunch();
@@ -131,7 +151,7 @@ export function useUpdater(): UseUpdaterReturn {
         description: 'Please manually restart the application',
       });
     }
-  };
+  }, []);
 
   return {
     isChecking,

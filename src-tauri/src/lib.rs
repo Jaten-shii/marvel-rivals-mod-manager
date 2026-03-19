@@ -75,13 +75,13 @@ fn greet(name: &str) -> String {
 // Preferences data structure
 // Only contains settings that should be persisted to disk
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppPreferences {
     pub theme: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub font: Option<String>,
-    // Add new persistent preferences here, e.g.:
-    // pub auto_save: bool,
-    // pub language: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_intensity: Option<String>,
 }
 
 impl Default for AppPreferences {
@@ -89,7 +89,7 @@ impl Default for AppPreferences {
         Self {
             theme: "dark-classic".to_string(),
             font: Some("quicksand".to_string()),
-            // Add defaults for new preferences here
+            background_intensity: Some("normal".to_string()),
         }
     }
 }
@@ -635,6 +635,12 @@ async fn migrate_metadata_to_path_ids(app: AppHandle) -> Result<usize, String> {
 }
 
 #[tauri::command]
+async fn migrate_to_costume_folders(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.migrate_to_costume_folders()
+}
+
+#[tauri::command]
 async fn log_total_mods_found(app: AppHandle) -> Result<(), String> {
     let service = get_mod_service(&app)?;
     let mods = service.get_all_mods()?;
@@ -923,15 +929,20 @@ async fn show_in_folder(file_path: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn is_game_running() -> Result<bool, String> {
-    use std::process::Command;
-
     log::info!("Checking if Marvel Rivals is running");
 
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        use std::process::Command;
+
+        // CREATE_NO_WINDOW flag to prevent console window from flashing
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
         // Use tasklist to check for MarvelRivals.exe process
         let output = Command::new("tasklist")
             .args(["/FI", "IMAGENAME eq MarvelGame-Win64-Shipping.exe"])
+            .creation_flags(CREATE_NO_WINDOW)
             .output()
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
 
@@ -948,6 +959,227 @@ async fn is_game_running() -> Result<bool, String> {
         log::warn!("Game detection not supported on this platform");
         Ok(false)
     }
+}
+
+// ===== SKIP INTROS MOD COMMANDS =====
+
+fn get_movies_logo_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let settings = load_app_settings(app)?;
+    let game_dir = settings.game_directory
+        .ok_or("Game directory not configured. Please set it in Settings.")?;
+
+    Ok(game_dir
+        .join("MarvelGame")
+        .join("Marvel")
+        .join("Content")
+        .join("Marvel")
+        .join("MoviesBink")
+        .join("Logo"))
+}
+
+fn get_movies_logo_backup_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let settings = load_app_settings(app)?;
+    let game_dir = settings.game_directory
+        .ok_or("Game directory not configured. Please set it in Settings.")?;
+
+    Ok(game_dir
+        .join("MarvelGame")
+        .join("Marvel")
+        .join("Content")
+        .join("Marvel")
+        .join("MoviesBink")
+        .join("Logo_backup"))
+}
+
+#[tauri::command]
+async fn get_skip_intros_status(app: AppHandle) -> Result<SkipIntrosStatus, String> {
+    let logo_path = get_movies_logo_path(&app)?;
+    let backup_path = get_movies_logo_backup_path(&app)?;
+
+    // If backup exists, skip intros is installed
+    let has_backup = backup_path.exists();
+    let installed = has_backup;
+
+    log::info!("Skip Intros status - installed: {}, has_backup: {}", installed, has_backup);
+
+    Ok(SkipIntrosStatus {
+        installed,
+        has_backup,
+    })
+}
+
+#[tauri::command]
+async fn install_skip_intros(app: AppHandle, zip_path: String) -> Result<(), String> {
+    log::info!("Installing Skip Intros mod from: {}", zip_path);
+
+    let logo_path = get_movies_logo_path(&app)?;
+    let backup_path = get_movies_logo_backup_path(&app)?;
+
+    // Verify Logo folder exists
+    if !logo_path.exists() {
+        return Err(format!("Logo folder not found at {:?}. Is the game installed correctly?", logo_path));
+    }
+
+    // If already installed (backup exists), restore originals first then reinstall
+    // This handles game updates that may have changed the intro videos
+    if backup_path.exists() {
+        log::info!("Skip Intros already installed - restoring originals before reinstall...");
+
+        // Restore backed-up files first
+        fn restore_for_reinstall(backup_dir: &std::path::Path, target_dir: &std::path::Path) -> Result<(), String> {
+            let entries = std::fs::read_dir(backup_dir)
+                .map_err(|e| format!("Failed to read backup directory: {}", e))?;
+
+            for entry in entries {
+                let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+                let path = entry.path();
+                let file_name = entry.file_name();
+                let target_path = target_dir.join(&file_name);
+
+                if path.is_dir() {
+                    restore_for_reinstall(&path, &target_path)?;
+                } else {
+                    std::fs::copy(&path, &target_path)
+                        .map_err(|e| format!("Failed to restore file {:?}: {}", file_name, e))?;
+                }
+            }
+            Ok(())
+        }
+
+        restore_for_reinstall(&backup_path, &logo_path)?;
+
+        // Remove old backup
+        std::fs::remove_dir_all(&backup_path)
+            .map_err(|e| format!("Failed to remove old backup: {}", e))?;
+
+        log::info!("Old installation removed, proceeding with fresh install...");
+    }
+
+    // Create backup directory
+    std::fs::create_dir_all(&backup_path)
+        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+
+    // Open zip file
+    log::info!("Extracting Skip Intros mod...");
+    let zip_file = std::fs::File::open(&zip_path)
+        .map_err(|e| format!("Failed to open zip file: {}", e))?;
+
+    let mut archive = zip::ZipArchive::new(zip_file)
+        .map_err(|e| format!("Failed to read zip archive: {}", e))?;
+
+    // Extract files, backing up originals that will be overwritten
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)
+            .map_err(|e| format!("Failed to read zip entry: {}", e))?;
+
+        let file_path = file.name().to_string();
+
+        // Skip directories and non-Movies content
+        if file.is_dir() {
+            continue;
+        }
+
+        // Extract .bk2 files from the ZIP
+        // The ZIP structure is: Movies/MarvelLogo/REGION/file.bk2
+        // We want to extract the .bk2 files directly to the Logo folder
+        if !file_path.to_lowercase().ends_with(".bk2") {
+            continue;
+        }
+
+        // Get just the filename
+        let file_name = std::path::Path::new(&file_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| format!("Invalid file path in zip: {}", file_path))?;
+
+        let dest_path = logo_path.join(file_name);
+        let backup_file_path = backup_path.join(file_name);
+
+        // If original file exists, back it up first
+        if dest_path.exists() {
+            // Create parent directories in backup
+            if let Some(parent) = backup_file_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+            }
+            // Copy original to backup
+            std::fs::copy(&dest_path, &backup_file_path)
+                .map_err(|e| format!("Failed to backup original file: {}", e))?;
+            log::debug!("Backed up: {:?}", dest_path);
+        }
+
+        // Create parent directories if needed
+        if let Some(parent) = dest_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+
+        // Extract/overwrite file
+        let mut outfile = std::fs::File::create(&dest_path)
+            .map_err(|e| format!("Failed to create file: {}", e))?;
+
+        std::io::copy(&mut file, &mut outfile)
+            .map_err(|e| format!("Failed to extract file: {}", e))?;
+
+        log::debug!("Extracted: {:?}", dest_path);
+    }
+
+    log::info!("Skip Intros mod installed successfully");
+    Ok(())
+}
+
+#[tauri::command]
+async fn uninstall_skip_intros(app: AppHandle) -> Result<(), String> {
+    log::info!("Uninstalling Skip Intros mod");
+
+    let logo_path = get_movies_logo_path(&app)?;
+    let backup_path = get_movies_logo_backup_path(&app)?;
+
+    // Check if backup exists
+    if !backup_path.exists() {
+        return Err("No backup found. Cannot restore original files.".to_string());
+    }
+
+    // Restore backed-up files by copying them back
+    log::info!("Restoring original files from backup...");
+
+    fn restore_recursive(backup_dir: &std::path::Path, target_dir: &std::path::Path) -> Result<u32, String> {
+        let mut restored_count = 0;
+
+        let entries = std::fs::read_dir(backup_dir)
+            .map_err(|e| format!("Failed to read backup directory: {}", e))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+            let path = entry.path();
+            let file_name = entry.file_name();
+            let target_path = target_dir.join(&file_name);
+
+            if path.is_dir() {
+                // Recursively restore subdirectories
+                restored_count += restore_recursive(&path, &target_path)?;
+            } else {
+                // Restore file by copying from backup
+                std::fs::copy(&path, &target_path)
+                    .map_err(|e| format!("Failed to restore file {:?}: {}", file_name, e))?;
+                log::debug!("Restored: {:?}", target_path);
+                restored_count += 1;
+            }
+        }
+
+        Ok(restored_count)
+    }
+
+    let restored = restore_recursive(&backup_path, &logo_path)?;
+    log::info!("Restored {} file(s)", restored);
+
+    // Remove backup directory
+    log::info!("Cleaning up backup directory...");
+    std::fs::remove_dir_all(&backup_path)
+        .map_err(|e| format!("Failed to remove backup directory: {}", e))?;
+
+    log::info!("Skip Intros mod uninstalled successfully");
+    Ok(())
 }
 
 // Create the native menu system
@@ -1173,9 +1405,14 @@ pub fn run() {
             organize_mods,
             merge_duplicate_folders,
             migrate_metadata_to_path_ids,
+            migrate_to_costume_folders,
             log_total_mods_found,
             get_metadata_directory,
-            copy_metadata_from_old_id
+            copy_metadata_from_old_id,
+            // Skip Intros mod
+            get_skip_intros_status,
+            install_skip_intros,
+            uninstall_skip_intros
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

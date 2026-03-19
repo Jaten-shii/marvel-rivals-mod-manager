@@ -32,6 +32,10 @@ dist-ssr
 **/*.key
 **/*.key.pub
 
+# Rust build artifacts (can get massive - 10GB+ easily)
+src-tauri/target/
+target/
+
 # Environment variables with secrets
 .env.local
 .env.*.local
@@ -59,3 +63,6 @@ GEMINI.md
 # AI helper files and setup documentation
 git-commands.txt
 INSTALLER_SETUP.md
+
+# Release notes (generated for each version)
+RELEASE_NOTES_*.md

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { ThemeProviderContext, type Theme } from '@/lib/theme-context'
 import { usePreferences } from '@/services/preferences'
+import type { BackgroundIntensity } from '@/types/preferences'
 
 interface ThemeProviderProps {
   children: React.ReactNode
@@ -44,6 +45,28 @@ export function ThemeProvider({
       console.log('[ThemeProvider] Applied font:', preferences.font)
     }
   }, [preferences?.font])
+
+  // Apply background intensity preference on startup and when it changes
+  useLayoutEffect(() => {
+    const root = window.document.documentElement
+    const intensity: BackgroundIntensity = preferences?.backgroundIntensity || 'normal'
+
+    console.log('[ThemeProvider] Background intensity effect running')
+    console.log('[ThemeProvider] preferences:', preferences)
+    console.log('[ThemeProvider] backgroundIntensity from preferences:', preferences?.backgroundIntensity)
+    console.log('[ThemeProvider] intensity to apply:', intensity)
+    console.log('[ThemeProvider] Classes before:', root.classList.toString())
+
+    // Remove existing intensity classes
+    root.classList.remove('bg-dim', 'bg-black')
+
+    // Apply intensity class if not normal
+    if (intensity !== 'normal') {
+      root.classList.add(`bg-${intensity}`)
+    }
+
+    console.log('[ThemeProvider] Classes after:', root.classList.toString())
+  }, [preferences?.backgroundIntensity])
 
   useEffect(() => {
     const root = window.document.documentElement

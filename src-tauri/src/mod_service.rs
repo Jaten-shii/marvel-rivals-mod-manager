@@ -1,7 +1,7 @@
 use crate::types::*;
 use chrono::Utc;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -39,10 +39,51 @@ impl ModService {
         }
     }
 
+    /// Build an index of all thumbnail files for fast lookup during scanning.
+    /// Maps lowercase filename (without extension) -> full path.
+    fn build_thumbnail_index(&self) -> HashMap<String, PathBuf> {
+        let mut index = HashMap::new();
+        let thumb_extensions: HashSet<&str> = ["webp", "png", "jpg", "jpeg"].iter().copied().collect();
+
+        // Index metadata directory thumbnails (new format: {mod_id}_thumbnail.png)
+        if let Ok(entries) = fs::read_dir(&self.metadata_directory) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if thumb_extensions.contains(ext.to_lowercase().as_str()) {
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            index.insert(stem.to_lowercase(), path);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Index thumbnails directory
+        if let Ok(entries) = fs::read_dir(&self.thumbnails_directory) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if thumb_extensions.contains(ext.to_lowercase().as_str()) {
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            // Don't overwrite metadata dir entries (higher priority)
+                            index.entry(stem.to_lowercase()).or_insert(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        index
+    }
+
     /// Get all mods in the mods directory
     pub fn get_all_mods(&self) -> Result<Vec<ModInfo>, String> {
         self.ensure_directory_exists(&self.mods_directory)?;
         self.ensure_directory_exists(&self.disabled_mods_directory)?;
+
+        // Build thumbnail index once instead of per-mod file existence checks
+        let thumbnail_index = self.build_thumbnail_index();
 
         let mut mods = Vec::new();
         let mut processed_paths = HashSet::new();
@@ -55,6 +96,7 @@ impl ModService {
             &mut processed_paths,
             &mut processed_ids,
             true,
+            &thumbnail_index,
         )?;
 
         let active_count = mods.len();
@@ -66,6 +108,7 @@ impl ModService {
             &mut processed_paths,
             &mut processed_ids,
             false,
+            &thumbnail_index,
         )?;
 
         // Sort by name
@@ -94,7 +137,7 @@ impl ModService {
             .map_err(|e| format!("Failed to copy mod file: {}", e))?;
 
         // Create mod info
-        self.create_mod_info(&dest_path, file_name, true)
+        self.create_mod_info(&dest_path, file_name, true, None)
             .ok_or_else(|| "Failed to create mod info".to_string())
     }
 
@@ -219,7 +262,7 @@ impl ModService {
         }
 
         // Create mod info
-        let mod_info = self.create_mod_info(&dest_path, file_name, true)
+        let mod_info = self.create_mod_info(&dest_path, file_name, true, None)
             .ok_or_else(|| "Failed to create mod info".to_string())?;
 
         // CRITICAL FIX: Save the default metadata immediately after installation
@@ -247,15 +290,24 @@ impl ModService {
             let is_loose = parent_dir == self.mods_directory;
 
             if is_loose {
-                // Build folder structure - all categories include character subfolder when character is specified
+                let old_mod_id = mod_info.id.clone();
+
+                // Build folder structure: Category/Character/ModName/ or Category/Character/ModName-Costume/ if costume specified
                 let mut folder_parts = vec![mod_info.category.to_string()];
 
                 // Include character subfolder if character is specified
                 if let Some(ref character) = mod_info.character {
-                    folder_parts.push(character.to_string());
+                    folder_parts.push(sanitize_folder_name(&character.to_string()));
                 }
 
-                folder_parts.push(sanitize_folder_name(&mod_info.name));
+                // Include costume in folder name if specified to avoid conflicts
+                // e.g., "Cool-Mod-Phoenix-Demon" instead of just "Cool-Mod"
+                let folder_name = if let Some(ref costume) = mod_info.metadata.costume {
+                    format!("{}-{}", mod_info.name, costume)
+                } else {
+                    mod_info.name.clone()
+                };
+                folder_parts.push(sanitize_folder_name(&folder_name));
 
                 let target_folder = folder_parts.iter()
                     .fold(self.mods_directory.clone(), |path, part| path.join(part));
@@ -263,12 +315,51 @@ impl ModService {
                 fs::create_dir_all(&target_folder)
                     .map_err(|e| format!("Failed to create target directory: {}", e))?;
 
-                for file_path in &mod_info.associated_files {
-                    let file_name = file_path.file_name()
+                // Find the main .pak file for ID generation
+                let pak_file = mod_info.associated_files.iter()
+                    .find(|f| f.extension().and_then(|e| e.to_str()) == Some("pak"));
+
+                let mut new_pak_path: Option<PathBuf> = None;
+
+                for associated_file in &mod_info.associated_files {
+                    let file_name = associated_file.file_name()
                         .ok_or("Invalid file name")?;
                     let target_path = target_folder.join(file_name);
-                    fs::rename(file_path, &target_path)
+                    fs::rename(associated_file, &target_path)
                         .map_err(|e| format!("Failed to move file: {}", e))?;
+
+                    // Track the new pak file location
+                    if Some(associated_file) == pak_file {
+                        new_pak_path = Some(target_path);
+                    }
+                }
+
+                // Migrate metadata to new ID (path changed)
+                if let Some(new_path) = new_pak_path {
+                    let file_name = new_path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("");
+                    let new_mod_id = self.generate_mod_id_from_path(&new_path, file_name);
+
+                    if new_mod_id != old_mod_id {
+                        // Save metadata under new ID
+                        if let Err(e) = self.save_metadata(&new_mod_id, &mod_info.metadata) {
+                            log::warn!("Failed to save metadata for organized mod: {}", e);
+                        } else {
+                            log::info!("   📝 Migrated metadata: {} → {}", old_mod_id, new_mod_id);
+                        }
+
+                        // Migrate thumbnail if exists
+                        let old_thumb = self.metadata_directory.join(format!("{}_thumbnail.png", old_mod_id));
+                        if old_thumb.exists() {
+                            let new_thumb = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
+                            let _ = fs::copy(&old_thumb, &new_thumb);
+                            let _ = fs::remove_file(&old_thumb);
+                        }
+
+                        // Delete old metadata
+                        let _ = self.delete_metadata(&old_mod_id);
+                    }
                 }
 
                 organized_count += 1;
@@ -491,36 +582,171 @@ impl ModService {
     }
 
     /// Enable or disable a mod
+    /// Preserves metadata and folder structure across enable/disable operations
     pub fn enable_mod(&self, mod_id: &str, enabled: bool) -> Result<(), String> {
+        log::info!("[enable_mod] {} mod: {}", if enabled { "Enabling" } else { "Disabling" }, mod_id);
+
+        // Step 1: Get current mod info and load existing metadata
         let mod_info = self
             .find_mod_by_id(mod_id)?
             .ok_or("Mod not found")?;
 
-        let _source_dir = if enabled {
+        // Load metadata with fallback - create from mod_info if not found
+        // This ensures we never lose metadata and the operation can proceed
+        let mut metadata = match self.load_metadata(mod_id)? {
+            Some(m) => m,
+            None => {
+                log::warn!("[enable_mod] Metadata not found for {}, creating from mod_info", mod_id);
+                // Create metadata from the mod_info we already have
+                let mut new_metadata = mod_info.metadata.clone();
+
+                // Ensure original_folder_path is captured from current location
+                let current_file_path = PathBuf::from(&mod_info.file_path);
+                if let Some(current_parent) = current_file_path.parent() {
+                    // Try to extract relative path from either mods or disabled-mods directory
+                    if let Ok(relative) = current_parent.strip_prefix(&self.mods_directory) {
+                        new_metadata.original_folder_path = Some(relative.to_string_lossy().to_string());
+                    } else if let Ok(relative) = current_parent.strip_prefix(&self.disabled_mods_directory) {
+                        new_metadata.original_folder_path = Some(relative.to_string_lossy().to_string());
+                    }
+                }
+
+                // Save the newly created metadata immediately
+                self.save_metadata(mod_id, &new_metadata)?;
+                log::info!("[enable_mod] Created and saved fallback metadata for {}", mod_id);
+                new_metadata
+            }
+        };
+
+        log::info!("[enable_mod] Current location: {:?}", mod_info.file_path);
+        log::info!("[enable_mod] Original folder path in metadata: {:?}", metadata.original_folder_path);
+
+        // Step 2: Store current folder structure in metadata if not already stored
+        // Extract the relative path from ~mods or disabled-mods directory
+        let current_file_path = PathBuf::from(&mod_info.file_path);
+        let current_parent = current_file_path.parent().ok_or("No parent directory")?;
+
+        // Calculate relative path from base directory
+        let base_dir = if enabled {
             &self.disabled_mods_directory
         } else {
             &self.mods_directory
         };
-        let dest_dir = if enabled {
-            &self.mods_directory
+
+        // If metadata doesn't have original_folder_path and mod is currently in a subfolder, store it
+        // FIX: Check BOTH mods_directory AND disabled_mods_directory for relative path
+        if metadata.original_folder_path.is_none() && current_parent != base_dir {
+            // Try mods_directory first
+            if let Ok(relative_path) = current_parent.strip_prefix(&self.mods_directory) {
+                metadata.original_folder_path = Some(relative_path.to_string_lossy().to_string());
+                log::info!("[enable_mod] Stored original folder path (from mods): {:?}", metadata.original_folder_path);
+            }
+            // Then try disabled_mods_directory
+            else if let Ok(relative_path) = current_parent.strip_prefix(&self.disabled_mods_directory) {
+                metadata.original_folder_path = Some(relative_path.to_string_lossy().to_string());
+                log::info!("[enable_mod] Stored original folder path (from disabled): {:?}", metadata.original_folder_path);
+            }
+        }
+
+        // Step 3: Calculate destination path
+        let dest_folder = if enabled {
+            // Enabling: restore to original folder or organize by category/character
+            if let Some(ref original_path) = metadata.original_folder_path {
+                // Restore to original folder structure
+                self.mods_directory.join(original_path)
+            } else {
+                // No original path stored - organize by category, character, and costume
+                let mut folder_parts = vec![metadata.category.to_string()];
+                if let Some(ref character) = metadata.character {
+                    folder_parts.push(sanitize_folder_name(&character.to_string()));
+                }
+                // Include costume in folder name if specified to avoid conflicts
+                let folder_name = if let Some(ref costume) = metadata.costume {
+                    format!("{}-{}", metadata.title, costume)
+                } else {
+                    metadata.title.clone()
+                };
+                folder_parts.push(sanitize_folder_name(&folder_name));
+
+                let organized_path = folder_parts.join("/");
+                self.mods_directory.join(organized_path)
+            }
         } else {
-            &self.disabled_mods_directory
+            // Disabling: move to disabled-mods preserving structure
+            if let Some(ref original_path) = metadata.original_folder_path {
+                // Preserve folder structure in disabled-mods
+                self.disabled_mods_directory.join(original_path)
+            } else {
+                // Move to root of disabled-mods
+                self.disabled_mods_directory.clone()
+            }
         };
 
-        self.ensure_directory_exists(dest_dir)?;
+        log::info!("[enable_mod] Destination folder: {:?}", dest_folder);
 
-        // Move all associated files
+        // Step 4: Create destination folder and move files
+        fs::create_dir_all(&dest_folder)
+            .map_err(|e| format!("Failed to create destination folder: {}", e))?;
+
+        let mut new_file_paths = Vec::new();
         for file_path in &mod_info.associated_files {
             let file_name = file_path
                 .file_name()
                 .ok_or("Invalid file path")?;
 
-            let dest_path = dest_dir.join(file_name);
+            let dest_path = dest_folder.join(file_name);
 
             fs::rename(file_path, &dest_path)
                 .map_err(|e| format!("Failed to move file: {}", e))?;
+
+            new_file_paths.push(dest_path);
         }
 
+        log::info!("[enable_mod] Moved {} files", new_file_paths.len());
+
+        // Step 5: Calculate new mod ID from new path
+        let new_main_file = new_file_paths.iter()
+            .find(|p| p.extension().and_then(|e| e.to_str()) == Some("pak"))
+            .ok_or("No .pak file found in moved files")?;
+
+        let file_name = new_main_file
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or("Invalid file name")?;
+
+        let clean_file_name = file_name.replace(".disabled", "");
+        let new_mod_id = self.generate_mod_id_from_path(new_main_file, &clean_file_name);
+
+        log::info!("[enable_mod] Old mod ID: {}", mod_id);
+        log::info!("[enable_mod] New mod ID: {}", new_mod_id);
+
+        // Step 6: Save metadata under new mod ID (if ID changed)
+        if new_mod_id != mod_id {
+            self.save_metadata(&new_mod_id, &metadata)?;
+            log::info!("[enable_mod] Saved metadata under new ID");
+
+            // Step 7: Migrate thumbnail from old ID to new ID
+            let old_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", mod_id));
+            if old_thumb_path.exists() {
+                let new_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
+                if let Err(e) = fs::copy(&old_thumb_path, &new_thumb_path) {
+                    log::warn!("[enable_mod] Failed to migrate thumbnail: {}", e);
+                } else {
+                    log::info!("[enable_mod] Migrated thumbnail to new ID");
+                    // Delete old thumbnail
+                    let _ = fs::remove_file(&old_thumb_path);
+                }
+            }
+
+            // Step 8: Delete old metadata file
+            let _ = self.delete_metadata(mod_id);
+            log::info!("[enable_mod] Deleted old metadata");
+        } else {
+            // Same ID - just update metadata in place
+            self.save_metadata(mod_id, &metadata)?;
+        }
+
+        log::info!("[enable_mod] Successfully {} mod", if enabled { "enabled" } else { "disabled" });
         Ok(())
     }
 
@@ -658,6 +884,110 @@ impl ModService {
         Ok(())
     }
 
+    /// Migrate existing mods to the new costume-based folder structure
+    /// This renames folders from "ModName" to "ModName-Costume" when a costume is set
+    /// Returns the number of mods migrated
+    pub fn migrate_to_costume_folders(&self) -> Result<usize, String> {
+        log::info!("🔍 Checking for mods needing costume folder migration...");
+        let all_mods = self.get_all_mods()?;
+        let mut migrated_count = 0;
+
+        for mod_info in all_mods {
+            // Skip if no costume is set - no migration needed
+            let costume = match &mod_info.metadata.costume {
+                Some(c) => c.clone(),
+                None => continue,
+            };
+
+            // Skip if mod is loose (not in a folder)
+            let file_path = &mod_info.file_path;
+            let parent_dir = match file_path.parent() {
+                Some(p) => p,
+                None => continue,
+            };
+
+            if parent_dir == self.mods_directory || parent_dir == self.disabled_mods_directory {
+                continue; // Loose mod, will be organized separately
+            }
+
+            // Get current folder name
+            let current_folder_name = match parent_dir.file_name().and_then(|n| n.to_str()) {
+                Some(name) => name.to_string(),
+                None => continue,
+            };
+
+            // Calculate expected folder name with costume
+            let expected_folder_name = sanitize_folder_name(&format!("{}-{}", mod_info.name, costume));
+
+            // Skip if folder already has costume suffix
+            if current_folder_name == expected_folder_name {
+                continue;
+            }
+
+            // Skip if the folder name already ends with the costume name (already migrated)
+            let costume_suffix = format!("-{}", sanitize_folder_name(&costume));
+            if current_folder_name.ends_with(&costume_suffix) {
+                continue;
+            }
+
+            log::info!("   🔄 Migrating: {} → {}", current_folder_name, expected_folder_name);
+
+            // Calculate new folder path
+            let parent_of_mod_folder = parent_dir.parent().ok_or("Invalid folder structure")?;
+            let new_folder = parent_of_mod_folder.join(&expected_folder_name);
+
+            // Check if target folder already exists
+            if new_folder.exists() {
+                log::warn!("      ⚠️  Target folder already exists, skipping: {:?}", new_folder);
+                continue;
+            }
+
+            // Rename the folder
+            match fs::rename(parent_dir, &new_folder) {
+                Ok(_) => {
+                    log::info!("      ✅ Folder renamed successfully");
+
+                    // Migrate metadata to new ID
+                    let new_pak_path = new_folder.join(file_path.file_name().unwrap());
+                    let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    let new_mod_id = self.generate_mod_id_from_path(&new_pak_path, file_name);
+
+                    if new_mod_id != mod_info.id {
+                        // Save metadata under new ID
+                        if let Err(e) = self.save_metadata(&new_mod_id, &mod_info.metadata) {
+                            log::warn!("      ⚠️  Failed to save metadata: {}", e);
+                        }
+
+                        // Migrate thumbnail
+                        let old_thumb = self.metadata_directory.join(format!("{}_thumbnail.png", mod_info.id));
+                        if old_thumb.exists() {
+                            let new_thumb = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
+                            let _ = fs::copy(&old_thumb, &new_thumb);
+                            let _ = fs::remove_file(&old_thumb);
+                        }
+
+                        // Delete old metadata
+                        let _ = self.delete_metadata(&mod_info.id);
+                        log::info!("      ✅ Metadata migrated: {} → {}", mod_info.id, new_mod_id);
+                    }
+
+                    migrated_count += 1;
+                }
+                Err(e) => {
+                    log::warn!("      ⚠️  Failed to rename folder: {}", e);
+                }
+            }
+        }
+
+        if migrated_count > 0 {
+            log::info!("   ✅ Migrated {} mod(s) to costume folder structure", migrated_count);
+        } else {
+            log::info!("   ✅ All mods already using costume folder structure");
+        }
+
+        Ok(migrated_count)
+    }
+
     /// Update mod metadata
     pub fn update_metadata(
         &self,
@@ -735,7 +1065,14 @@ impl ModService {
                 folder_parts.push(sanitize_folder_name(&character.to_string()));
             }
 
-            folder_parts.push(sanitize_folder_name(&metadata.title));
+            // Include costume in folder name if specified to avoid conflicts
+            // e.g., "Cool-Mod-Phoenix-Demon" instead of just "Cool-Mod"
+            let folder_name = if let Some(ref costume) = metadata.costume {
+                format!("{}-{}", metadata.title, costume)
+            } else {
+                metadata.title.clone()
+            };
+            folder_parts.push(sanitize_folder_name(&folder_name));
             let new_folder = folder_parts.iter()
                 .fold(self.mods_directory.clone(), |path, part| path.join(part));
 
@@ -851,7 +1188,7 @@ impl ModService {
 
                     // Return the mod info with new ID
                     let is_enabled = !file_name_str.ends_with(".disabled");
-                    return self.create_mod_info(&new_file_path, &file_name_str, is_enabled)
+                    return self.create_mod_info(&new_file_path, &file_name_str, is_enabled, None)
                         .ok_or_else(|| "Failed to create mod info after folder rename".to_string());
                 } else {
                     log::info!("   ℹ️  Folder name is already correct");
@@ -920,6 +1257,7 @@ impl ModService {
         processed_paths: &mut HashSet<PathBuf>,
         processed_ids: &mut HashSet<String>,
         is_enabled: bool,
+        thumbnail_index: &HashMap<String, PathBuf>,
     ) -> Result<(), String> {
         let mut file_count = 0;
         let mut pak_count = 0;
@@ -948,7 +1286,7 @@ impl ModService {
 
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-            if let Some(mod_info) = self.create_mod_info(path, file_name, is_enabled) {
+            if let Some(mod_info) = self.create_mod_info(path, file_name, is_enabled, Some(thumbnail_index)) {
                 if processed_ids.contains(&mod_info.id) {
                     continue;
                 }
@@ -964,7 +1302,7 @@ impl ModService {
         Ok(())
     }
 
-    fn create_mod_info(&self, file_path: &Path, file_name: &str, is_enabled: bool) -> Option<ModInfo> {
+    fn create_mod_info(&self, file_path: &Path, file_name: &str, is_enabled: bool, thumbnail_index: Option<&HashMap<String, PathBuf>>) -> Option<ModInfo> {
         let metadata_result = fs::metadata(file_path);
         if metadata_result.is_err() {
             return None;
@@ -975,37 +1313,76 @@ impl ModService {
         // Use path-based ID to prevent duplicates when same mod installed multiple times
         let mod_id = self.generate_mod_id_from_path(file_path, &clean_file_name);
 
-        // Load metadata if exists
-        let metadata = self.load_metadata(&mod_id).ok().flatten().unwrap_or_else(|| {
-            let category = self.detect_category_from_path(file_path, &clean_file_name);
-            let character = self.detect_character_from_path(file_path, &clean_file_name);
-            let now = Utc::now();
+        // Load metadata if exists, or create and SAVE new metadata
+        // This ensures every mod always has persisted metadata for enable/disable operations
+        let (metadata, is_new_metadata) = match self.load_metadata(&mod_id).ok().flatten() {
+            Some(m) => (m, false),
+            None => {
+                let category = self.detect_category_from_path(file_path, &clean_file_name);
+                let character = self.detect_character_from_path(file_path, &clean_file_name);
+                let now = Utc::now();
 
-            ModMetadata {
-                title: self.extract_mod_name(&clean_file_name),
-                description: String::new(),
-                author: None,
-                version: None,
-                tags: Vec::new(),
-                category,
-                character,
-                costume: None,
-                is_favorite: false,
-                is_nsfw: false,
-                created_at: now,
-                updated_at: now,
-                install_date: now,
-                profile_ids: None,
-                nexus_mod_id: None,
-                nexus_file_id: None,
-                nexus_version: None,
+                // Extract and store original folder path for enable/disable operations
+                let original_folder_path = if let Some(parent) = file_path.parent() {
+                    // Only store if the mod is in a subfolder (not root of ~mods or disabled-mods)
+                    if parent != &self.mods_directory && parent != &self.disabled_mods_directory {
+                        // Try to get relative path from ~mods directory
+                        if let Ok(relative) = parent.strip_prefix(&self.mods_directory) {
+                            Some(relative.to_string_lossy().to_string())
+                        } else if let Ok(relative) = parent.strip_prefix(&self.disabled_mods_directory) {
+                            Some(relative.to_string_lossy().to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                (ModMetadata {
+                    title: self.extract_mod_name(&clean_file_name),
+                    subtitle: None,
+                    description: String::new(),
+                    author: None,
+                    version: None,
+                    tags: Vec::new(),
+                    category,
+                    character,
+                    costume: None,
+                    is_favorite: false,
+                    is_nsfw: false,
+                    created_at: now,
+                    updated_at: now,
+                    install_date: now,
+                    profile_ids: None,
+                    nexus_mod_id: None,
+                    nexus_file_id: None,
+                    nexus_version: None,
+                    original_folder_path,
+                }, true)
             }
-        });
+        };
+
+        // Auto-save new metadata to ensure it persists for enable/disable operations
+        // This prevents the "Metadata not found" error when toggling mods
+        if is_new_metadata {
+            if let Err(e) = self.save_metadata(&mod_id, &metadata) {
+                log::warn!("[create_mod_info] Failed to auto-save metadata for {}: {}", mod_id, e);
+            } else {
+                log::debug!("[create_mod_info] Auto-saved metadata for new mod: {}", mod_id);
+            }
+        }
 
         let associated_files = self.find_associated_files(file_path).ok()?;
 
-        // Look for thumbnail (check mod_id first, then filename)
-        let thumbnail_path = self.find_thumbnail(&mod_id, &clean_file_name);
+        // Look for thumbnail using cached index if available, otherwise fall back to disk checks
+        let thumbnail_path = if let Some(index) = thumbnail_index {
+            self.find_thumbnail_cached(&mod_id, &clean_file_name, index)
+        } else {
+            self.find_thumbnail(&mod_id, &clean_file_name)
+        };
 
         Some(ModInfo {
             id: mod_id.clone(),
@@ -1023,6 +1400,37 @@ impl ModService {
             associated_files,
             metadata,
         })
+    }
+
+    /// Fast thumbnail lookup using pre-built index (HashMap lookups instead of filesystem exists() calls)
+    fn find_thumbnail_cached(&self, mod_id: &str, file_name: &str, index: &HashMap<String, PathBuf>) -> Option<PathBuf> {
+        // Check new format: {mod_id}_thumbnail
+        let new_key = format!("{}_thumbnail", mod_id).to_lowercase();
+        if let Some(path) = index.get(&new_key) {
+            return Some(path.clone());
+        }
+
+        // Check mod_id-based thumbnails
+        if let Some(path) = index.get(&mod_id.to_lowercase()) {
+            return Some(path.clone());
+        }
+
+        // Check filename-based thumbnails
+        let base_name = Path::new(file_name)
+            .file_stem()
+            .and_then(|s| s.to_str())?;
+
+        if let Some(path) = index.get(&base_name.to_lowercase()) {
+            return Some(path.clone());
+        }
+
+        // Try with _P removed
+        let alt_name = base_name.replace("_P", "").to_lowercase();
+        if let Some(path) = index.get(&alt_name) {
+            return Some(path.clone());
+        }
+
+        None
     }
 
     fn find_thumbnail(&self, mod_id: &str, file_name: &str) -> Option<PathBuf> {

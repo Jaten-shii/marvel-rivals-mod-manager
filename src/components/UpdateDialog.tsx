@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
 import { useUIStore } from '../stores';
 import { useUpdater } from '../hooks/useUpdater';
-import { Download, RefreshCw, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, RefreshCw, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 
 export function UpdateDialog() {
   const { updateDialogOpen, setUpdateDialogOpen } = useUIStore();
@@ -21,10 +21,8 @@ export function UpdateDialog() {
 
   const hasCheckedInDialog = useRef(false);
 
-  // Auto-check for updates when dialog opens (only once per dialog session)
   useEffect(() => {
     if (updateDialogOpen) {
-      // Reset check flag when dialog opens
       hasCheckedInDialog.current = false;
     }
   }, [updateDialogOpen]);
@@ -32,7 +30,7 @@ export function UpdateDialog() {
   useEffect(() => {
     if (updateDialogOpen && !availableUpdate && !isChecking && !hasCheckedInDialog.current) {
       hasCheckedInDialog.current = true;
-      checkForUpdates(false); // Explicitly not silent - show toast
+      checkForUpdates(false);
     }
   }, [updateDialogOpen, availableUpdate, isChecking]);
 
@@ -47,7 +45,6 @@ export function UpdateDialog() {
   const formatChangelog = (body: string | null) => {
     if (!body) return null;
 
-    // Enhanced markdown-to-HTML conversion for changelog text
     const lines = body.split('\n');
     const elements: React.JSX.Element[] = [];
 
@@ -56,71 +53,56 @@ export function UpdateDialog() {
       if (!line) continue;
       const trimmed = line.trim();
 
-      // Skip completely empty lines
       if (trimmed === '') {
         elements.push(<div key={i} className="h-2" />);
         continue;
       }
 
-      // Handle headers with triple ###
       if (trimmed.match(/^###\s+/)) {
         const text = trimmed.replace(/^###\s+/, '');
         elements.push(
-          <h3 key={i} className="text-base font-semibold mt-4 mb-2 text-foreground/90">
-            {text}
-          </h3>
+          <h3 key={i} className="text-sm font-semibold mt-4 mb-2 text-foreground/90">{text}</h3>
         );
         continue;
       }
 
-      // Handle headers with double ##
       if (trimmed.match(/^##\s+/)) {
         const text = trimmed.replace(/^##\s+/, '');
         elements.push(
-          <h2 key={i} className="text-lg font-bold mt-6 mb-3 text-foreground border-b border-border/50 pb-2">
-            {text}
-          </h2>
+          <h2 key={i} className="text-base font-bold mt-5 mb-2 text-foreground">{text}</h2>
         );
         continue;
       }
 
-      // Handle headers with single #
       if (trimmed.match(/^#\s+/) && !trimmed.startsWith('##')) {
         const text = trimmed.replace(/^#\s+/, '');
         elements.push(
-          <h1 key={i} className="text-xl font-bold mt-4 mb-3 text-foreground">
-            {text}
-          </h1>
+          <h1 key={i} className="text-lg font-bold mt-4 mb-3 text-foreground">{text}</h1>
         );
         continue;
       }
 
-      // Handle list items
       if (trimmed.match(/^[-*]\s+/)) {
         const cleanedText = trimmed
           .replace(/^[-*]\s+/, '')
           .replace(/^\*\*(.+?)\*\*:?\s*/, '$1: ')
           .replace(/\*\*(.+?)\*\*/g, '$1');
         elements.push(
-          <li key={i} className="ml-6 text-sm text-foreground/80 leading-relaxed mb-1 list-disc">
-            {cleanedText}
-          </li>
+          <li key={i} className="ml-5 text-sm text-foreground/70 leading-relaxed mb-1 list-disc">{cleanedText}</li>
         );
         continue;
       }
 
-      // Handle regular text with bold markdown
       if (trimmed.includes('**')) {
         const styledText = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
         elements.push(
-          <p key={i} className="text-sm text-foreground/80 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: styledText }} />
+          <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: styledText }} />
         );
         continue;
       }
 
-      // Regular text
       elements.push(
-        <p key={i} className="text-sm text-foreground/80 leading-relaxed mb-2">{trimmed}</p>
+        <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2">{trimmed}</p>
       );
     }
 
@@ -131,138 +113,153 @@ export function UpdateDialog() {
 
   return (
     <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-      <DialogContent className="!max-w-5xl w-[85vw]" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif' }}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Check for Updates
-          </DialogTitle>
-          <DialogDescription>
-            Current version: v{currentVersion}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Checking State */}
-          {isChecking && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="w-12 h-12 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Checking for updates...</p>
+      <DialogContent className="!max-w-2xl w-[85vw] p-0 gap-0 rounded-2xl overflow-hidden" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif' }}>
+        <div className="px-6 pt-6 pb-5 border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <RefreshCw className="w-5 h-5 text-primary" />
             </div>
-          )}
-
-          {/* No Update Available */}
-          {!isChecking && !availableUpdate && !updateInstalled && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
-              </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold">You're up to date!</h3>
-                <p className="text-sm text-muted-foreground">
-                  You are running the latest version (v{currentVersion})
-                </p>
-              </div>
-              <Button
-                onClick={() => checkForUpdates()}
-                className="gap-2 bg-[#191F24] hover:bg-primary/20 text-foreground hover:text-primary border border-border hover:border-primary/40 transition-all duration-200"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Check Again
-              </Button>
+            <div>
+              <DialogTitle className="text-xl font-bold tracking-tight">Check for Updates</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                Current version: v{currentVersion}
+              </DialogDescription>
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* Update Available */}
-          {!isChecking && availableUpdate && !updateInstalled && (
-            <div className="space-y-4">
-              {/* Update Header */}
-              <div className="flex items-start gap-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="w-6 h-6 text-blue-500" />
+        {/* Checking State */}
+        {isChecking && (
+          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-4" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both' }}>
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>Checking for updates...</p>
+          </div>
+        )}
+
+        {/* No Update Available */}
+        {!isChecking && !availableUpdate && !updateInstalled && (
+          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-6">
+            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both, pulse-glow 3s ease-in-out 600ms infinite' }}>
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            </div>
+            <div className="text-center space-y-1.5" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>
+              <h3 className="text-xl font-bold">You're up to date!</h3>
+              <p className="text-sm text-muted-foreground">
+                Running the latest version
+              </p>
+            </div>
+            <button
+              onClick={() => checkForUpdates()}
+              className="group flex items-center gap-2.5 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all duration-200"
+              style={{ animation: 'metadata-fade-in 300ms ease-out 400ms both' }}
+            >
+              <RefreshCw className="w-4 h-4 transition-transform duration-500 group-hover:rotate-180" />
+              Check Again
+            </button>
+          </div>
+        )}
+
+        {/* Update Available */}
+        {!isChecking && availableUpdate && !updateInstalled && (
+          <div className="space-y-0" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
+            {/* Update banner */}
+            <div className="mx-6 p-4 rounded-xl bg-primary/8 border border-primary/15">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-6 h-6 text-primary" />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <h3 className="text-lg font-semibold text-blue-500">Update Available</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Version {availableUpdate.version} is now available
-                  </p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-foreground">
+                    v{availableUpdate.version} Available
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Released {formatDate(availableUpdate.date)}
                   </p>
                 </div>
               </div>
-
-              {/* Changelog */}
-              {availableUpdate.body && (
-                <div className="border border-border rounded-lg p-4">
-                  <h4 className="text-sm font-semibold mb-3 text-foreground">What's New</h4>
-                  <ScrollArea className="h-64">
-                    <div className="max-w-none pr-4">
-                      {formatChangelog(availableUpdate.body)}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-
-              {/* Download Progress */}
-              {isDownloading && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Downloading update...</span>
-                    <span className="font-medium">{downloadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-primary h-full transition-all duration-300"
-                      style={{ width: `${downloadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>
-                  Later
-                </Button>
-                {isDownloading ? (
-                  <Button disabled className="gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Downloading...
-                  </Button>
-                ) : (
-                  <Button onClick={downloadAndInstall} className="gap-2">
-                    <Download className="w-4 h-4" />
-                    Download & Install
-                  </Button>
-                )}
-              </div>
             </div>
-          )}
 
-          {/* Update Installed - Ready to Restart */}
-          {updateInstalled && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
+            {/* Changelog */}
+            {availableUpdate.body && (
+              <div className="px-6 pt-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">What's New</h4>
+                <ScrollArea className="h-52">
+                  <div className="pr-4 rounded-xl bg-muted/15 p-4">
+                    {formatChangelog(availableUpdate.body)}
+                  </div>
+                </ScrollArea>
               </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold">Update Installed!</h3>
-                <p className="text-sm text-muted-foreground">
-                  Restart the app to apply the update
-                </p>
+            )}
+
+            {/* Download Progress */}
+            {isDownloading && (
+              <div className="px-6 pt-4 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Downloading...</span>
+                  <span className="font-bold text-foreground">{downloadProgress}%</span>
+                </div>
+                <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>
-                  Restart Later
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={() => setUpdateDialogOpen(false)}
+                className="rounded-xl border-border/40"
+              >
+                Later
+              </Button>
+              {isDownloading ? (
+                <Button disabled className="gap-2 rounded-xl">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Downloading...
                 </Button>
-                <Button onClick={restartApp} className="gap-2">
-                  <RefreshCw className="w-4 h-4" />
-                  Restart Now
+              ) : (
+                <Button onClick={downloadAndInstall} className="gap-2 rounded-xl">
+                  <Download className="w-4 h-4" />
+                  Download & Install
                 </Button>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Update Installed */}
+        {updateInstalled && (
+          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-6">
+            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both, pulse-glow 3s ease-in-out 600ms infinite' }}>
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            </div>
+            <div className="text-center space-y-1.5" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>
+              <h3 className="text-xl font-bold">Update Installed!</h3>
+              <p className="text-sm text-muted-foreground">
+                Restart to apply the update
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setUpdateDialogOpen(false)}
+                className="rounded-xl border-border/40"
+              >
+                Later
+              </Button>
+              <Button onClick={restartApp} className="gap-2 rounded-xl">
+                <RefreshCw className="w-4 h-4" />
+                Restart Now
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

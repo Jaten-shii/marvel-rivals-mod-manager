@@ -204,6 +204,7 @@
   --toast-background: oklch(0.2662 0.0134 253.0514); /* Dark background for toast notifications */
 }
 
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -305,79 +306,172 @@
     background: transparent;
   }
 
-  /* Specific styling for overflow-auto containers (mod list) */
-  div.overflow-auto::-webkit-scrollbar,
-  .overflow-auto::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
-  }
-
-  div.overflow-auto::-webkit-scrollbar-track,
-  .overflow-auto::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2) !important;
-  }
-
-  div.overflow-auto::-webkit-scrollbar-thumb,
-  .overflow-auto::-webkit-scrollbar-thumb {
-    background: rgba(100, 100, 100, 0.6) !important;
-    border-radius: 3px !important;
-  }
-
-  div.overflow-auto::-webkit-scrollbar-thumb:hover,
-  .overflow-auto::-webkit-scrollbar-thumb:hover {
-    background: rgba(80, 80, 80, 0.8) !important;
+  /* Hide scrollbar arrows/buttons globally */
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
 }
 
-/* Theme-specific scrollbar colors for overflow-auto containers - HIGHEST SPECIFICITY */
+/* Thin scrollbar utility class - use this for custom scrollbar styling */
+.scrollbar-thin {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 100, 100, 0.6) transparent;
+  /* Force overlay scrollbar behavior */
+  overflow: overlay;
+}
+
+/* Webkit/Blink scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.6) !important;
+  border-radius: 3px !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.8) !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Theme-specific scrollbar colors for .scrollbar-thin */
+html.forest .scrollbar-thin {
+  scrollbar-color: #4ade80 transparent;
+}
+html.forest .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #4ade80 !important;
+}
+html.forest .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #22c55e !important;
+}
+
+html.ruby .scrollbar-thin {
+  scrollbar-color: #f87171 transparent;
+}
+html.ruby .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #f87171 !important;
+}
+html.ruby .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #ef4444 !important;
+}
+
+html.ice .scrollbar-thin {
+  scrollbar-color: #60a5fa transparent;
+}
+html.ice .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #60a5fa !important;
+}
+html.ice .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6 !important;
+}
+
+html.dark-classic .scrollbar-thin {
+  scrollbar-color: #4a4a4a transparent;
+}
+html.dark-classic .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #4a4a4a !important;
+}
+html.dark-classic .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #e5c300 !important;
+}
+
+html.light-classic .scrollbar-thin {
+  scrollbar-color: #a0a0a0 transparent;
+}
+html.light-classic .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #a0a0a0 !important;
+}
+html.light-classic .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #e5c300 !important;
+}
+
+/* Theme-specific scrollbar colors for overflow containers - HIGHEST SPECIFICITY */
 html.forest div.overflow-auto::-webkit-scrollbar-thumb,
-html.forest .overflow-auto::-webkit-scrollbar-thumb {
+html.forest .overflow-auto::-webkit-scrollbar-thumb,
+html.forest div.overflow-y-auto::-webkit-scrollbar-thumb,
+html.forest .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #4ade80 !important;
 }
 
 html.forest div.overflow-auto::-webkit-scrollbar-thumb:hover,
-html.forest .overflow-auto::-webkit-scrollbar-thumb:hover {
+html.forest .overflow-auto::-webkit-scrollbar-thumb:hover,
+html.forest div.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+html.forest .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #22c55e !important;
 }
 
 html.ruby div.overflow-auto::-webkit-scrollbar-thumb,
-html.ruby .overflow-auto::-webkit-scrollbar-thumb {
+html.ruby .overflow-auto::-webkit-scrollbar-thumb,
+html.ruby div.overflow-y-auto::-webkit-scrollbar-thumb,
+html.ruby .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #f87171 !important;
 }
 
 html.ruby div.overflow-auto::-webkit-scrollbar-thumb:hover,
-html.ruby .overflow-auto::-webkit-scrollbar-thumb:hover {
+html.ruby .overflow-auto::-webkit-scrollbar-thumb:hover,
+html.ruby div.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+html.ruby .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #ef4444 !important;
 }
 
 html.ice div.overflow-auto::-webkit-scrollbar-thumb,
-html.ice .overflow-auto::-webkit-scrollbar-thumb {
+html.ice .overflow-auto::-webkit-scrollbar-thumb,
+html.ice div.overflow-y-auto::-webkit-scrollbar-thumb,
+html.ice .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #60a5fa !important;
 }
 
 html.ice div.overflow-auto::-webkit-scrollbar-thumb:hover,
-html.ice .overflow-auto::-webkit-scrollbar-thumb:hover {
+html.ice .overflow-auto::-webkit-scrollbar-thumb:hover,
+html.ice div.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+html.ice .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #3b82f6 !important;
 }
 
 html.dark-classic div.overflow-auto::-webkit-scrollbar-thumb,
-html.dark-classic .overflow-auto::-webkit-scrollbar-thumb {
+html.dark-classic .overflow-auto::-webkit-scrollbar-thumb,
+html.dark-classic div.overflow-y-auto::-webkit-scrollbar-thumb,
+html.dark-classic .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #4a4a4a !important;
 }
 
 html.dark-classic div.overflow-auto::-webkit-scrollbar-thumb:hover,
-html.dark-classic .overflow-auto::-webkit-scrollbar-thumb:hover {
+html.dark-classic .overflow-auto::-webkit-scrollbar-thumb:hover,
+html.dark-classic div.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+html.dark-classic .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #e5c300 !important;
 }
 
 html.light-classic div.overflow-auto::-webkit-scrollbar-thumb,
-html.light-classic .overflow-auto::-webkit-scrollbar-thumb {
+html.light-classic .overflow-auto::-webkit-scrollbar-thumb,
+html.light-classic div.overflow-y-auto::-webkit-scrollbar-thumb,
+html.light-classic .overflow-y-auto::-webkit-scrollbar-thumb {
   background: #a0a0a0 !important;
 }
 
 html.light-classic div.overflow-auto::-webkit-scrollbar-thumb:hover,
-html.light-classic .overflow-auto::-webkit-scrollbar-thumb:hover {
+html.light-classic .overflow-auto::-webkit-scrollbar-thumb:hover,
+html.light-classic div.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+html.light-classic .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #e5c300 !important;
 }
 
@@ -499,6 +593,85 @@ html.light-classic .overflow-auto::-webkit-scrollbar-thumb:hover {
   animation: collapsible-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Toast notification styling */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms ease !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-icon] svg {
+  width: 20px !important;
+  height: 20px !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] svg {
+  color: white !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] svg {
+  color: white !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] [data-icon] svg {
+  color: white !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] svg {
+  color: white !important;
+}
+
+/* Metadata dialog staggered entrance */
+@keyframes metadata-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Changelog expand animation */
+@keyframes changelog-expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse glow for update check */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px rgba(34, 197, 94, 0.15);
+  }
+}
+
+/* Scale-in bounce for status icons */
+@keyframes icon-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Character Icon Animations */
 @keyframes fadeIn {
   from {
@@ -519,5 +692,3 @@ html.font-ubuntu {
 
 :root.font-quicksand,
 html.font-quicksand {
-  --font-sans: var(--font-quicksand);
-}

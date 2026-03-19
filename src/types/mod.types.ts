@@ -8,22 +8,24 @@ export type ModCategory = 'UI' | 'Audio' | 'Skins' | 'Gameplay';
 
 // ===== Marvel Rivals Characters =====
 export type Character =
-  // Vanguards (9 total)
+  // Vanguards (10 total)
   | 'Captain America'
   | 'Doctor Strange'
   | 'Groot'
   | 'Hulk'
   | 'Magneto'
   | 'Peni Parker'
+  | 'Rogue'
   | 'The Thing'
   | 'Thor'
   | 'Venom'
-  // Duelists (24 total)
+  // Duelists (25 total)
   | 'Angela'
   | 'Blade'
   | 'Black Panther'
   | 'Black Widow'
   | 'Daredevil'
+  | 'Deadpool'
   | 'Emma Frost'
   | 'Gambit'
   | 'Hawkeye'
@@ -54,7 +56,10 @@ export type Character =
   | 'Loki'
   | 'Luna Snow'
   | 'Mantis'
-  | 'Rocket Raccoon';
+  | 'Rocket Raccoon'
+  | 'Elsa Bloodstone'
+  // Special
+  | 'All Characters';
 
 // ===== Costume/Skin Types =====
 export interface Costume {
@@ -67,6 +72,7 @@ export interface Costume {
 // ===== Mod Metadata =====
 export interface ModMetadata {
   title: string;
+  subtitle: string | null; // Optional subtitle shown under the title
   description: string;
   author: string | null;
   version: string | null;
@@ -83,6 +89,7 @@ export interface ModMetadata {
   nexusModId: number | null;
   nexusFileId: number | null;
   nexusVersion: string | null;
+  originalFolderPath: string | null; // Relative path from ~mods root for restore on enable
 }
 
 // ===== Mod Info =====

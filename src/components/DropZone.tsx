@@ -1,6 +1,6 @@
 import { useState, useCallback, DragEvent, useEffect } from 'react';
 import { FileArchive } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { listen } from '@tauri-apps/api/event';
 
 interface DropZoneProps {
@@ -18,7 +18,7 @@ export function DropZone({ onDrop, accept = ['.zip', '.7z', '.rar', '.pak'], chi
     let unlisten: (() => void) | undefined;
 
     const setupListener = async () => {
-      // Listen for file drop hover
+      // Listen for file drop hover (entering window)
       const unlistenHover = await listen<{ paths: string[] }>('tauri://drag-over', () => {
         setIsDragging(true);
       });
@@ -26,6 +26,7 @@ export function DropZone({ onDrop, accept = ['.zip', '.7z', '.rar', '.pak'], chi
       // Listen for file drop
       const unlistenDrop = await listen<{ paths: string[] }>('tauri://drag-drop', (event) => {
         setIsDragging(false);
+        setDragCounter(0);
         const filePaths = event.payload.paths.filter((filePath) => {
           const ext = `.${filePath.split('.').pop()?.toLowerCase()}`;
           return accept.includes(ext);
@@ -36,15 +37,23 @@ export function DropZone({ onDrop, accept = ['.zip', '.7z', '.rar', '.pak'], chi
         }
       });
 
-      // Listen for drag cancelled
+      // Listen for drag leave (leaving window without dropping)
+      const unlistenLeave = await listen('tauri://drag-leave', () => {
+        setIsDragging(false);
+        setDragCounter(0);
+      });
+
+      // Listen for drag cancelled (e.g., pressing Escape)
       const unlistenCancel = await listen('tauri://drag-cancelled', () => {
         setIsDragging(false);
+        setDragCounter(0);
       });
 
       // Combine unlisten functions
       unlisten = () => {
         unlistenHover();
         unlistenDrop();
+        unlistenLeave();
         unlistenCancel();
       };
     };

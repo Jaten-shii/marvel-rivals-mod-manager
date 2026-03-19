@@ -5,6 +5,12 @@ import type { Profile } from '../shared/profiles';
 
 export type SortOption = 'date' | 'category' | 'character' | 'name' | 'updated' | 'profile';
 
+export interface UpdateInfo {
+  version: string;
+  date: string;
+  body: string | null;
+}
+
 interface UIStore {
   // Theme
   theme: ThemeMode;
@@ -63,6 +69,10 @@ interface UIStore {
   profileDialogMode: 'create' | 'edit' | null;
   profileDialogProfileId: string | null;
   setProfileDialogOpen: (open: boolean, mode?: 'create' | 'edit', profileId?: string | null) => void;
+
+  // Updater (shared state for auto-update indicator)
+  availableUpdate: UpdateInfo | null;
+  setAvailableUpdate: (update: UpdateInfo | null) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -178,6 +188,10 @@ export const useUIStore = create<UIStore>()(
           profileDialogMode: mode,
           profileDialogProfileId: profileId,
         }),
+
+      // Updater (shared state for auto-update indicator)
+      availableUpdate: null,
+      setAvailableUpdate: (update) => set({ availableUpdate: update }),
     }),
     {
       name: 'marvel-rivals-ui-storage', // localStorage key

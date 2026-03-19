@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo, useCallback } from 'react'
 import { CircleX, Pencil, Trash2, Tag } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { type Profile } from '../shared/profiles'
@@ -8,10 +8,10 @@ interface ProfileItemProps {
   profile: Profile
   active: boolean
   modCount: number
-  onSelect: () => void
-  onEdit: () => void
-  onDisableAll: () => void
-  onDelete: () => void
+  onSelect: (profileId: string) => void
+  onEdit: (profileId: string) => void
+  onDisableAll: (profileId: string) => void
+  onDelete: (profileId: string) => void
 }
 
 // Map icon names to Lucide components
@@ -42,7 +42,7 @@ const iconComponents: Record<string, React.ComponentType<{ className?: string }>
   Disc: LucideIcons.Disc,
 }
 
-export function ProfileItem({
+export const ProfileItem = memo(function ProfileItem({
   profile,
   active,
   modCount,
@@ -53,14 +53,29 @@ export function ProfileItem({
 }: ProfileItemProps) {
   const IconComponent = iconComponents[profile.icon] || Tag
 
-  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
-    e.stopPropagation() // Prevent profile selection when clicking action buttons
-    action()
-  }
+  // Memoized handlers that call callbacks with profile ID
+  const handleSelect = useCallback(() => {
+    onSelect(profile.id)
+  }, [onSelect, profile.id])
+
+  const handleEdit = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onEdit(profile.id)
+  }, [onEdit, profile.id])
+
+  const handleDisableAll = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDisableAll(profile.id)
+  }, [onDisableAll, profile.id])
+
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(profile.id)
+  }, [onDelete, profile.id])
 
   return (
     <div
-      onClick={onSelect}
+      onClick={handleSelect}
       className={cn(
         'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 cursor-pointer',
         active
@@ -90,7 +105,7 @@ export function ProfileItem({
       <div className="flex items-center gap-1 ml-1" onClick={(e) => e.stopPropagation()}>
         {/* Disable All Mods */}
         <button
-          onClick={(e) => handleActionClick(e, onDisableAll)}
+          onClick={handleDisableAll}
           className="p-1 rounded hover:bg-orange-500/20 hover:text-orange-400 transition-colors group"
           title="Disable all mods in this profile"
         >
@@ -99,7 +114,7 @@ export function ProfileItem({
 
         {/* Edit Profile */}
         <button
-          onClick={(e) => handleActionClick(e, onEdit)}
+          onClick={handleEdit}
           className="p-1 rounded hover:bg-blue-500/20 hover:text-blue-400 transition-colors group"
           title="Edit profile"
         >
@@ -108,7 +123,7 @@ export function ProfileItem({
 
         {/* Delete Profile Tag */}
         <button
-          onClick={(e) => handleActionClick(e, onDelete)}
+          onClick={handleDelete}
           className="p-1 rounded hover:bg-red-500/20 hover:text-red-400 transition-colors group"
           title="Delete profile (removes tag from all mods)"
         >
@@ -117,4 +132,4 @@ export function ProfileItem({
       </div>
     </div>
   )
-}
+})

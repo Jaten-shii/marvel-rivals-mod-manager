@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '../stores';
 import { useGetMods, useUpdateModMetadata, useGetCostumesForCharacter } from '../hooks/useMods';
@@ -8,9 +8,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ScrollArea } from './ui/scroll-area';
 import type { ModCategory, Character } from '../types/mod.types';
 import { ALL_CHARACTERS, MOD_CATEGORIES } from '../shared/constants';
-import { Upload, Download, Clipboard, Image as ImageIcon, FileText, Users, Check, Monitor, Volume2, Shirt, Gamepad2, Loader2 } from 'lucide-react';
+import { Upload, Download, Clipboard, Image as ImageIcon, Check, Monitor, Volume2, Shirt, Gamepad2, Loader2 } from 'lucide-react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
@@ -57,6 +58,7 @@ export function MetadataDialog() {
   const mod = mods?.find((m) => m.id === metadataDialogModId);
 
   const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
   const [author, setAuthor] = useState('');
   const [version, setVersion] = useState('');
   const [description, setDescription] = useState('');
@@ -68,17 +70,33 @@ export function MetadataDialog() {
   const [imageUrl, setImageUrl] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Author autocomplete state
+  const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
+  const authorInputRef = useRef<HTMLInputElement>(null);
+
+  // Track if costume was loaded from mod (to prevent auto-select overriding it)
+  const [costumeLoadedFromMod, setCostumeLoadedFromMod] = useState(false);
+
+  // Get unique authors from all mods for autocomplete
+  const uniqueAuthors = useMemo(() => {
+    if (!mods) return [];
+    const authors = mods
+      .map(m => m.metadata.author)
+      .filter((a): a is string => !!a && a.trim() !== '')
+      .map(a => a.trim());
+    return [...new Set(authors)].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  }, [mods]);
+
+  // Filter authors based on current input
+  const filteredAuthors = useMemo(() => {
+    if (!author.trim()) return uniqueAuthors;
+    const searchLower = author.toLowerCase();
+    return uniqueAuthors.filter(a => a.toLowerCase().includes(searchLower));
+  }, [author, uniqueAuthors]);
+
   // Fetch costumes for selected character
   const { data: costumes = [], isLoading: isLoadingCostumes } = useGetCostumesForCharacter(character || null);
 
-  // Debug logging for costume loading
-  useEffect(() => {
-    if (character) {
-      console.log('[MetadataDialog] Selected character:', character);
-      console.log('[MetadataDialog] Loading costumes:', isLoadingCostumes);
-      console.log('[MetadataDialog] Costumes loaded:', costumes.length, costumes);
-    }
-  }, [character, costumes, isLoadingCostumes]);
 
   // Thumbnail state
   const [showCropDialog, setShowCropDialog] = useState(false);
@@ -87,23 +105,12 @@ export function MetadataDialog() {
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [thumbnailTimestamp, setThumbnailTimestamp] = useState(Date.now());
 
-  // Debug: Log thumbnail changes
-  useEffect(() => {
-    console.log('[MetadataDialog] Thumbnail state changed:', {
-      modId: mod?.id,
-      thumbnailPath: mod?.thumbnailPath,
-      timestamp: thumbnailTimestamp,
-      finalSrc: mod?.thumbnailPath ? `${convertFileSrc(mod.thumbnailPath)}?t=${thumbnailTimestamp}` : null,
-    });
-  }, [mod?.thumbnailPath, thumbnailTimestamp, mod?.id]);
 
   // Load mod data when dialog opens (only when dialog opens, not on every mod update)
   useEffect(() => {
-    console.log('[MetadataDialog] Effect fired - dialogOpen:', metadataDialogOpen, 'modId:', metadataDialogModId, 'mod found:', !!mod);
-
     if (metadataDialogOpen && mod) {
-      console.log('[MetadataDialog] Loading data for mod:', mod.id, mod.name);
       setTitle(mod.metadata.title || mod.name);
+      setSubtitle(mod.metadata.subtitle || '');
       setAuthor(mod.metadata.author || '');
       setVersion(mod.metadata.version || '');
       setDescription(mod.metadata.description || '');
@@ -111,6 +118,7 @@ export function MetadataDialog() {
       setCategory(mod.category);
       setCharacter(mod.character || '');
       setCostume(mod.metadata.costume || '');
+      setCostumeLoadedFromMod(!!mod.metadata.costume); // Track if costume came from mod
       setIsNsfw(mod.metadata.isNsfw);
       setHasChanges(false);
 
@@ -118,23 +126,63 @@ export function MetadataDialog() {
       setShowCropDialog(false);
       setCropImageUrl('');
       setCropImageFile(null);
-    } else if (metadataDialogOpen && !mod) {
-      console.warn('[MetadataDialog] Dialog is open but mod not found! ModId:', metadataDialogModId);
     }
   }, [metadataDialogOpen, metadataDialogModId, mod?.id]);
 
-  // Clear costume when character changes
+  // Auto-select Default costume when character changes (only if costume wasn't already set from mod)
   useEffect(() => {
-    if (!character) {
+    if (!character || character === 'All Characters') {
       setCostume('');
+      setCostumeLoadedFromMod(false);
+    } else if (!costume && !costumeLoadedFromMod && costumes.length > 0) {
+      // If character is set but no costume and costume wasn't loaded from mod, auto-select the default costume
+      const defaultCostume = costumes.find(c => c.isDefault);
+      if (defaultCostume) {
+        setCostume(defaultCostume.id);
+      }
     }
-  }, [character]);
+  }, [character, costumes, costume, costumeLoadedFromMod]);
+
+  // Pre-request clipboard permission when dialog opens
+  useEffect(() => {
+    if (metadataDialogOpen && navigator.clipboard && navigator.clipboard.read) {
+      // Silently request clipboard permission in the background
+      navigator.clipboard.read().catch(() => {
+        // Permission denied or not supported - fail silently
+        // The permission prompt will show when user clicks the paste button
+      });
+    }
+  }, [metadataDialogOpen]);
+
+  // Add keyboard shortcut for paste (Ctrl+V)
+  useEffect(() => {
+    if (!metadataDialogOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+V (Windows/Linux) or Cmd+V (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        // Don't interfere with paste in input fields
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return;
+        }
+
+        // Trigger clipboard paste
+        e.preventDefault();
+        handlePasteFromClipboard();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [metadataDialogOpen]);
 
   // Track changes
   useEffect(() => {
     if (mod) {
       const changed =
         title !== (mod.metadata.title || mod.name) ||
+        subtitle !== (mod.metadata.subtitle || '') ||
         author !== (mod.metadata.author || '') ||
         description !== (mod.metadata.description || '') ||
         category !== mod.category ||
@@ -143,7 +191,19 @@ export function MetadataDialog() {
         isNsfw !== mod.metadata.isNsfw;
       setHasChanges(changed);
     }
-  }, [mod, title, author, description, category, character, costume, isNsfw]);
+  }, [mod, title, subtitle, author, description, category, character, costume, isNsfw]);
+
+  // Check for duplicate mods with same name + character + costume
+  const duplicateMod = mods?.find((m) => {
+    if (!mod || m.id === mod.id) return false; // Don't compare with self
+
+    // Normalize values for comparison
+    const sameTitle = m.metadata.title.toLowerCase() === title.toLowerCase();
+    const sameCharacter = (m.character || '') === (character || '');
+    const sameCostume = (m.metadata.costume || '') === (costume || '');
+
+    return sameTitle && sameCharacter && sameCostume;
+  });
 
   const handleSave = async () => {
     if (!mod) return;
@@ -158,6 +218,7 @@ export function MetadataDialog() {
       metadata: {
         ...mod.metadata,
         title,
+        subtitle: subtitle || null,
         author: author || null,
         version: version || null,
         description,
@@ -179,7 +240,6 @@ export function MetadataDialog() {
     // If user is canceling during a multi-mod installation and hasn't made changes,
     // we should delete the mod that was just installed (orphaned files)
     if (mod && !hasChanges) {
-      console.log('[MetadataDialog] Closing without changes - checking if this is a fresh install...');
 
       // Check if this mod was just installed (metadata is still mostly default)
       // Fresh installs have: no author, no description, no tags, default category (Skins), no character
@@ -191,7 +251,6 @@ export function MetadataDialog() {
         !mod.character;
 
       if (isFreshInstall) {
-        console.log('[MetadataDialog] Fresh install detected - deleting orphaned mod:', mod.id);
         try {
           await invoke('delete_mod', { modId: mod.id });
           // Remove from cache using optimistic update (same query key as useGetMods)
@@ -287,7 +346,6 @@ export function MetadataDialog() {
             setCropImageFile(null);
             setShowCropDialog(true);
 
-            console.log('[MetadataDialog] Pasted image from clipboard:', imageType, blob.size, 'bytes');
           };
           reader.readAsDataURL(blob);
 
@@ -306,44 +364,31 @@ export function MetadataDialog() {
   const handleCropComplete = async (cropData: { x: number; y: number; width: number; height: number }) => {
     if (!mod) return;
 
-    console.log('[MetadataDialog] Starting crop complete for mod:', mod.id);
     setIsUploadingThumbnail(true);
     setShowCropDialog(false);
 
     try {
-      let thumbnailPath: string;
-
       if (cropImageFile) {
-        // Upload from file
-        console.log('[MetadataDialog] Saving thumbnail from file:', cropImageFile);
-        thumbnailPath = await invoke<string>('save_thumbnail_from_file', {
+        await invoke<string>('save_thumbnail_from_file', {
           modId: mod.id,
           filePath: cropImageFile,
           cropData,
         });
       } else {
-        // Download from URL
-        console.log('[MetadataDialog] Downloading thumbnail from URL:', cropImageUrl);
-        thumbnailPath = await invoke<string>('download_and_save_thumbnail', {
+        await invoke<string>('download_and_save_thumbnail', {
           modId: mod.id,
           url: cropImageUrl,
           cropData,
         });
       }
 
-      console.log('[MetadataDialog] Thumbnail saved, path returned:', thumbnailPath);
-
       toast.success('Thumbnail saved successfully');
 
       // Update timestamp to bust cache
-      const newTimestamp = Date.now();
-      console.log('[MetadataDialog] Updating timestamp to:', newTimestamp);
-      setThumbnailTimestamp(newTimestamp);
+      setThumbnailTimestamp(Date.now());
 
-      // Refresh mods query - backend will automatically find the new thumbnail
-      console.log('[MetadataDialog] Invalidating mods query...');
+      // Refresh mods query
       await queryClient.invalidateQueries({ queryKey: ['mods', 'list'] });
-      console.log('[MetadataDialog] Query invalidated successfully');
     } catch (error) {
       console.error('Failed to save thumbnail:', error);
       toast.error('Failed to save thumbnail: ' + String(error));
@@ -368,7 +413,7 @@ export function MetadataDialog() {
   return (
     <>
     <Dialog open={metadataDialogOpen && !showCropDialog} onOpenChange={handleClose}>
-      <DialogContent className="w-[90vw] sm:max-w-[1200px] max-h-[90vh] p-0 overflow-hidden bg-[#1a1f2e] overflow-x-hidden">
+      <DialogContent className="w-[90vw] sm:max-w-[1400px] max-h-[90vh] p-0 overflow-hidden bg-card overflow-x-hidden rounded-2xl">
         {!mod ? (
           <div className="p-12 flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -377,26 +422,25 @@ export function MetadataDialog() {
         ) : (
           <>
         {/* Header */}
-        <div className="p-6 pb-4 border-b border-border">
-          <DialogTitle className="text-2xl font-bold text-white">Edit Mod Metadata</DialogTitle>
-          <DialogDescription className="text-gray-400 mt-1">
+        <div className="px-6 pt-5 pb-4 border-b border-border/40">
+          <DialogTitle className="text-2xl font-bold text-white tracking-tight">Edit Mod Metadata</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-0.5">
             Update mod information and thumbnail
           </DialogDescription>
         </div>
 
         {/* Two-Column Layout */}
-        <div className="grid grid-cols-[400px_1fr] h-[600px] overflow-x-hidden">
+        <div className="grid grid-cols-[440px_1fr] h-[720px] overflow-x-hidden">
           {/* Left Column - Thumbnail */}
-          <div className="p-6 border-r border-border overflow-y-auto bg-[#151a26]">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-300 mb-2">
-                <ImageIcon className="w-5 h-5" />
-                <h3 className="font-semibold">Thumbnail Preview</h3>
+          <div className="px-6 py-5 border-r border-border/40 overflow-y-auto bg-background/50">
+            <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out both' }}>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thumbnail Preview</h3>
+                <p className="text-xs text-muted-foreground/60 mt-1">16:9 aspect ratio recommended</p>
               </div>
-              <p className="text-xs text-gray-500">16:9 aspect ratio recommended</p>
 
               {/* Current Thumbnail */}
-              <div className="aspect-video bg-black/50 rounded-lg overflow-hidden border border-border">
+              <div className="aspect-video bg-black/40 rounded-xl overflow-hidden ring-1 ring-white/5">
                 {thumbnailSrcWithCache ? (
                   <img
                     src={thumbnailSrcWithCache}
@@ -414,16 +458,16 @@ export function MetadataDialog() {
               </div>
 
               {/* Upload and Paste Buttons (Side by Side) */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleUploadImage}
                   disabled={isUploadingThumbnail}
-                  className="px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
+                  className="px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isUploadingThumbnail ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Upload className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+                    <Upload className="w-4 h-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
                   )}
                   {isUploadingThumbnail ? 'Uploading...' : 'Upload Image'}
                 </button>
@@ -431,7 +475,7 @@ export function MetadataDialog() {
                 <button
                   onClick={handlePasteFromClipboard}
                   disabled={isUploadingThumbnail}
-                  className="px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
+                  className="px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isUploadingThumbnail ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -443,10 +487,10 @@ export function MetadataDialog() {
               </div>
 
               {/* OR Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border"></div>
-                <span className="text-xs text-gray-500">OR</span>
-                <div className="flex-1 h-px bg-border"></div>
+              <div className="flex items-center gap-3 py-1">
+                <div className="flex-1 h-px bg-border/40"></div>
+                <span className="text-[11px] text-muted-foreground/50 uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-border/40"></div>
               </div>
 
               {/* URL Input */}
@@ -454,19 +498,19 @@ export function MetadataDialog() {
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://example.com/image.png"
-                className="bg-[#1a1a1a] border-border"
+                className="bg-muted/30 border-border/40 h-11 text-sm rounded-xl"
               />
 
               {/* Download from URL Button */}
               <button
                 onClick={handleDownloadFromUrl}
                 disabled={isUploadingThumbnail || !imageUrl.trim()}
-                className="w-full px-4 py-2.5 bg-[#1a1a1a] text-white rounded-md text-sm border border-transparent transition-all flex items-center justify-center gap-2 cursor-pointer group hover:bg-primary/20 hover:text-primary hover:border-primary/40 disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isUploadingThumbnail ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
+                  <Download className="w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5" />
                 )}
                 {isUploadingThumbnail ? 'Processing...' : 'Download from URL'}
               </button>
@@ -474,18 +518,15 @@ export function MetadataDialog() {
           </div>
 
           {/* Right Column - Metadata */}
-          <div className="p-6 overflow-y-auto overflow-x-hidden">
+          <div className="px-6 py-5 overflow-y-auto overflow-x-hidden">
             <div className="space-y-6">
               {/* Basic Information */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary mb-3">
-                  <FileText className="w-5 h-5" />
-                  <h3 className="font-semibold">Basic Information</h3>
-                </div>
+              <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basic Information</h3>
 
                 {/* Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="title" className="text-sm font-medium text-foreground">
                     Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
@@ -493,27 +534,207 @@ export function MetadataDialog() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Mod name"
-                    className="bg-[#1a1a1a] border-border"
+                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    autoComplete="off"
                   />
                 </div>
 
-                {/* Author */}
+                {/* Subtitle with preset chips */}
                 <div className="space-y-2">
-                  <Label htmlFor="author" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="subtitle" className="text-sm font-medium text-foreground">
+                    Subtitle
+                  </Label>
+                  <Input
+                    id="subtitle"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Click presets below or type custom..."
+                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    autoComplete="off"
+                  />
+                  {/* Compact preset chips */}
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {/* Type presets (orange) */}
+                    {['Add-on'].map((preset) => {
+                      const isSelected = subtitle.includes(preset);
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              // Remove preset
+                              setSubtitle(prev => prev.replace(new RegExp(`${preset} • |${preset}| • ${preset}`, 'g'), '').trim());
+                            } else {
+                              setSubtitle(prev => prev ? `${preset} • ${prev}` : preset);
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-orange-500/25 text-orange-400'
+                              : 'bg-muted text-gray-500 hover:text-orange-400 hover:bg-orange-500/15'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
+                    {/* Skin presets (green) */}
+                    {['Retexture', 'Remesh'].map((preset) => {
+                      const isSelected = subtitle.includes(preset);
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSubtitle(prev => prev.replace(new RegExp(` • ${preset}|${preset} • |${preset}`, 'g'), '').trim());
+                            } else {
+                              setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-emerald-500/25 text-emerald-400'
+                              : 'bg-muted text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/15'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
+                    {/* UI presets (cyan) */}
+                    {['Icons', 'MVP Frame', 'Portrait'].map((preset) => {
+                      const isSelected = subtitle.includes(preset);
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSubtitle(prev => prev.replace(new RegExp(` • ${preset}|${preset} • |${preset}`, 'g'), '').trim());
+                            } else {
+                              setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-cyan-500/25 text-cyan-400'
+                              : 'bg-muted text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/15'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
+                    {/* Audio presets (purple) */}
+                    {['Voice', 'Ult Voice', 'Ult Music', 'SFX'].map((preset) => {
+                      const isSelected = subtitle.includes(preset);
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSubtitle(prev => prev.replace(new RegExp(` • ${preset}|${preset} • |${preset}`, 'g'), '').trim());
+                            } else {
+                              setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-purple-500/25 text-purple-400'
+                              : 'bg-muted text-gray-500 hover:text-purple-400 hover:bg-purple-500/15'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
+                    {/* Scope presets (blue) */}
+                    {['Lobby Only', 'In-Game Only'].map((preset) => {
+                      const isSelected = subtitle.includes(preset);
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSubtitle(prev => prev.replace(new RegExp(` • ${preset}|${preset} • |${preset}`, 'g'), '').trim());
+                            } else {
+                              setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-blue-500/25 text-blue-400'
+                              : 'bg-muted text-gray-500 hover:text-blue-400 hover:bg-blue-500/15'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
+                    {/* Clear */}
+                    {subtitle && (
+                      <button
+                        type="button"
+                        onClick={() => setSubtitle('')}
+                        className="px-2 py-0.5 text-[11px] rounded bg-muted text-gray-500 hover:text-red-400 hover:bg-red-500/15 transition-all"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Author with autocomplete */}
+                <div className="space-y-2 relative">
+                  <Label htmlFor="author" className="text-sm font-medium text-foreground">
                     Author
                   </Label>
                   <Input
+                    ref={authorInputRef}
                     id="author"
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
+                    onFocus={() => setShowAuthorSuggestions(true)}
+                    onBlur={() => {
+                      // Delay hiding to allow click on suggestion
+                      setTimeout(() => setShowAuthorSuggestions(false), 150);
+                    }}
                     placeholder="Mod author name..."
-                    className="bg-[#1a1a1a] border-border"
+                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    autoComplete="off"
                   />
+                  {/* Author suggestions dropdown */}
+                  {showAuthorSuggestions && filteredAuthors.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-card border border-border/40 rounded-xl shadow-lg overflow-hidden">
+                      <ScrollArea className="h-[200px]">
+                        <div className="py-1">
+                          {filteredAuthors.map((authorName) => (
+                            <button
+                              key={authorName}
+                              type="button"
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-primary/20 text-gray-300 hover:text-white transition-colors"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setAuthor(authorName);
+                                setShowAuthorSuggestions(false);
+                              }}
+                            >
+                              {authorName}
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="description" className="text-sm font-medium text-foreground">
                     Description
                   </Label>
                   <Textarea
@@ -521,28 +742,25 @@ export function MetadataDialog() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter mod description..."
-                    rows={4}
-                    className="bg-[#1a1a1a] border-border resize-none"
+                    rows={3}
+                    className="bg-muted/30 border-border/40 text-base resize-none rounded-xl"
                   />
                 </div>
               </div>
 
               {/* Category & Character */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary mb-3">
-                  <Users className="w-5 h-5" />
-                  <h3 className="font-semibold">Category & Character</h3>
-                </div>
+              <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out 200ms both' }}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category & Character</h3>
 
                 {/* Horizontal Grid for Category, Character, and Costume */}
                 <div className="grid grid-cols-3 gap-3 min-w-0">
                   {/* Category */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="category" className="text-sm font-medium text-gray-300">
+                    <Label htmlFor="category" className="text-sm font-medium text-foreground">
                       Category
                     </Label>
                     <Select value={category} onValueChange={(value) => setCategory(value as ModCategory)}>
-                      <SelectTrigger id="category" className="bg-[#1a1a1a] border-border hover:bg-[#2a2a2a] transition-colors">
+                      <SelectTrigger id="category" className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl">
                         <SelectValue>
                           <div className="flex items-center gap-2">
                             {getCategoryIcon(category)}
@@ -565,18 +783,21 @@ export function MetadataDialog() {
 
                   {/* Character */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="character" className="text-sm font-medium text-gray-300">
+                    <Label htmlFor="character" className="text-sm font-medium text-foreground">
                       Character
                     </Label>
-                    <Select value={character || 'none'} onValueChange={(value) => setCharacter(value === 'none' ? '' : value as Character)}>
-                      <SelectTrigger id="character" className="bg-[#1a1a1a] border-border hover:bg-[#2a2a2a] transition-colors">
+                    <Select value={character || 'none'} onValueChange={(value) => {
+                      setCharacter(value === 'none' ? '' : value as Character);
+                      setCostumeLoadedFromMod(false); // Reset so new character auto-selects default costume
+                    }}>
+                      <SelectTrigger id="character" className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl">
                         <SelectValue placeholder="Select character">
                           {character ? (
                             <div className="flex items-center gap-2 overflow-hidden">
                               <img
                                 src={getCharacterIconPath(character)}
                                 alt={character}
-                                className="w-5 h-5 rounded-full object-cover border border-border flex-shrink-0"
+                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -598,7 +819,7 @@ export function MetadataDialog() {
                               <img
                                 src={getCharacterIconPath(char)}
                                 alt={char}
-                                className="w-5 h-5 rounded-full object-cover border border-border flex-shrink-0"
+                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -613,17 +834,17 @@ export function MetadataDialog() {
 
                   {/* Costume - Show always but disabled if no character */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="costume" className="text-sm font-medium text-gray-300">
+                    <Label htmlFor="costume" className="text-sm font-medium text-foreground">
                       Costume / Skin
                     </Label>
                     <Select
                       value={costume || 'none'}
                       onValueChange={(value) => setCostume(value === 'none' ? '' : value)}
-                      disabled={!character}
+                      disabled={!character || character === 'All Characters'}
                     >
                       <SelectTrigger
                         id="costume"
-                        className="bg-[#1a1a1a] border-border hover:bg-[#2a2a2a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <SelectValue placeholder={!character ? "Select character first" : "Select costume"}>
                           {costume && costumes.find(c => c.id === costume) ? (
@@ -631,7 +852,7 @@ export function MetadataDialog() {
                               <img
                                 src={`/assets/costume-icons/${costumes.find(c => c.id === costume)?.imagePath}`}
                                 alt={costumes.find(c => c.id === costume)?.name}
-                                className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
+                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
@@ -660,7 +881,7 @@ export function MetadataDialog() {
                                 <img
                                   src={`/assets/costume-icons/${costumeItem.imagePath}`}
                                   alt={costumeItem.name}
-                                  className="w-6 h-6 rounded object-cover border border-border flex-shrink-0"
+                                  className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                   }}
@@ -683,7 +904,7 @@ export function MetadataDialog() {
                 </div>
 
                 {/* NSFW Toggle */}
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10" style={{ animation: 'metadata-fade-in 400ms ease-out 300ms both' }}>
                   <div className="relative flex items-center">
                     <input
                       type="checkbox"
@@ -718,7 +939,7 @@ export function MetadataDialog() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-[#151a26]">
+        <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-background/50">
           <div className="flex items-center gap-2">
             {hasChanges ? (
               <span className="text-sm text-yellow-400">Unsaved changes</span>
@@ -730,6 +951,15 @@ export function MetadataDialog() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {/* Duplicate warning */}
+            {duplicateMod && (
+              <div className="flex items-center gap-2 text-amber-500 text-sm mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span>Another mod exists with this name{character ? ` for ${character}` : ''}{costume ? ` (${costumes.find(c => c.id === costume)?.name || costume})` : ''}</span>
+              </div>
+            )}
             <Button variant="outline" onClick={handleClose} className="border-border">
               Cancel
             </Button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useGetAppSettings } from '../hooks/useSettings';
 import { useFileWatcher } from '../hooks/useFileWatcher';
 import { useGetMods } from '../hooks/useMods';
@@ -31,8 +32,12 @@ declare global {
 }
 
 export function ModManager() {
+  const queryClient = useQueryClient();
   const { data: settings, isLoading, error } = useGetAppSettings();
-  const { leftSidebarOpen, selectedModId, metadataDialogOpen, setMetadataDialogOpen } = useUIStore();
+  const leftSidebarOpen = useUIStore((state) => state.leftSidebarOpen);
+  const selectedModId = useUIStore((state) => state.selectedModId);
+  const metadataDialogOpen = useUIStore((state) => state.metadataDialogOpen);
+  const setMetadataDialogOpen = useUIStore((state) => state.setMetadataDialogOpen);
   const { data: mods, isRefetching } = useGetMods();
 
   // Archive installation workflow state
@@ -101,7 +106,21 @@ export function ModManager() {
             toast.success(`Merged ${mergedCount} duplicate character folder(s)`);
           }
 
-          // Step 4: Log total mods found
+          // Step 4: Migrate mods with costumes to new folder structure
+          console.log('[ModManager] Migrating mods to costume folder structure...');
+          const costumeMigratedCount = await invoke<number>('migrate_to_costume_folders');
+          if (costumeMigratedCount > 0) {
+            console.log(`[ModManager] Migrated ${costumeMigratedCount} mod(s) to costume folders`);
+            toast.success(`Migrated ${costumeMigratedCount} mod(s) to costume folder structure`);
+          }
+
+          // If any migrations occurred, refresh the mods list to get updated file paths
+          if (migratedCount > 0 || count > 0 || mergedCount > 0 || costumeMigratedCount > 0) {
+            console.log('[ModManager] Refreshing mods list after migrations...');
+            await queryClient.invalidateQueries({ queryKey: ['mods'] });
+          }
+
+          // Step 5: Log total mods found
           console.log('[ModManager] Startup complete - counting mods...');
           await invoke('log_total_mods_found');
         } catch (error) {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { useUIStore } from '../stores';
 import { APP_VERSION } from '../shared/constants';
-import { ChevronDown, ChevronUp, ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface GitHubRelease {
@@ -31,16 +31,12 @@ export function ChangelogDialog() {
   const fetchReleases = async () => {
     setIsLoadingReleases(true);
     try {
-      // Fetch releases from GitHub API
       const response = await fetch('https://api.github.com/repos/Jaten-shii/marvel-rivals-mod-manager/releases');
-
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
       }
-
       const data: GitHubRelease[] = await response.json();
       setReleases(data);
-      console.log('[ChangelogDialog] Fetched', data.length, 'releases');
     } catch (error) {
       console.error('[ChangelogDialog] Failed to fetch releases:', error);
       toast.error('Failed to load changelog', {
@@ -72,7 +68,6 @@ export function ChangelogDialog() {
   };
 
   const formatChangelog = (body: string) => {
-    // Enhanced markdown-to-HTML conversion for changelog text
     const lines = body.split('\n');
     const elements: React.JSX.Element[] = [];
 
@@ -81,71 +76,64 @@ export function ChangelogDialog() {
       if (!line) continue;
       const trimmed = line.trim();
 
-      // Skip completely empty lines
       if (trimmed === '') {
         elements.push(<div key={i} className="h-2" />);
         continue;
       }
 
-      // Handle headers with triple ###
       if (trimmed.match(/^###\s+/)) {
         const text = trimmed.replace(/^###\s+/, '');
         elements.push(
-          <h3 key={i} className="text-base font-semibold mt-4 mb-2 text-foreground/90">
+          <h3 key={i} className="text-sm font-semibold mt-4 mb-2 text-foreground/90">
             {text}
           </h3>
         );
         continue;
       }
 
-      // Handle headers with double ##
       if (trimmed.match(/^##\s+/)) {
         const text = trimmed.replace(/^##\s+/, '');
         elements.push(
-          <h2 key={i} className="text-lg font-bold mt-6 mb-3 text-foreground border-b border-border/50 pb-2">
+          <h2 key={i} className="text-base font-bold mt-5 mb-2 text-foreground">
             {text}
           </h2>
         );
         continue;
       }
 
-      // Handle headers with single #
       if (trimmed.match(/^#\s+/) && !trimmed.startsWith('##')) {
         const text = trimmed.replace(/^#\s+/, '');
         elements.push(
-          <h1 key={i} className="text-xl font-bold mt-4 mb-3 text-foreground">
+          <h1 key={i} className="text-lg font-bold mt-4 mb-3 text-foreground">
             {text}
           </h1>
         );
         continue;
       }
 
-      // Handle list items
       if (trimmed.match(/^[-*]\s+/)) {
         const cleanedText = trimmed
           .replace(/^[-*]\s+/, '')
           .replace(/^\*\*(.+?)\*\*:?\s*/, '$1: ')
           .replace(/\*\*(.+?)\*\*/g, '$1');
         elements.push(
-          <li key={i} className="ml-6 text-sm text-foreground/80 leading-relaxed mb-1 list-disc">
+          <li key={i} className="ml-5 text-sm text-foreground/70 leading-relaxed mb-1 list-disc">
             {cleanedText}
           </li>
         );
         continue;
       }
 
-      // Handle regular text with bold markdown
       if (trimmed.includes('**')) {
         const styledText = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
         elements.push(
-          <p key={i} className="text-sm text-foreground/80 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: styledText }} />
+          <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: styledText }} />
         );
         continue;
       }
 
-      // Regular text
       elements.push(
-        <p key={i} className="text-sm text-foreground/80 leading-relaxed mb-2">{trimmed}</p>
+        <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2">{trimmed}</p>
       );
     }
 
@@ -154,91 +142,111 @@ export function ChangelogDialog() {
 
   return (
     <Dialog open={changelogDialogOpen} onOpenChange={setChangelogDialogOpen}>
-      <DialogContent className="!max-w-6xl w-[90vw] p-0 gap-0" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif' }}>
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="!max-w-5xl w-[85vw] p-0 gap-0 rounded-2xl overflow-hidden" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif' }}>
+        <div className="px-6 pt-6 pb-4 border-b border-border/40">
+          <DialogTitle className="text-3xl font-bold tracking-tight">
             Changelog
-            <span className="text-sm font-normal text-muted-foreground">v{APP_VERSION}</span>
           </DialogTitle>
-          <DialogDescription>
-            View release notes and version history
+          <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+            v{APP_VERSION} — Release notes and version history
           </DialogDescription>
-        </DialogHeader>
+        </div>
 
-        {/* Releases List */}
-        <ScrollArea className="h-[calc(90vh-140px)] max-h-[700px]">
-          <div className="space-y-3 px-6 py-4">
+        <ScrollArea className="h-[calc(85vh-120px)] max-h-[650px]">
+          <div className="px-6 py-5">
           {isLoadingReleases ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : releases.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-16">
               <p className="text-sm text-muted-foreground">No releases found</p>
             </div>
           ) : (
-            releases.map((release) => {
-              const isExpanded = expandedReleases.has(release.tag_name);
-              const isCurrentVersion = release.tag_name === 'v' + APP_VERSION || release.tag_name === APP_VERSION;
+            <div className="relative">
+              {/* Timeline line */}
+              <div className="absolute left-[9px] top-3 bottom-3 w-px bg-border/50" />
 
-              return (
-                <div
-                  key={release.tag_name}
-                  className={`border border-border rounded-lg overflow-hidden ${
-                    isCurrentVersion ? 'border-green-500/50 bg-green-500/5' : ''
-                  }`}
-                >
-                  {/* Release Header */}
-                  <button
-                    onClick={() => toggleRelease(release.tag_name)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{release.tag_name}</span>
-                        {isCurrentVersion && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-500 border border-green-500/30">
-                            Current
-                          </span>
-                        )}
+              <div className="space-y-1">
+                {releases.map((release, index) => {
+                  const isExpanded = expandedReleases.has(release.tag_name);
+                  const isCurrentVersion = release.tag_name === 'v' + APP_VERSION || release.tag_name === APP_VERSION;
+
+                  return (
+                    <div
+                      key={release.tag_name}
+                      className="relative pl-9"
+                      style={{ animation: `metadata-fade-in 300ms ease-out ${Math.min(index, 10) * 40}ms both` }}
+                    >
+                      {/* Timeline dot */}
+                      <div className={`absolute left-0 top-4 w-[19px] h-[19px] rounded-full border-2 z-10 ${
+                        isCurrentVersion
+                          ? 'bg-primary border-primary shadow-[0_0_10px_rgba(var(--primary),0.4)]'
+                          : 'bg-card border-border/60'
+                      }`} />
+
+                      <div className={`rounded-xl overflow-hidden transition-colors duration-200 ${
+                        isCurrentVersion ? 'bg-primary/5' : 'hover:bg-muted/20'
+                      }`}>
+                        {/* Release Header */}
+                        <button
+                          onClick={() => toggleRelease(release.tag_name)}
+                          className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-foreground">{release.tag_name}</span>
+                            {isCurrentVersion && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+                                Current
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground/60">
+                              {formatDate(release.published_at)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <a
+                              href={release.html_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 hover:bg-muted/40 rounded-lg transition-colors"
+                              title="View on GitHub"
+                            >
+                              <ExternalLink className="w-4 h-4 text-muted-foreground/50 hover:text-foreground" />
+                            </a>
+                            <div className={`p-1 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown className="w-5 h-5 text-muted-foreground/50" />
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Release Body — always mounted, animated via grid */}
+                        <div
+                          className="grid transition-[grid-template-rows,opacity] duration-350 ease-out"
+                          style={{
+                            gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                            opacity: isExpanded ? 1 : 0,
+                            transitionDuration: '350ms',
+                          }}
+                        >
+                          <div className="overflow-hidden">
+                            <div className="px-4 pb-4 pt-1">
+                              <div className="rounded-xl bg-muted/15 p-4">
+                                {release.body ? formatChangelog(release.body) : (
+                                  <p className="text-sm text-muted-foreground italic">No changelog provided</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(release.published_at)}
-                      </span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={release.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1 hover:bg-accent rounded-md transition-colors"
-                        title="View on GitHub"
-                      >
-                        <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                      </a>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Release Body (Changelog) */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 border-t border-border">
-                      <div className="max-w-none">
-                        {release.body ? formatChangelog(release.body) : (
-                          <p className="text-sm text-muted-foreground italic">No changelog provided</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                  );
+                })}
+              </div>
+            </div>
           )}
           </div>
         </ScrollArea>

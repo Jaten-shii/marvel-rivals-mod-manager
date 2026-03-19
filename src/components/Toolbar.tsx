@@ -10,7 +10,12 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ onArchiveSelect }: ToolbarProps) {
-  const { filters, setFilters, viewMode, setViewMode, sortBy, setSortBy } = useUIStore();
+  const filters = useUIStore((state) => state.filters);
+  const setFilters = useUIStore((state) => state.setFilters);
+  const viewMode = useUIStore((state) => state.viewMode);
+  const setViewMode = useUIStore((state) => state.setViewMode);
+  const sortBy = useUIStore((state) => state.sortBy);
+  const setSortBy = useUIStore((state) => state.setSortBy);
   const { setPreferencesOpen } = useUIStoreOld();
   const [showSortMenu, setShowSortMenu] = useState(false);
 

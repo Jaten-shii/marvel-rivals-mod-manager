@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from '@/components/ui/sidebar'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useUIStore } from '@/store/ui-store'
 import { GeneralPane } from './panes/GeneralPane'
 import { AppearancePane } from './panes/AppearancePane'
@@ -103,8 +104,8 @@ export function PreferencesDialog() {
           </Sidebar>
 
           <main className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-16 shrink-0 items-center gap-2">
-              <div className="flex items-center gap-2 px-4">
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/40">
+              <div className="flex items-center gap-2 px-5">
                 <Breadcrumb>
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
@@ -121,11 +122,13 @@ export function PreferencesDialog() {
               </div>
             </header>
 
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0 max-h-[calc(750px-4rem)]">
-              {activePane === 'general' && <GeneralPane />}
-              {activePane === 'appearance' && <AppearancePane />}
-              {activePane === 'advanced' && <AdvancedPane />}
-            </div>
+            <ScrollArea className="h-[calc(750px-3.5rem)]">
+              <div className="flex flex-col gap-4 p-5 pt-5 pr-5">
+                {activePane === 'general' && <GeneralPane />}
+                {activePane === 'appearance' && <AppearancePane />}
+                {activePane === 'advanced' && <AdvancedPane />}
+              </div>
+            </ScrollArea>
           </main>
         </SidebarProvider>
       </DialogContent>

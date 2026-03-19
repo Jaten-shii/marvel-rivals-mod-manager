@@ -23,19 +23,12 @@ export function useGetMods() {
   return useQuery({
     queryKey: MODS_QUERY_KEY,
     queryFn: async () => {
-      try {
-        console.log('[useMods] Fetching mods...')
-        const mods = await invoke<ModInfo[]>('get_all_mods')
-        console.log('[useMods] Loaded mods:', mods.length, mods)
-        return mods
-      } catch (error) {
-        console.error('[useMods] Error loading mods:', error)
-        throw error
-      }
+      const mods = await invoke<ModInfo[]>('get_all_mods')
+      return mods
     },
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    refetchOnWindowFocus: true,
-    retry: false, // Don't retry on error for easier debugging
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    retry: false,
   })
 }
 
@@ -47,22 +40,15 @@ export function useInstallMod() {
 
   return useMutation({
     mutationFn: async (filePath: string) => {
-      console.log('[useMods] Installing mod from:', filePath)
       return await invoke<ModInfo>('install_mod', { filePath })
     },
     onSuccess: (newMod) => {
-      console.log('[useMods] Mod installed successfully:', newMod.name)
-
-      // Optimistic update: add new mod to existing list instead of invalidating
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
-        // Add new mod to the beginning of the list
         return [newMod, ...oldMods]
       })
-
       toast.success(`Mod "${newMod.name}" installed successfully`)
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to install mod:', error)
       toast.error(`Failed to install mod: ${error.message}`)
     },
   })
@@ -76,9 +62,6 @@ export function useToggleMod() {
 
   return useMutation({
     mutationFn: async ({ modId, enabled }: { modId: string; enabled: boolean }) => {
-      console.log('[useMods] Toggling mod:', modId, enabled)
-
-      // Check if game is running
       const isGameRunning = await checkGameRunning()
       if (isGameRunning) {
         throw new Error('Cannot enable/disable mods while Marvel Rivals is running. Please close the game first.')
@@ -89,19 +72,14 @@ export function useToggleMod() {
     },
     onSuccess: (data) => {
       const action = data.enabled ? 'enabled' : 'disabled'
-      console.log('[useMods] Mod', action, 'successfully')
-
-      // Optimistic update: update specific mod instead of invalidating all
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
         return oldMods.map(mod =>
           mod.id === data.modId ? { ...mod, enabled: data.enabled } : mod
         )
       })
-
       toast.success(`Mod ${action} successfully`)
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to toggle mod:', error)
       toast.error(error.message)
     },
   })
@@ -114,8 +92,7 @@ async function checkGameRunning(): Promise<boolean> {
   try {
     const isRunning = await invoke<boolean>('is_game_running')
     return isRunning
-  } catch (error) {
-    console.error('[useMods] Failed to check game status:', error)
+  } catch {
     return false
   }
 }
@@ -128,9 +105,6 @@ export function useDeleteMod() {
 
   return useMutation({
     mutationFn: async (modId: string) => {
-      console.log('[useMods] Deleting mod:', modId)
-
-      // Check if game is running
       const isGameRunning = await checkGameRunning()
       if (isGameRunning) {
         throw new Error('Cannot delete mods while Marvel Rivals is running. Please close the game first.')
@@ -140,17 +114,12 @@ export function useDeleteMod() {
       return modId
     },
     onSuccess: (modId) => {
-      console.log('[useMods] Mod deleted successfully')
-
-      // Optimistic update: remove mod from list
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
         return oldMods.filter(mod => mod.id !== modId)
       })
-
       toast.success('Mod deleted successfully')
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to delete mod:', error)
       toast.error(error.message)
     },
   })
@@ -158,22 +127,17 @@ export function useDeleteMod() {
 
 /**
  * Hook to toggle mod enabled/disabled state
- * Moves mod files between active and disabled directories
  */
 export function useToggleModEnabled() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (modId: string) => {
-      console.log('[useMods] Toggling mod enabled state:', modId)
-
-      // Check if game is running
       const isGameRunning = await checkGameRunning()
       if (isGameRunning) {
         throw new Error('Cannot enable/disable mods while Marvel Rivals is running. Please close the game first.')
       }
 
-      // Get current mod state
       const mods = queryClient.getQueryData<ModInfo[]>(MODS_QUERY_KEY)
       const mod = mods?.find((m) => m.id === modId)
 
@@ -182,26 +146,19 @@ export function useToggleModEnabled() {
       }
 
       const newEnabledState = !mod.enabled
-
-      // Toggle enabled state
       await invoke('enable_mod', { modId, enabled: newEnabledState })
 
       return { modId, enabled: newEnabledState }
     },
     onSuccess: (data) => {
-      console.log('[useMods] Mod enabled state toggled successfully')
-
-      // Optimistic update: update specific mod
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
         return oldMods.map(mod =>
           mod.id === data.modId ? { ...mod, enabled: data.enabled } : mod
         )
       })
-
       toast.success('Mod status updated')
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to toggle mod:', error)
       toast.error(error.message)
     },
   })
@@ -215,9 +172,6 @@ export function useToggleFavorite() {
 
   return useMutation({
     mutationFn: async (modId: string) => {
-      console.log('[useMods] Toggling mod favorite:', modId)
-
-      // Get current mod to toggle favorite
       const mods = queryClient.getQueryData<ModInfo[]>(MODS_QUERY_KEY)
       const mod = mods?.find((m) => m.id === modId)
 
@@ -225,7 +179,6 @@ export function useToggleFavorite() {
         throw new Error('Mod not found')
       }
 
-      // Toggle favorite and update metadata
       const updatedMetadata: ModMetadata = {
         ...mod.metadata,
         isFavorite: !mod.isFavorite,
@@ -235,19 +188,14 @@ export function useToggleFavorite() {
     },
     onSuccess: (updatedMod) => {
       const action = updatedMod.isFavorite ? 'added to' : 'removed from'
-      console.log(`[useMods] Mod ${action} favorites successfully`)
-
-      // Optimistic update: update specific mod
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
         return oldMods.map(mod =>
           mod.id === updatedMod.id ? updatedMod : mod
         )
       })
-
       toast.success(`Mod ${action} favorites`)
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to toggle favorite:', error)
       toast.error(`Failed to toggle favorite: ${error.message}`)
     },
   })
@@ -261,23 +209,24 @@ export function useUpdateModMetadata() {
 
   return useMutation({
     mutationFn: async ({ modId, metadata }: { modId: string; metadata: ModMetadata }) => {
-      console.log('[useMods] Updating mod metadata:', modId)
-      return await invoke<ModInfo>('update_mod_metadata', { modId, metadata })
+      const updatedMod = await invoke<ModInfo>('update_mod_metadata', { modId, metadata })
+      return { oldModId: modId, updatedMod }
     },
-    onSuccess: (updatedMod) => {
-      console.log('[useMods] Metadata updated successfully:', updatedMod.name)
-
-      // Optimistic update: update specific mod
+    onSuccess: ({ oldModId, updatedMod }) => {
       queryClient.setQueryData<ModInfo[]>(MODS_QUERY_KEY, (oldMods = []) => {
-        return oldMods.map(mod =>
-          mod.id === updatedMod.id ? updatedMod : mod
-        )
+        if (oldModId === updatedMod.id) {
+          return oldMods.map(mod =>
+            mod.id === updatedMod.id ? updatedMod : mod
+          )
+        } else {
+          return oldMods
+            .filter(mod => mod.id !== oldModId)
+            .concat(updatedMod)
+        }
       })
-
       toast.success('Mod metadata updated successfully')
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to update metadata:', error)
       toast.error(`Failed to update metadata: ${error.message}`)
     },
   })
@@ -291,15 +240,12 @@ export function useRemoveProfileFromAllMods() {
 
   return useMutation({
     mutationFn: async (profileId: string) => {
-      console.log('[useMods] Removing profile from all mods:', profileId)
       return await invoke<number>('remove_profile_from_all_mods', { profileId })
     },
-    onSuccess: (count) => {
-      console.log('[useMods] Profile removed from', count, 'mods')
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
     },
     onError: (error: Error) => {
-      console.error('[useMods] Failed to remove profile:', error)
       toast.error(`Failed to remove profile: ${error.message}`)
     },
   })
@@ -313,13 +259,11 @@ export function useGetCostumesForCharacter(character: Character | null) {
     queryKey: ['costumes', character],
     queryFn: async () => {
       if (!character) return []
-      console.log('[useMods] Fetching costumes for character:', character)
       const costumes = await invoke<Costume[]>('get_costumes_for_character', { character })
-      console.log('[useMods] Loaded costumes:', costumes.length)
       return costumes
     },
-    enabled: !!character, // Only run query if character is selected
-    staleTime: 300000, // Cache for 5 minutes (costume data rarely changes)
+    enabled: !!character,
+    staleTime: 300000,
   })
 }
 
@@ -330,11 +274,9 @@ export function useGetAllCostumes() {
   return useQuery({
     queryKey: ['costumes', 'all'],
     queryFn: async () => {
-      console.log('[useMods] Fetching all costumes')
       const costumes = await invoke<Record<string, Costume[]>>('get_all_costumes')
-      console.log('[useMods] Loaded all costumes')
       return costumes
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 300000,
   })
 }

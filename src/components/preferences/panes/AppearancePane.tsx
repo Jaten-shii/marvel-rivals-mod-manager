@@ -1,36 +1,16 @@
 import React, { useCallback } from 'react'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/hooks/use-theme'
 import { usePreferences, useSavePreferences } from '@/services/preferences'
 import { Moon, Sun, TreePine, Flame, Snowflake } from 'lucide-react'
-
-const SettingsField: React.FC<{
-  label: string
-  children: React.ReactNode
-  description?: string
-  centerText?: boolean
-  largeLabel?: boolean
-}> = ({ label, children, description, centerText = false, largeLabel = false }) => (
-  <div className="space-y-2">
-    <Label className={`font-medium text-foreground ${largeLabel ? 'text-lg' : 'text-sm'} ${centerText ? 'text-center block' : ''}`}>{label}</Label>
-    {children}
-    {description && (
-      <p className={`text-sm text-muted-foreground ${centerText ? 'text-center' : ''}`}>{description}</p>
-    )}
-  </div>
-)
+import type { BackgroundIntensity } from '@/types/preferences'
 
 const SettingsSection: React.FC<{
   title: string
   children: React.ReactNode
 }> = ({ title, children }) => (
-  <div className="space-y-4">
-    <div>
-      <h3 className="text-lg font-medium text-foreground">{title}</h3>
-      <Separator className="mt-2" />
-    </div>
-    <div className="space-y-4">{children}</div>
+  <div className="space-y-3">
+    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">{title}</h3>
+    <div className="space-y-3">{children}</div>
   </div>
 )
 
@@ -99,12 +79,43 @@ const fontOptions: FontOption[] = [
   },
 ]
 
+type IntensityOption = {
+  id: BackgroundIntensity
+  name: string
+  description: string
+  previewColor: string
+}
+
+const intensityOptions: IntensityOption[] = [
+  {
+    id: 'normal',
+    name: 'Normal',
+    description: 'Default grey',
+    previewColor: 'oklch(0.2355 0.0131 243)',
+  },
+  {
+    id: 'dim',
+    name: 'Dim',
+    description: 'Darker grey',
+    previewColor: 'oklch(0.15 0.01 243)',
+  },
+  {
+    id: 'black',
+    name: 'Black',
+    description: 'True black',
+    previewColor: 'oklch(0 0 0)',
+  },
+]
+
 export const AppearancePane: React.FC = () => {
   const { theme, setTheme } = useTheme()
   const { data: preferences } = usePreferences()
   const savePreferences = useSavePreferences()
   const [selectedFont, setSelectedFont] = React.useState<'ubuntu' | 'quicksand'>(
     (preferences?.font as 'ubuntu' | 'quicksand') || 'quicksand'
+  )
+  const [selectedIntensity, setSelectedIntensity] = React.useState<BackgroundIntensity>(
+    (preferences?.backgroundIntensity as BackgroundIntensity) || 'normal'
   )
 
   const handleThemeChange = useCallback(
@@ -113,9 +124,9 @@ export const AppearancePane: React.FC = () => {
       setTheme(value)
 
       // Persist the theme preference to disk
-      savePreferences.mutate({ theme: value, font: selectedFont })
+      savePreferences.mutate({ theme: value, font: selectedFont, backgroundIntensity: selectedIntensity })
     },
-    [setTheme, savePreferences, selectedFont]
+    [setTheme, savePreferences, selectedFont, selectedIntensity]
   )
 
   const handleFontChange = useCallback(
@@ -123,9 +134,24 @@ export const AppearancePane: React.FC = () => {
       setSelectedFont(value)
 
       // Persist font preference to disk (ThemeProvider will apply it)
-      savePreferences.mutate({ theme, font: value })
+      savePreferences.mutate({ theme, font: value, backgroundIntensity: selectedIntensity })
     },
-    [savePreferences, theme]
+    [savePreferences, theme, selectedIntensity]
+  )
+
+  const handleIntensityChange = useCallback(
+    async (value: BackgroundIntensity) => {
+      console.log('[AppearancePane] handleIntensityChange called with:', value)
+      console.log('[AppearancePane] Current theme:', theme)
+      console.log('[AppearancePane] Current font:', selectedFont)
+      setSelectedIntensity(value)
+
+      // Persist intensity preference to disk (ThemeProvider will apply it)
+      const payload = { theme, font: selectedFont, backgroundIntensity: value }
+      console.log('[AppearancePane] Saving preferences:', payload)
+      savePreferences.mutate(payload)
+    },
+    [savePreferences, theme, selectedFont]
   )
 
   // Sync local state with loaded preferences
@@ -134,117 +160,131 @@ export const AppearancePane: React.FC = () => {
       const fontValue = preferences.font as 'ubuntu' | 'quicksand'
       setSelectedFont(fontValue)
     }
-  }, [preferences?.font])
+    if (preferences?.backgroundIntensity) {
+      setSelectedIntensity(preferences.backgroundIntensity as BackgroundIntensity)
+    }
+  }, [preferences?.font, preferences?.backgroundIntensity])
 
   return (
-    <div className="space-y-6">
-      <SettingsSection title="Theme">
-        <SettingsField
-          label="Color"
-          description="Choose your preferred color theme from the Marvel Rivals collection"
-          centerText={true}
-          largeLabel={true}
-        >
-          <div className="grid grid-cols-5 gap-4 mt-2">
-            {themeOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleThemeChange(option.id)}
-                disabled={savePreferences.isPending}
-                className={`
-                  group relative flex flex-col items-center justify-center gap-3 p-6 rounded-lg border-2 transition-all duration-200 aspect-square
-                  ${theme === option.id
-                    ? 'border-primary bg-primary/10 shadow-md'
-                    : 'border-border bg-card hover:border-primary/50 hover:bg-card/80 hover:-translate-y-1 hover:shadow-lg'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
+    <div className="space-y-8">
+      {/* Color Theme Section */}
+      <SettingsSection title="Color Theme">
+        <div className="grid grid-cols-5 gap-2">
+          {themeOptions.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => handleThemeChange(option.id)}
+              disabled={savePreferences.isPending}
+              className={`
+                group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all duration-200 aspect-square
+                ${theme === option.id
+                  ? 'bg-primary/10 ring-2 ring-primary shadow-sm'
+                  : 'bg-muted/20 hover:bg-muted/40 hover:-translate-y-0.5'
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+              style={
+                theme === option.id ? { '--tw-ring-color': option.activeColor } as React.CSSProperties : undefined
+              }
+              onMouseEnter={(e) => {
+                if (theme !== option.id) {
+                  e.currentTarget.style.backgroundColor = ''
+                }
+              }}
+            >
+              {theme === option.id && (
+                <div className="absolute top-1.5 right-1.5">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: option.activeColor }}>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              <div
+                className="flex items-center justify-center"
                 style={{
-                  borderColor: theme === option.id ? option.activeColor : undefined,
-                }}
-                onMouseEnter={(e) => {
-                  if (theme !== option.id) {
-                    e.currentTarget.style.borderColor = option.hoverColor
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (theme !== option.id) {
-                    e.currentTarget.style.borderColor = ''
-                  }
+                  color: theme === option.id ? option.activeColor : '#9ca3af',
                 }}
               >
-                {theme === option.id && (
-                  <div className="absolute top-2 right-2">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style={{ color: option.activeColor }}>
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    color: theme === option.id ? option.activeColor : '#9ca3af',
-                  }}
-                >
-                  {option.icon}
-                </div>
-                <div className="text-center">
-                  <div className="font-medium text-xs text-foreground">{option.name}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </SettingsField>
+                {option.icon}
+              </div>
+              <div className="font-medium text-xs text-foreground">{option.name}</div>
+            </button>
+          ))}
+        </div>
+      </SettingsSection>
 
-        <Separator className="my-8" />
-
-        <SettingsField
-          label="Font"
-          description="Choose your preferred font family for the application"
-          centerText={true}
-          largeLabel={true}
-        >
-          <div className="flex justify-center gap-4 mt-2">
+      {/* Font & Background Row */}
+      <div className="grid grid-cols-2 gap-8">
+        {/* Font Section */}
+        <SettingsSection title="Font">
+          <div className="flex gap-2">
             {fontOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handleFontChange(option.id)}
                 disabled={savePreferences.isPending}
                 className={`
-                  group relative flex flex-col items-center justify-center gap-3 p-6 rounded-lg border-2 transition-all duration-200 w-40 h-32
+                  group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all duration-200 flex-1 h-28
                   ${selectedFont === option.id
-                    ? 'border-primary bg-primary/10 shadow-md'
-                    : 'border-border bg-card hover:border-primary/50 hover:bg-card/80 hover:-translate-y-1 hover:shadow-lg'
+                    ? 'bg-primary/10 ring-2 ring-primary shadow-sm'
+                    : 'bg-muted/20 hover:bg-muted/40 hover:-translate-y-0.5'
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
-                style={{
-                  borderColor: selectedFont === option.id ? (theme === 'forest' ? '#22c55e' : theme === 'ruby' ? '#ef4444' : theme === 'ice' ? '#3b82f6' : '#e5c300') : undefined,
-                }}
               >
                 {selectedFont === option.id && (
-                  <div className="absolute top-2 right-2">
-                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="absolute top-1.5 right-1.5">
+                    <svg className="w-3.5 h-3.5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
                 )}
                 <div
-                  className="text-4xl font-bold text-foreground"
-                  style={{
-                    fontFamily: option.fontFamily,
-                  }}
+                  className="text-3xl font-bold text-foreground"
+                  style={{ fontFamily: option.fontFamily }}
                 >
                   Aa
                 </div>
-                <div className="text-center">
-                  <div className="font-medium text-xs text-foreground">{option.name}</div>
-                </div>
+                <div className="font-medium text-xs text-foreground">{option.name}</div>
               </button>
             ))}
           </div>
-        </SettingsField>
-      </SettingsSection>
+        </SettingsSection>
+
+        {/* Background Intensity Section */}
+        <SettingsSection title="Background">
+          <div className="flex gap-2">
+            {intensityOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleIntensityChange(option.id)}
+                disabled={savePreferences.isPending}
+                className={`
+                  group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all duration-200 flex-1 h-28
+                  ${selectedIntensity === option.id
+                    ? 'bg-primary/10 ring-2 ring-primary shadow-sm'
+                    : 'bg-muted/20 hover:bg-muted/40 hover:-translate-y-0.5'
+                  }
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                {selectedIntensity === option.id && (
+                  <div className="absolute top-1.5 right-1.5">
+                    <svg className="w-3.5 h-3.5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                <div
+                  className="w-10 h-10 rounded-md"
+                  style={{ backgroundColor: option.previewColor }}
+                />
+                <div className="font-medium text-xs text-foreground">{option.name}</div>
+              </button>
+            ))}
+          </div>
+        </SettingsSection>
+      </div>
     </div>
   )
 }
