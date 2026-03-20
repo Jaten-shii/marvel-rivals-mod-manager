@@ -37,6 +37,11 @@
       "imagePath": "adam-warlock/img_icon_king-in-white.png"
     },
     {
+      "id": "living-tribunal",
+      "name": "Living Tribunal",
+      "imagePath": "adam-warlock/img_icon_living-tribunal.png"
+    },
+    {
       "id": "magus",
       "name": "Magus",
       "imagePath": "adam-warlock/img_icon_magus.png"
@@ -63,6 +68,11 @@
       "id": "divine-dragon-wing",
       "name": "Divine Dragon Wing",
       "imagePath": "angela/img_icon_divine-dragon-wing.png"
+    },
+    {
+      "id": "doom-angel",
+      "name": "Doom Angel",
+      "imagePath": "angela/img_icon_doom-angel.png"
     },
     {
       "id": "odins-beautiful-daughter",
@@ -356,6 +366,11 @@
       "imagePath": "deadpool/img_icon_captain-pool.png"
     },
     {
+      "id": "wade-wilson-the-spirit-squad",
+      "name": "Wade Wilson The Spirit Squad",
+      "imagePath": "deadpool/img_icon_wade-wilson-the-spirit-squad.png"
+    },
+    {
       "id": "workwear-woes",
       "name": "Workwear Woes",
       "imagePath": "deadpool/img_icon_workwear-woes.png"
@@ -417,6 +432,11 @@
       "id": "sorcerer-supreme-of-the-galaxy",
       "name": "Sorcerer Supreme Of The Galaxy",
       "imagePath": "doctor-strange/img_icon_sorcerer-supreme-of-the-galaxy.png"
+    },
+    {
+      "id": "stephen-sanders-the-doctor",
+      "name": "Stephen Sanders The Doctor",
+      "imagePath": "doctor-strange/img_icon_stephen-sanders-the-doctor.png"
     }
   ],
   "Elsa Bloodstone": [
@@ -574,6 +594,11 @@
       "isDefault": true
     },
     {
+      "id": "argent-archer",
+      "name": "Argent Archer",
+      "imagePath": "hawkeye/img_icon_argent-archer.png"
+    },
+    {
       "id": "binary-arrow",
       "name": "Binary Arrow",
       "imagePath": "hawkeye/img_icon_binary-arrow.png"
@@ -632,6 +657,11 @@
       "imagePath": "hela/img_icon_goddess-of-death.png"
     },
     {
+      "id": "helen-angerboda-the-rebel",
+      "name": "Helen Angerboda The Rebel",
+      "imagePath": "hela/img_icon_helen-angerboda-the-rebel.png"
+    },
+    {
       "id": "merciful-queen",
       "name": "Merciful Queen",
       "imagePath": "hela/img_icon_merciful-queen.png"
@@ -642,6 +672,11 @@
       "imagePath": "hela/img_icon_queen-in-black.png"
     },
     {
+      "id": "ruby-revolt",
+      "name": "Ruby Revolt",
+      "imagePath": "hela/img_icon_ruby-revolt.png"
+    },
+    {
       "id": "the-grim-lady",
       "name": "The Grim Lady",
       "imagePath": "hela/img_icon_the-grim-lady.png"
@@ -650,6 +685,11 @@
       "id": "ultimate",
       "name": "Ultimate",
       "imagePath": "hela/img_icon_ultimate.png"
+    },
+    {
+      "id": "violet-violence",
+      "name": "Violet Violence",
+      "imagePath": "hela/img_icon_violet-violence.png"
     },
     {
       "id": "will-of-galacta",
@@ -1073,6 +1113,11 @@
       "imagePath": "loki/img_icon_loki-season-2.png"
     },
     {
+      "id": "low-key-loki",
+      "name": "Low Key Loki",
+      "imagePath": "loki/img_icon_low-key-loki.png"
+    },
+    {
       "id": "presidential-attire",
       "name": "Presidential Attire",
       "imagePath": "loki/img_icon_presidential-attire.png"
@@ -1154,6 +1199,11 @@
       "id": "nolaehaneun-manyeo",
       "name": "Nolaehaneun Manyeo",
       "imagePath": "luna-snow/img_icon_nolaehaneun-manyeo.png"
+    },
+    {
+      "id": "park-sun-young-the-dancer",
+      "name": "Park Sun Young The Dancer",
+      "imagePath": "luna-snow/img_icon_park-sun-young-the-dancer.png"
     },
     {
       "id": "plasma-pulse",
@@ -1486,9 +1536,19 @@
   ],
   "Peni Parker": [
     {
+      "id": "badlands-lullaby",
+      "name": "Badlands Lullaby",
+      "imagePath": "peni-parker/img_icon_badlands-lullaby.png"
+    },
+    {
       "id": "blue-tarantula",
       "name": "Blue Tarantula",
       "imagePath": "peni-parker/img_icon_blue-tarantula.png"
+    },
+    {
+      "id": "cerulean-corruption",
+      "name": "Cerulean Corruption",
+      "imagePath": "peni-parker/img_icon_cerulean-corruption.png"
     },
     {
       "id": "floral-frights",
@@ -1514,6 +1574,11 @@
       "id": "snow-spdr",
       "name": "Snow Spdr",
       "imagePath": "peni-parker/img_icon_snow-spdr.png"
+    },
+    {
+      "id": "toxic-tint",
+      "name": "Toxic Tint",
+      "imagePath": "peni-parker/img_icon_toxic-tint.png"
     },
     {
       "id": "venm",
@@ -1715,6 +1780,11 @@
       "imagePath": "rocket-raccoon/img_icon_rocky.png"
     },
     {
+      "id": "rocky-the-transfer",
+      "name": "Rocky The Transfer",
+      "imagePath": "rocket-raccoon/img_icon_rocky-the-transfer.png"
+    },
+    {
       "id": "sunshine-raccoon",
       "name": "Sunshine Raccoon",
       "imagePath": "rocket-raccoon/img_icon_sunshine-raccoon.png"
@@ -1834,6 +1904,11 @@
       "id": "white-witch",
       "name": "White Witch",
       "imagePath": "scarlet-witch/img_icon_white-witch.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will Of Galacta",
+      "imagePath": "scarlet-witch/img_icon_will-of-galacta.png"
     },
     {
       "id": "witch-of-the-evil-eye",
@@ -2111,6 +2186,11 @@
       "imagePath": "the-punisher/img_icon_franken-castle.png"
     },
     {
+      "id": "marauder-marksman",
+      "name": "Marauder Marksman",
+      "imagePath": "the-punisher/img_icon_marauder-marksman.png"
+    },
+    {
       "id": "punisher-2099",
       "name": "Punisher 2099",
       "imagePath": "the-punisher/img_icon_punisher-2099.png"
@@ -2217,6 +2297,11 @@
       "imagePath": "thor/img_icon_lightning-fast.png"
     },
     {
+      "id": "low-key-thor",
+      "name": "Low Key Thor",
+      "imagePath": "thor/img_icon_low-key-thor.png"
+    },
+    {
       "id": "majestic-raiment",
       "name": "Majestic Raiment",
       "imagePath": "thor/img_icon_majestic-raiment.png"
@@ -2278,6 +2363,11 @@
       "id": "mechanical-phantom",
       "name": "Mechanical Phantom",
       "imagePath": "ultron/img_icon_mechanical-phantom.png"
+    },
+    {
+      "id": "odinforce-ultron",
+      "name": "Odinforce Ultron",
+      "imagePath": "ultron/img_icon_odinforce-ultron.png"
     },
     {
       "id": "wasteland-robot",
@@ -2366,6 +2456,29 @@
       "id": "space-knight",
       "name": "Space Knight",
       "imagePath": "venom/img_icon_space-knight.png"
+    }
+  ],
+  "White Fox": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "white-fox/img_icon_white-fox.png",
+      "isDefault": true
+    },
+    {
+      "id": "rosy-recon",
+      "name": "Rosy Recon",
+      "imagePath": "white-fox/img_icon_rosy-recon.png"
+    },
+    {
+      "id": "secret-agent",
+      "name": "Secret Agent",
+      "imagePath": "white-fox/img_icon_secret-agent.png"
+    },
+    {
+      "id": "yoon-ji-woo-the-leader",
+      "name": "Yoon Ji Woo The Leader",
+      "imagePath": "white-fox/img_icon_yoon-ji-woo-the-leader.png"
     }
   ],
   "Winter Soldier": [

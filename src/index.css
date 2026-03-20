@@ -620,6 +620,21 @@ html.light-classic .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   color: white !important;
 }
 
+/* Thin scrollbar for dropdowns */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* Metadata dialog staggered entrance */
 @keyframes metadata-fade-in {
   from {

@@ -114,6 +114,8 @@ pub enum Character {
 
     #[serde(rename = "Elsa Bloodstone")]
     ElsaBloodstone,
+    #[serde(rename = "White Fox")]
+    WhiteFox,
 
     // Special
     #[serde(rename = "All Characters")]
@@ -171,6 +173,7 @@ impl Character {
             Character::Mantis,
             Character::RocketRaccoon,
             Character::ElsaBloodstone,
+            Character::WhiteFox,
             Character::AllCharacters,
         ]
     }
@@ -224,6 +227,7 @@ impl Character {
             Character::Mantis => &["mantis"],
             Character::RocketRaccoon => &["rocketraccoon", "rocket", "raccoon"],
             Character::ElsaBloodstone => &["elsabloodstone", "elsa", "bloodstone"],
+            Character::WhiteFox => &["whitefox", "white", "fox", "yoonji"],
             Character::AllCharacters => &["allcharacters", "all", "everyone", "every"],
         }
     }
@@ -279,6 +283,7 @@ impl std::fmt::Display for Character {
             Character::Mantis => "Mantis",
             Character::RocketRaccoon => "Rocket Raccoon",
             Character::ElsaBloodstone => "Elsa Bloodstone",
+            Character::WhiteFox => "White Fox",
             Character::AllCharacters => "All Characters",
         };
         write!(f, "{}", name)
@@ -324,6 +329,10 @@ pub struct ModMetadata {
     // Folder structure tracking (for disable/enable operations)
     // Stores the relative path from ~mods root (e.g., "Skins/Magik/Classic-Eldritch-Armor")
     pub original_folder_path: Option<String>,
+
+    // Parent mod linkage (for add-on mods)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_mod_id: Option<String>,
 }
 
 // ===== Mod Info =====

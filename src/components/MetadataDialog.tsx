@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '../stores';
 import { useGetMods, useUpdateModMetadata, useGetCostumesForCharacter } from '../hooks/useMods';
@@ -67,8 +68,20 @@ export function MetadataDialog() {
   const [character, setCharacter] = useState<Character | ''>('');
   const [costume, setCostume] = useState<string>('');
   const [isNsfw, setIsNsfw] = useState(false);
+  const [parentModId, setParentModId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [parentSearchQuery, setParentSearchQuery] = useState('');
+  const [showParentPicker, setShowParentPicker] = useState(false);
+  const parentInputRef = useRef<HTMLInputElement>(null);
+  const [parentPickerPos, setParentPickerPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const updateParentPickerPos = () => {
+    if (parentInputRef.current) {
+      const rect = parentInputRef.current.getBoundingClientRect();
+      setParentPickerPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+  };
 
   // Author autocomplete state
   const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
@@ -93,6 +106,39 @@ export function MetadataDialog() {
     const searchLower = author.toLowerCase();
     return uniqueAuthors.filter(a => a.toLowerCase().includes(searchLower));
   }, [author, uniqueAuthors]);
+
+  // Check if subtitle contains "Add-on"
+  const isAddon = subtitle.toLowerCase().includes('add-on');
+
+  // Potential parent mods (exclude self, exclude other addons, filter by character if set)
+  const parentModCandidates = useMemo(() => {
+    if (!mods || !mod) return [];
+    return mods
+      .filter(m => {
+        if (m.id === mod.id) return false;
+        if (m.metadata.subtitle?.toLowerCase().includes('add-on')) return false;
+        if (character && m.character !== character) return false;
+        return true;
+      })
+      .sort((a, b) => (a.metadata.title || a.name).localeCompare(b.metadata.title || b.name));
+  }, [mods, mod, character]);
+
+  // Filtered parent mods based on search
+  const filteredParentMods = useMemo(() => {
+    if (!parentSearchQuery.trim()) return parentModCandidates;
+    const q = parentSearchQuery.toLowerCase();
+    return parentModCandidates.filter(m =>
+      (m.metadata.title || m.name).toLowerCase().includes(q) ||
+      (m.metadata.author || '').toLowerCase().includes(q) ||
+      (m.character || '').toLowerCase().includes(q)
+    );
+  }, [parentModCandidates, parentSearchQuery]);
+
+  // Get the selected parent mod info
+  const selectedParentMod = useMemo(() => {
+    if (!parentModId || !mods) return null;
+    return mods.find(m => m.id === parentModId) || null;
+  }, [parentModId, mods]);
 
   // Fetch costumes for selected character
   const { data: costumes = [], isLoading: isLoadingCostumes } = useGetCostumesForCharacter(character || null);
@@ -120,6 +166,7 @@ export function MetadataDialog() {
       setCostume(mod.metadata.costume || '');
       setCostumeLoadedFromMod(!!mod.metadata.costume); // Track if costume came from mod
       setIsNsfw(mod.metadata.isNsfw);
+      setParentModId(mod.metadata.parentModId || null);
       setHasChanges(false);
 
       // Reset crop dialog state
@@ -188,10 +235,11 @@ export function MetadataDialog() {
         category !== mod.category ||
         (character || '') !== (mod.character || '') ||
         (costume || '') !== (mod.metadata.costume || '') ||
-        isNsfw !== mod.metadata.isNsfw;
+        isNsfw !== mod.metadata.isNsfw ||
+        (parentModId || null) !== (mod.metadata.parentModId || null);
       setHasChanges(changed);
     }
-  }, [mod, title, subtitle, author, description, category, character, costume, isNsfw]);
+  }, [mod, title, subtitle, author, description, category, character, costume, isNsfw, parentModId]);
 
   // Check for duplicate mods with same name + character + costume
   const duplicateMod = mods?.find((m) => {
@@ -213,7 +261,7 @@ export function MetadataDialog() {
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
-    await updateMetadata.mutateAsync({
+    const updatedMod = await updateMetadata.mutateAsync({
       modId: mod.id,
       metadata: {
         ...mod.metadata,
@@ -227,11 +275,29 @@ export function MetadataDialog() {
         character: character || null,
         costume: costume || null,
         isNsfw,
+        parentModId: parentModId || null,
       },
     });
 
-    // The backend's update_metadata already handles folder reorganization
-    // when character/category/title changes, so we don't need to call organize_mods
+    // If the mod ID changed (due to folder rename), update any addons pointing to the old ID
+    if (updatedMod && updatedMod.updatedMod.id !== mod.id && mods) {
+      const newId = updatedMod.updatedMod.id;
+      const addonsToMigrate = mods.filter(m => m.metadata.parentModId === mod.id);
+      for (const addon of addonsToMigrate) {
+        try {
+          await updateMetadata.mutateAsync({
+            modId: addon.id,
+            metadata: {
+              ...addon.metadata,
+              parentModId: newId,
+            },
+          });
+          console.log(`[MetadataDialog] Migrated addon "${addon.name}" to new parent ID: ${newId}`);
+        } catch (err) {
+          console.error(`[MetadataDialog] Failed to migrate addon "${addon.name}":`, err);
+        }
+      }
+    }
 
     setMetadataDialogOpen(false);
   };
@@ -387,8 +453,8 @@ export function MetadataDialog() {
       // Update timestamp to bust cache
       setThumbnailTimestamp(Date.now());
 
-      // Refresh mods query
-      await queryClient.invalidateQueries({ queryKey: ['mods', 'list'] });
+      // Force refetch mods to update card thumbnails
+      await queryClient.refetchQueries({ queryKey: ['mods', 'list'] });
     } catch (error) {
       console.error('Failed to save thumbnail:', error);
       toast.error('Failed to save thumbnail: ' + String(error));
@@ -413,7 +479,7 @@ export function MetadataDialog() {
   return (
     <>
     <Dialog open={metadataDialogOpen && !showCropDialog} onOpenChange={handleClose}>
-      <DialogContent className="w-[90vw] sm:max-w-[1400px] max-h-[90vh] p-0 overflow-hidden bg-card overflow-x-hidden rounded-2xl">
+      <DialogContent className="w-[92vw] sm:max-w-[1500px] max-h-[85vh] p-0 overflow-hidden bg-card overflow-x-hidden rounded-2xl flex flex-col">
         {!mod ? (
           <div className="p-12 flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -422,7 +488,7 @@ export function MetadataDialog() {
         ) : (
           <>
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-border/40">
+        <div className="px-6 pt-4 pb-3 border-b border-border/40">
           <DialogTitle className="text-2xl font-bold text-white tracking-tight">Edit Mod Metadata</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-0.5">
             Update mod information and thumbnail
@@ -430,7 +496,7 @@ export function MetadataDialog() {
         </div>
 
         {/* Two-Column Layout */}
-        <div className="grid grid-cols-[440px_1fr] h-[720px] overflow-x-hidden">
+        <div className="grid grid-cols-[440px_1fr] flex-1 min-h-0 overflow-x-hidden">
           {/* Left Column - Thumbnail */}
           <div className="px-6 py-5 border-r border-border/40 overflow-y-auto bg-background/50">
             <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out both' }}>
@@ -518,10 +584,10 @@ export function MetadataDialog() {
           </div>
 
           {/* Right Column - Metadata */}
-          <div className="px-6 py-5 overflow-y-auto overflow-x-hidden">
-            <div className="space-y-6">
+          <div className="px-6 py-4 overflow-y-auto">
+            <div className="space-y-4">
               {/* Basic Information */}
-              <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
+              <div className="space-y-2.5" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basic Information</h3>
 
                 {/* Name */}
@@ -534,7 +600,7 @@ export function MetadataDialog() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Mod name"
-                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
                     autoComplete="off"
                   />
                 </div>
@@ -549,7 +615,7 @@ export function MetadataDialog() {
                     value={subtitle}
                     onChange={(e) => setSubtitle(e.target.value)}
                     placeholder="Click presets below or type custom..."
-                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
                     autoComplete="off"
                   />
                   {/* Compact preset chips */}
@@ -569,7 +635,7 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${preset} • ${prev}` : preset);
                             }
                           }}
-                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
                             isSelected
                               ? 'bg-orange-500/25 text-orange-400'
                               : 'bg-muted text-gray-500 hover:text-orange-400 hover:bg-orange-500/15'
@@ -593,7 +659,7 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
                             isSelected
                               ? 'bg-emerald-500/25 text-emerald-400'
                               : 'bg-muted text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/15'
@@ -617,7 +683,7 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
                             isSelected
                               ? 'bg-cyan-500/25 text-cyan-400'
                               : 'bg-muted text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/15'
@@ -628,7 +694,7 @@ export function MetadataDialog() {
                       );
                     })}
                     {/* Audio presets (purple) */}
-                    {['Voice', 'Ult Voice', 'Ult Music', 'SFX'].map((preset) => {
+                    {['Voice', 'Ult Voice', 'Ultimate Music', 'SFX'].map((preset) => {
                       const isSelected = subtitle.includes(preset);
                       return (
                         <button
@@ -641,7 +707,7 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
                             isSelected
                               ? 'bg-purple-500/25 text-purple-400'
                               : 'bg-muted text-gray-500 hover:text-purple-400 hover:bg-purple-500/15'
@@ -665,7 +731,7 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
                             isSelected
                               ? 'bg-blue-500/25 text-blue-400'
                               : 'bg-muted text-gray-500 hover:text-blue-400 hover:bg-blue-500/15'
@@ -704,7 +770,7 @@ export function MetadataDialog() {
                       setTimeout(() => setShowAuthorSuggestions(false), 150);
                     }}
                     placeholder="Mod author name..."
-                    className="bg-muted/30 border-border/40 h-11 text-base rounded-xl"
+                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
                     autoComplete="off"
                   />
                   {/* Author suggestions dropdown */}
@@ -742,14 +808,14 @@ export function MetadataDialog() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter mod description..."
-                    rows={3}
-                    className="bg-muted/30 border-border/40 text-base resize-none rounded-xl"
+                    rows={2}
+                    className="bg-muted/30 border-border/40 text-sm resize-none rounded-xl"
                   />
                 </div>
               </div>
 
               {/* Category & Character */}
-              <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out 200ms both' }}>
+              <div className="space-y-2.5" style={{ animation: 'metadata-fade-in 400ms ease-out 200ms both' }}>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category & Character</h3>
 
                 {/* Horizontal Grid for Category, Character, and Costume */}
@@ -904,7 +970,7 @@ export function MetadataDialog() {
                 </div>
 
                 {/* NSFW Toggle */}
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10" style={{ animation: 'metadata-fade-in 400ms ease-out 300ms both' }}>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/10" style={{ animation: 'metadata-fade-in 400ms ease-out 300ms both' }}>
                   <div className="relative flex items-center">
                     <input
                       type="checkbox"
@@ -934,6 +1000,122 @@ export function MetadataDialog() {
                   </div>
                 </div>
               </div>
+
+              {/* Parent Mod Picker — only visible when Add-on is in subtitle */}
+              {isAddon && (
+                <div className="space-y-3" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Parent Mod</h3>
+
+                  {selectedParentMod ? (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20">
+                      {selectedParentMod.thumbnailPath && (
+                        <img
+                          src={convertFileSrc(selectedParentMod.thumbnailPath)}
+                          alt=""
+                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {selectedParentMod.metadata.title || selectedParentMod.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedParentMod.character || selectedParentMod.category}
+                          {selectedParentMod.metadata.author && ` · ${selectedParentMod.metadata.author}`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setParentModId(null)}
+                        className="text-xs text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-400/10"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        ref={parentInputRef}
+                        type="text"
+                        value={parentSearchQuery}
+                        onChange={(e) => {
+                          setParentSearchQuery(e.target.value);
+                          setShowParentPicker(true);
+                        }}
+                        onFocus={() => { updateParentPickerPos(); setShowParentPicker(true); }}
+                        placeholder="Search for parent mod..."
+                        onBlur={() => setTimeout(() => setShowParentPicker(false), 200)}
+                        className="w-full px-3 py-2 text-sm rounded-xl bg-muted/30 border border-border/40 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                      />
+                      {createPortal(
+                        <div
+                          onMouseDown={(e) => e.preventDefault()}
+                          onWheel={(e) => e.stopPropagation()}
+                          className="fixed z-[9999] bg-card border border-border/40 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+                          style={{
+                            opacity: showParentPicker ? 1 : 0,
+                            transform: showParentPicker ? 'translateY(0)' : 'translateY(-8px)',
+                            pointerEvents: showParentPicker ? 'auto' : 'none',
+                            transition: 'opacity 200ms ease, transform 200ms ease',
+                            top: parentPickerPos.top,
+                            left: parentPickerPos.left,
+                            width: parentPickerPos.width || 'auto',
+                          }}
+                        >
+                          <div
+                            className="max-h-[200px] overflow-y-auto overscroll-contain thin-scrollbar p-1"
+                            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}
+                            onWheel={(e) => e.stopPropagation()}
+                          >
+                            {filteredParentMods.length === 0 ? (
+                              <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                                No mods found
+                              </div>
+                            ) : (
+                              filteredParentMods.map((m) => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg hover:bg-muted/30 transition-colors"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setParentModId(m.id);
+                                    setParentSearchQuery('');
+                                    setShowParentPicker(false);
+                                  }}
+                                >
+                                  {m.thumbnailPath ? (
+                                    <img
+                                      src={convertFileSrc(m.thumbnailPath)}
+                                      alt=""
+                                      className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground text-xs flex-shrink-0">
+                                      ?
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">
+                                      {m.metadata.title || m.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {m.character || m.category}
+                                      {m.metadata.author && ` · ${m.metadata.author}`}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>,
+                        document.body
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              )}
             </div>
           </div>
         </div>

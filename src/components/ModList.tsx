@@ -3,7 +3,7 @@ import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite }
 import { useUIStore } from '../stores';
 import type { ModInfo, Costume } from '../types/mod.types';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Link, AlertTriangle, Shirt, Volume2, Palette, Gamepad2, Tag, Star, Monitor, Users } from 'lucide-react';
+import { Link, AlertTriangle, Shirt, Volume2, Palette, Gamepad2, Tag, Star, Monitor, Users, ChevronDown } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { ModContextMenu } from './ModContextMenu';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
@@ -22,7 +22,7 @@ const AnimatedCard = memo(function AnimatedCard({
 
   return (
     <div
-      className="animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both"
+      className="animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both self-start"
       style={{
         animationDelay: `${delay}s`,
       }}
@@ -240,6 +240,25 @@ export function ModList() {
     });
   }, [filteredMods, sortBy, profiles]);
 
+  // Group addons under their parent mods
+  const { parentMods, addonsByParent } = useMemo(() => {
+    const addonsByParent = new Map<string, ModInfo[]>();
+    const parentMods: ModInfo[] = [];
+
+    for (const mod of sortedMods) {
+      if (mod.metadata.parentModId) {
+        // This is an addon — group it under its parent
+        const existing = addonsByParent.get(mod.metadata.parentModId) || [];
+        existing.push(mod);
+        addonsByParent.set(mod.metadata.parentModId, existing);
+      } else {
+        parentMods.push(mod);
+      }
+    }
+
+    return { parentMods, addonsByParent };
+  }, [sortedMods]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -271,22 +290,25 @@ export function ModList() {
       <div className="h-full overflow-auto mod-list-scroll">
         <div className="p-4">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {sortedMods.map((mod, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+              {parentMods.map((mod, index) => (
                 <AnimatedCard key={mod.id} index={index}>
                   <ModCard
                     mod={mod}
                     allCostumes={allCostumes}
                     sortBy={sortBy}
+                    addons={addonsByParent.get(mod.id)}
                     onClick={() => setSelectedModId(mod.id)}
                     onContextMenu={(e) => handleContextMenu(e, mod)}
+                    onAddonClick={(addonId) => setSelectedModId(addonId)}
+                    onAddonContextMenu={(e, addon) => handleContextMenu(e, addon)}
                   />
                 </AnimatedCard>
               ))}
             </div>
           ) : (
             <div className="space-y-2">
-              {sortedMods.map((mod, index) => (
+              {parentMods.map((mod, index) => (
                 <AnimatedCard key={mod.id} index={index}>
                   <ModListItem
                     mod={mod}
@@ -320,18 +342,25 @@ const ModCard = memo(function ModCard({
   mod,
   allCostumes,
   sortBy,
+  addons,
   onClick,
   onContextMenu,
+  onAddonClick,
+  onAddonContextMenu,
 }: {
   mod: ModInfo;
   allCostumes: Record<string, Costume[]> | undefined;
   sortBy: string;
+  addons?: ModInfo[];
   onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
+  onAddonClick?: (addonId: string) => void;
+  onAddonContextMenu?: (e: React.MouseEvent, addon: ModInfo) => void;
 }) {
   const toggleEnabled = useToggleModEnabled();
   const toggleFavorite = useToggleFavorite();
   const profiles = useUIStore((state) => state.profiles);
+  const [addonsExpanded, setAddonsExpanded] = useState(false);
 
   // Get costume for this mod
   const costume = getCostumeForMod(mod, allCostumes);
@@ -353,7 +382,7 @@ const ModCard = memo(function ModCard({
   const CategoryIcon = categoryIcons[mod.category] || Palette;
 
   // Convert thumbnail path to Tauri asset URL
-  const thumbnailSrc = mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
+  const thumbnailSrc = mod.thumbnailPath ? `${convertFileSrc(mod.thumbnailPath)}?t=${new Date(mod.lastModified).getTime()}` : null;
 
   const handleToggleEnabled = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -416,17 +445,17 @@ const ModCard = memo(function ModCard({
       {/* Content */}
       <div className="p-3">
         {/* Badges Row - Category, NSFW, Linked, and Favorite Star */}
-        <div className="flex items-center gap-2 pb-2.5 border-b border-border">
+        <div className="flex items-center gap-2 pb-1.5 border-b border-border">
           <div className="flex flex-wrap gap-1.5 flex-1">
             {/* Category Badge with icon */}
-            <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium flex items-center gap-1 ${categoryColors[mod.category]}`}>
+            <span className={`text-[11px] px-2 py-px rounded-full border font-medium flex items-center gap-1 ${categoryColors[mod.category]}`}>
               <CategoryIcon className="w-3 h-3" />
               {mod.category}
             </span>
 
             {/* NSFW Badge */}
             {mod.metadata.isNsfw && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-medium flex items-center gap-1">
+              <span className="text-[11px] px-2 py-px rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 NSFW
               </span>
@@ -434,7 +463,7 @@ const ModCard = memo(function ModCard({
 
             {/* Linked Badge - only show if has nexusModId */}
             {mod.metadata.nexusModId && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30 font-medium flex items-center gap-1">
+              <span className="text-[11px] px-2 py-px rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30 font-medium flex items-center gap-1">
                 <Link className="w-3 h-3" />
                 Linked
               </span>
@@ -451,7 +480,7 @@ const ModCard = memo(function ModCard({
                 <Tooltip key={profileId}>
                   <TooltipTrigger asChild>
                     <span
-                      className="text-xs px-2.5 py-0.5 rounded-full border font-medium flex items-center gap-1"
+                      className="text-[11px] px-2 py-px rounded-full border font-medium flex items-center gap-1"
                       style={{
                         backgroundColor: `${profile.color}33`, // 20% opacity
                         color: profile.color,
@@ -563,37 +592,124 @@ const ModCard = memo(function ModCard({
           </div>
         )}
 
-        {/* Footer - Author, File Size, Date, and Status */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2.5 border-t border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-sm"><span className="text-muted-foreground font-normal">By </span><span className="font-bold text-foreground/70">{mod.metadata.author || 'Unknown'}</span></span>
-            <span>•</span>
-            <span>{formatFileSize(mod.fileSize)}</span>
-            <span>•</span>
-            {sortBy === 'updated' ? (
-              <span>{new Date(mod.lastModified).toLocaleDateString()} {new Date(mod.lastModified).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-            ) : (
-              <span>{new Date(mod.installDate).toLocaleDateString()} {new Date(mod.installDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-            )}
+        {/* Footer - Author, File Size, Date, Status, and Addons */}
+        <div className="pt-2.5 border-t border-border">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 min-w-0 truncate">
+              <span className="text-sm whitespace-nowrap"><span className="text-muted-foreground font-normal">By </span><span className="font-bold text-foreground/70">{mod.metadata.author || 'Unknown'}</span></span>
+              <span>•</span>
+              <span className="whitespace-nowrap">{formatFileSize(mod.fileSize)}</span>
+              <span>•</span>
+              <span className="whitespace-nowrap">
+              {sortBy === 'updated' ? (
+                new Date(mod.lastModified).toLocaleDateString()
+              ) : (
+                new Date(mod.installDate).toLocaleDateString()
+              )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {addons && addons.length > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setAddonsExpanded(!addonsExpanded); }}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                >
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${addonsExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                  {addons.length} Add-on{addons.length > 1 ? 's' : ''}
+                </button>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleToggleEnabled}
+                    className={`px-2 py-0.5 rounded text-xs font-medium transition-all duration-200 ${
+                      mod.enabled
+                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 hover:text-green-300'
+                        : 'bg-gray-500/20 text-gray-400 hover:bg-red-600 hover:text-white grayscale-0'
+                    }`}
+                    style={!mod.enabled ? { filter: 'grayscale(0)' } : undefined}
+                  >
+                    {mod.enabled ? 'Enabled' : 'Disabled'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {mod.enabled ? 'Click to disable this mod' : 'Click to enable this mod'}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleToggleEnabled}
-                className={`px-2 py-0.5 rounded text-xs font-medium transition-all duration-200 ${
-                  mod.enabled
-                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 hover:text-green-300'
-                    : 'bg-gray-500/20 text-gray-400 hover:bg-red-600 hover:text-white grayscale-0'
-                }`}
-                style={!mod.enabled ? { filter: 'grayscale(0)' } : undefined}
-              >
-                {mod.enabled ? 'Enabled' : 'Disabled'}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {mod.enabled ? 'Click to disable this mod' : 'Click to enable this mod'}
-            </TooltipContent>
-          </Tooltip>
+
+          {/* Addon dropdown */}
+          {addons && addons.length > 0 && (
+            <div
+              className="grid transition-[grid-template-rows] ease-out"
+              style={{
+                gridTemplateRows: addonsExpanded ? '1fr' : '0fr',
+                transitionDuration: '250ms',
+              }}
+            >
+              <div className="overflow-hidden">
+                <div className="pt-2 space-y-1">
+                  {addons.map((addon) => (
+                    <div
+                      key={addon.id}
+                      onClick={(e) => { e.stopPropagation(); onAddonClick?.(addon.id); }}
+                      onContextMenu={(e) => { e.stopPropagation(); e.preventDefault(); onAddonContextMenu?.(e, addon); }}
+                      className="flex items-center gap-3 px-2.5 py-2 rounded-lg bg-muted/10 hover:bg-muted/20 cursor-pointer transition-colors"
+                    >
+                      {addon.thumbnailPath ? (
+                        <img
+                          src={convertFileSrc(addon.thumbnailPath)}
+                          alt=""
+                          loading="lazy"
+                          className="w-11 h-11 rounded-lg object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-muted/20 flex items-center justify-center text-muted-foreground text-xs flex-shrink-0">
+                          +
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">
+                          {(() => {
+                            const title = addon.metadata.title || addon.name;
+                            const dashMatch = title.match(/^.+?\s*[-–—]\s*(.+)$/);
+                            const name = dashMatch && dashMatch[1] ? dashMatch[1].trim() : title;
+                            const sub = (addon.metadata.subtitle || '').replace(/Add-on\s*[·•]\s*/i, '').replace(/^Add-on$/i, '').trim();
+                            return <><span className="font-medium">{name}</span>{sub && <span className="font-light text-muted-foreground ml-1">· {sub}</span>}</>;
+                          })()}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {(() => {
+                            const AddonCatIcon = addon.category === 'UI' ? Monitor : addon.category === 'Audio' ? Volume2 : addon.category === 'Skins' ? Shirt : Gamepad2;
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                addon.category === 'UI' ? 'bg-blue-500/20 text-blue-400' :
+                                addon.category === 'Audio' ? 'bg-purple-500/20 text-purple-400' :
+                                addon.category === 'Skins' ? 'bg-orange-500/20 text-orange-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                <AddonCatIcon className="w-3 h-3" />
+                                {addon.category}
+                              </span>
+                            );
+                          })()}
+                          <span className="text-xs text-muted-foreground">{formatFileSize(addon.fileSize)} · {new Date(addon.installDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        addon.enabled
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {addon.enabled ? 'On' : 'Off'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -638,7 +754,7 @@ const ModListItem = memo(function ModListItem({
   const CategoryIcon = categoryIcons[mod.category] || Palette;
 
   // Convert thumbnail path to Tauri asset URL
-  const thumbnailSrc = mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
+  const thumbnailSrc = mod.thumbnailPath ? `${convertFileSrc(mod.thumbnailPath)}?t=${new Date(mod.lastModified).getTime()}` : null;
 
   const handleToggleEnabled = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -687,12 +803,12 @@ const ModListItem = memo(function ModListItem({
         <div className="flex-1 min-w-0">
           {/* Badges Row */}
           <div className="flex items-center gap-2 mb-2">
-            <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium flex items-center gap-1 ${categoryColors[mod.category]}`}>
+            <span className={`text-[11px] px-2 py-px rounded-full border font-medium flex items-center gap-1 ${categoryColors[mod.category]}`}>
               <CategoryIcon className="w-3 h-3" />
               {mod.category}
             </span>
             {mod.metadata.isNsfw && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-medium flex items-center gap-1">
+              <span className="text-[11px] px-2 py-px rounded-full border bg-red-500/20 text-red-400 border-red-500/30 font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 NSFW
               </span>
@@ -700,7 +816,7 @@ const ModListItem = memo(function ModListItem({
             {mod.metadata.tags && mod.metadata.tags.slice(0, 2).map((tag, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30">
+                  <span className="text-[11px] px-2 py-px rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30">
                     {tag}
                   </span>
                 </TooltipTrigger>
@@ -721,7 +837,7 @@ const ModListItem = memo(function ModListItem({
                 <Tooltip key={profileId}>
                   <TooltipTrigger asChild>
                     <span
-                      className="text-xs px-2.5 py-0.5 rounded-full border font-medium flex items-center gap-1"
+                      className="text-[11px] px-2 py-px rounded-full border font-medium flex items-center gap-1"
                       style={{
                         backgroundColor: `${profile.color}33`, // 20% opacity
                         color: profile.color,

@@ -1165,22 +1165,32 @@ impl ModService {
                     log::info!("      Old ID: {}", mod_id);
                     log::info!("      New ID: {}", new_mod_id);
 
+                    // Migrate metadata to new ID
                     if let Ok(Some(saved_metadata)) = self.load_metadata(mod_id) {
                         self.save_metadata(&new_mod_id, &saved_metadata)?;
                         log::info!("      ✅ Metadata migrated");
-
-                        // Copy thumbnail if it exists
-                        let old_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", mod_id));
-                        if old_thumb_path.exists() {
-                            let new_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
-                            fs::copy(&old_thumb_path, &new_thumb_path)
-                                .map_err(|e| format!("Failed to copy thumbnail: {}", e))?;
-                            log::info!("      ✅ Thumbnail migrated");
-                        }
-
-                        self.delete_metadata(mod_id)?;
-                        log::info!("      ✅ Old metadata cleaned up");
+                    } else {
+                        // Fallback: save the current metadata with the new ID
+                        self.save_metadata(&new_mod_id, &metadata)?;
+                        log::info!("      ✅ Metadata saved with new ID (fallback)");
                     }
+
+                    // Copy thumbnail if it exists
+                    let old_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", mod_id));
+                    if old_thumb_path.exists() {
+                        let new_thumb_path = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
+                        let _ = fs::copy(&old_thumb_path, &new_thumb_path);
+                        let _ = fs::remove_file(&old_thumb_path);
+                        log::info!("      ✅ Thumbnail migrated");
+                    }
+
+                    // Always clean up old metadata
+                    let _ = self.delete_metadata(mod_id);
+                    log::info!("      ✅ Old metadata cleaned up");
+
+                    // Migrate addons that reference the old parent ID
+                    self.migrate_addon_parent_ids(mod_id, &new_mod_id)?;
+
                     log::info!("");
                     log::info!("✅ METADATA UPDATE COMPLETE");
                     log::info!("==========================================================");
@@ -1361,6 +1371,7 @@ impl ModService {
                     nexus_file_id: None,
                     nexus_version: None,
                     original_folder_path,
+                    parent_mod_id: None,
                 }, true)
             }
         };
@@ -1775,6 +1786,44 @@ impl ModService {
             fs::remove_file(&metadata_path)
                 .map_err(|e| format!("Failed to delete metadata: {}", e))?;
         }
+        Ok(())
+    }
+
+    /// Update all addon mods that reference an old parent ID to point to the new ID
+    fn migrate_addon_parent_ids(&self, old_id: &str, new_id: &str) -> Result<(), String> {
+        log::info!("      🔄 Scanning for addons with parent_mod_id = {}", old_id);
+        let mut migrated = 0;
+        let mut scanned = 0;
+
+        // Scan all metadata files in the metadata directory
+        if let Ok(entries) = fs::read_dir(&self.metadata_directory) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                    continue;
+                }
+                scanned += 1;
+
+                if let Ok(content) = fs::read_to_string(&path) {
+                    // Use a simple string check first for speed, then parse if match found
+                    if content.contains(old_id) {
+                        if let Ok(mut metadata) = serde_json::from_str::<ModMetadata>(&content) {
+                            log::info!("      📄 Checking {:?} - parentModId: {:?}", path.file_name(), metadata.parent_mod_id);
+                            if metadata.parent_mod_id.as_deref() == Some(old_id) {
+                                metadata.parent_mod_id = Some(new_id.to_string());
+                                if let Ok(updated) = serde_json::to_string_pretty(&metadata) {
+                                    let _ = fs::write(&path, updated);
+                                    migrated += 1;
+                                    log::info!("      ✅ Updated addon: {:?}", path.file_name());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        log::info!("      📊 Scanned {} metadata files, migrated {} addon(s)", scanned, migrated);
         Ok(())
     }
 

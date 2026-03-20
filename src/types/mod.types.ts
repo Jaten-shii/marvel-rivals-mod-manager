@@ -58,6 +58,7 @@ export type Character =
   | 'Mantis'
   | 'Rocket Raccoon'
   | 'Elsa Bloodstone'
+  | 'White Fox'
   // Special
   | 'All Characters';
 
@@ -90,6 +91,7 @@ export interface ModMetadata {
   nexusFileId: number | null;
   nexusVersion: string | null;
   originalFolderPath: string | null; // Relative path from ~mods root for restore on enable
+  parentModId: string | null; // ID of parent mod (for add-on mods)
 }
 
 // ===== Mod Info =====

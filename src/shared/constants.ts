@@ -1,7 +1,7 @@
 import type { Character, ModCategory } from '../types/mod.types';
 
 // App version (synchronized with package.json)
-export const APP_VERSION = '4.2.0';
+export const APP_VERSION = '4.3.1';
 
 // All Marvel Rivals characters in alphabetical order
 export const ALL_CHARACTERS: Character[] = [
@@ -52,6 +52,7 @@ export const ALL_CHARACTERS: Character[] = [
   'Ultron',
   'Venom',
   'Winter Soldier',
+  'White Fox',
   'Wolverine',
 ];
 
