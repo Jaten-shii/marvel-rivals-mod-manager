@@ -159,7 +159,8 @@ export function useToggleModEnabled() {
       toast.success('Mod status updated')
     },
     onError: (error: Error) => {
-      toast.error(error.message)
+      toast.error(error.message || 'Failed to toggle mod status')
+      console.error('[useToggleModEnabled] Error:', error)
     },
   })
 }

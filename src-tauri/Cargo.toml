@@ -1,6 +1,6 @@
 [package]
 name = "marvel-rivals-mod-manager"
-version = "4.3.1"
+version = "4.3.2"
 description = "Professional mod manager for Marvel Rivals"
 authors = ["Marvel Rivals Mod Manager"]
 edition = "2021"

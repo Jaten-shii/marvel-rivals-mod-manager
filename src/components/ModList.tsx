@@ -240,14 +240,17 @@ export function ModList() {
     });
   }, [filteredMods, sortBy, profiles]);
 
-  // Group addons under their parent mods
+  // Deduplicate mods (scanner can return duplicates during install) and group addons
   const { parentMods, addonsByParent } = useMemo(() => {
     const addonsByParent = new Map<string, ModInfo[]>();
     const parentMods: ModInfo[] = [];
+    const seenIds = new Set<string>();
 
     for (const mod of sortedMods) {
+      if (seenIds.has(mod.id)) continue;
+      seenIds.add(mod.id);
+
       if (mod.metadata.parentModId) {
-        // This is an addon — group it under its parent
         const existing = addonsByParent.get(mod.metadata.parentModId) || [];
         existing.push(mod);
         addonsByParent.set(mod.metadata.parentModId, existing);

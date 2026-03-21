@@ -303,35 +303,9 @@ export function MetadataDialog() {
   };
 
   const handleClose = async () => {
-    // If user is canceling during a multi-mod installation and hasn't made changes,
-    // we should delete the mod that was just installed (orphaned files)
-    if (mod && !hasChanges) {
-
-      // Check if this mod was just installed (metadata is still mostly default)
-      // Fresh installs have: no author, no description, no tags, default category (Skins), no character
-      const isFreshInstall =
-        !mod.metadata.author &&
-        !mod.metadata.description &&
-        (!mod.metadata.tags || mod.metadata.tags.length === 0) &&
-        mod.category === 'Skins' &&
-        !mod.character;
-
-      if (isFreshInstall) {
-        try {
-          await invoke('delete_mod', { modId: mod.id });
-          // Remove from cache using optimistic update (same query key as useGetMods)
-          queryClient.setQueryData(['mods', 'list'], (oldMods: any[] = []) => {
-            return oldMods.filter(m => m.id !== mod.id);
-          });
-          toast.info('Cancelled installation - mod removed');
-        } catch (error) {
-          console.error('[MetadataDialog] Failed to delete orphaned mod:', error);
-        }
-      }
-    }
-
     setMetadataDialogOpen(false);
   };
+
 
   // Handle upload image from file
   const handleUploadImage = async () => {
