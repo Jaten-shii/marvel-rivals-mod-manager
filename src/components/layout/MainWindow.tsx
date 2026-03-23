@@ -3,14 +3,28 @@ import { Toaster } from 'sonner'
 import { useTheme } from '@/hooks/use-theme'
 import { useUpdater } from '@/hooks/useUpdater'
 import { useGetAppSettings } from '@/hooks/useSettings'
+import { useNxmDeepLink, syncNexusApiKeyFromPreferences } from '@/hooks/useNexusMods'
+import { usePreferences } from '@/services/preferences'
 import { ModManager } from '../ModManager'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
+import { NexusDownloadModal } from '../NexusDownloadModal'
 
 export function MainWindow() {
   const { theme } = useTheme()
   const { checkForUpdates } = useUpdater()
   const { data: settings } = useGetAppSettings()
   const hasCheckedForUpdates = useRef(false)
+
+  // Sync Nexus API key from backend preferences to localStorage
+  const { data: preferences } = usePreferences()
+  useEffect(() => {
+    if (preferences?.nexusApiKey) {
+      syncNexusApiKeyFromPreferences(preferences.nexusApiKey)
+    }
+  }, [preferences?.nexusApiKey])
+
+  // Listen for NXM deep links (Nexus Mods "Download with Manager")
+  const { downloadStatus, downloadModName, downloadProgress, downloadError, dismissDownload } = useNxmDeepLink()
 
   // Check for updates on startup if enabled in settings (only once per app session)
   useEffect(() => {
@@ -47,6 +61,15 @@ export function MainWindow() {
 
       {/* Settings Dialog */}
       <PreferencesDialog />
+
+      {/* Nexus Mods Download Modal */}
+      <NexusDownloadModal
+        status={downloadStatus}
+        modName={downloadModName}
+        progress={downloadProgress}
+        error={downloadError}
+        onDismiss={dismissDownload}
+      />
 
       {/* Toast Notifications */}
       <Toaster

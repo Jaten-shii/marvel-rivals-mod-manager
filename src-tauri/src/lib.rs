@@ -82,6 +82,8 @@ pub struct AppPreferences {
     pub font: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub background_intensity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nexus_api_key: Option<String>,
 }
 
 impl Default for AppPreferences {
@@ -90,6 +92,7 @@ impl Default for AppPreferences {
             theme: "dark-classic".to_string(),
             font: Some("quicksand".to_string()),
             background_intensity: Some("normal".to_string()),
+            nexus_api_key: None,
         }
     }
 }
@@ -638,6 +641,70 @@ async fn migrate_metadata_to_path_ids(app: AppHandle) -> Result<usize, String> {
 async fn migrate_to_costume_folders(app: AppHandle) -> Result<usize, String> {
     let service = get_mod_service(&app)?;
     service.migrate_to_costume_folders()
+}
+
+#[tauri::command]
+async fn download_nexus_mod(url: String, mod_name: String) -> Result<String, String> {
+    log::info!("Downloading mod from Nexus: {} ({})", mod_name, url);
+
+    let client = reqwest::Client::new();
+    let response = client.get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Download request failed: {e}"))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Download failed with status: {}", response.status()));
+    }
+
+    // Get the filename from Content-Disposition header or URL
+    let filename = response.headers()
+        .get("content-disposition")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| {
+            v.split("filename=").nth(1)
+                .map(|f| f.trim_matches('"').to_string())
+        })
+        .unwrap_or_else(|| {
+            url.split('/').last()
+                .unwrap_or("nexus_mod.zip")
+                .split('?').next()
+                .unwrap_or("nexus_mod.zip")
+                .to_string()
+        });
+
+    let temp_dir = std::env::temp_dir().join("marvel_rivals_nexus");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create temp dir: {e}"))?;
+
+    let file_path = temp_dir.join(&filename);
+
+    let bytes = response.bytes()
+        .await
+        .map_err(|e| format!("Failed to read download: {e}"))?;
+
+    std::fs::write(&file_path, &bytes)
+        .map_err(|e| format!("Failed to save file: {e}"))?;
+
+    log::info!("Downloaded {} ({} bytes) to {:?}", filename, bytes.len(), file_path);
+
+    Ok(file_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+async fn install_mod_from_path(app: AppHandle, file_path: String) -> Result<(), String> {
+    log::info!("Installing mod from path: {}", file_path);
+    let path = std::path::PathBuf::from(&file_path);
+
+    if !path.exists() {
+        return Err("Downloaded file not found".to_string());
+    }
+
+    // Emit an event so the frontend can handle the install flow
+    app.emit("nexus-mod-downloaded", file_path)
+        .map_err(|e| format!("Failed to emit event: {e}"))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -1235,6 +1302,26 @@ fn create_app_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // When a second instance tries to open (e.g. from NXM link),
+            // forward the args to the existing instance
+            log::info!("[SingleInstance] Second instance args: {:?}", args);
+
+            // Check for NXM URLs in the args
+            for arg in &args {
+                if arg.starts_with("nxm://") {
+                    log::info!("[SingleInstance] NXM link detected: {}", arg);
+                    let _ = app.emit("deep-link-received", arg.clone());
+                }
+            }
+
+            // Focus the existing window
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+                let _ = window.unminimize();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
@@ -1412,7 +1499,10 @@ pub fn run() {
             // Skip Intros mod
             get_skip_intros_status,
             install_skip_intros,
-            uninstall_skip_intros
+            uninstall_skip_intros,
+            // Nexus Mods
+            download_nexus_mod,
+            install_mod_from_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

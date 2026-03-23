@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Palette, Zap } from 'lucide-react'
+import { Settings, Palette, ExternalLink } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,8 +45,8 @@ const navigationItems = [
   },
   {
     id: 'advanced' as const,
-    name: 'Advanced',
-    icon: Zap,
+    name: 'Nexus Mods',
+    icon: ExternalLink,
   },
 ]
 
@@ -57,7 +57,7 @@ const getPaneTitle = (pane: PreferencePane): string => {
     case 'appearance':
       return 'Appearance'
     case 'advanced':
-      return 'Advanced'
+      return 'Nexus Mods'
     default:
       return 'General'
   }

@@ -248,6 +248,7 @@ export const GeneralPane: React.FC = () => {
           </div>
         </SettingsSection>
       </div>
+
     </div>
   )
 }

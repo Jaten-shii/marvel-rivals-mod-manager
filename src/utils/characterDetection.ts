@@ -46,6 +46,10 @@ const CHARACTER_PATTERNS: Record<string, string[]> = {
   'Venom': ['venom', 'eddie', 'brock'],
   'Winter Soldier': ['winter-soldier', 'wintersoldier', 'bucky', 'barnes'],
   'Wolverine': ['wolverine', 'logan', 'weapon-x'],
+  'Deadpool': ['deadpool', 'wade', 'wilson'],
+  'Rogue': ['rogue', 'anna', 'marie'],
+  'Elsa Bloodstone': ['elsa', 'bloodstone'],
+  'White Fox': ['white-fox', 'whitefox', 'ami', 'yoonji'],
 };
 
 /**

@@ -18,6 +18,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { ImageCropDialog } from './ImageCropDialog';
 import { toast } from 'sonner';
+import { detectCharacterFromPath } from '../utils/characterDetection';
 
 // Helper function to get character icon path
 function getCharacterIconPath(character: string): string {
@@ -144,6 +145,32 @@ export function MetadataDialog() {
   const { data: costumes = [], isLoading: isLoadingCostumes } = useGetCostumesForCharacter(character || null);
 
 
+  // Auto-detect costume from Nexus mod name once costumes load
+  useEffect(() => {
+    const pendingMatch = localStorage.getItem('nexus_pending_costume_match');
+    if (pendingMatch && costumes.length > 0 && !costume) {
+      const modNameLower = pendingMatch.toLowerCase();
+
+      // Try to find a matching costume by name
+      const matched = costumes.find(c => {
+        if (c.isDefault) return false;
+        const costumeName = c.name.toLowerCase();
+        // Check if the costume name appears in the mod name
+        return modNameLower.includes(costumeName) ||
+          modNameLower.includes(costumeName.replace(/\s+/g, '-')) ||
+          modNameLower.includes(costumeName.replace(/\s+/g, ''));
+      });
+
+      if (matched) {
+        setCostume(matched.id);
+        setCostumeLoadedFromMod(true);
+        console.log('[MetadataDialog] Auto-detected costume from Nexus name:', matched.name);
+      }
+
+      localStorage.removeItem('nexus_pending_costume_match');
+    }
+  }, [costumes, costume]);
+
   // Thumbnail state
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [cropImageUrl, setCropImageUrl] = useState('');
@@ -168,6 +195,58 @@ export function MetadataDialog() {
       setIsNsfw(mod.metadata.isNsfw);
       setParentModId(mod.metadata.parentModId || null);
       setHasChanges(false);
+
+      // Check for pending Nexus Mods data (from "Download with Manager")
+      const nexusThumbnail = localStorage.getItem('nexus_pending_thumbnail');
+      const nexusModName = localStorage.getItem('nexus_pending_mod_name');
+      const nexusAuthor = localStorage.getItem('nexus_pending_mod_author');
+      const nexusDescription = localStorage.getItem('nexus_pending_mod_description');
+
+      if (nexusModName && !mod.metadata.author) {
+        // This is likely the mod we just downloaded from Nexus — auto-fill
+        if (nexusModName) setTitle(nexusModName);
+        if (nexusAuthor) setAuthor(nexusAuthor);
+        if (nexusDescription) setDescription(nexusDescription);
+
+        // Auto-detect character from Nexus mod name
+        const detectedChar = detectCharacterFromPath(nexusModName);
+        if (detectedChar && detectedChar !== 'All Characters') {
+          setCharacter(detectedChar);
+          console.log('[MetadataDialog] Auto-detected character from Nexus name:', detectedChar);
+
+          // Try to detect costume from mod name
+          // We'll match against costume data after the character is set
+          // Store the mod name for costume matching in the next render cycle
+          localStorage.setItem('nexus_pending_costume_match', nexusModName);
+        }
+
+        // Auto-download thumbnail from Nexus
+        if (nexusThumbnail) {
+          setImageUrl(nexusThumbnail);
+          (async () => {
+            try {
+              await invoke<string>('download_and_save_thumbnail', {
+                modId: mod.id,
+                url: nexusThumbnail,
+                cropData: null,
+              });
+              setThumbnailTimestamp(Date.now());
+              await queryClient.refetchQueries({ queryKey: ['mods', 'list'] });
+            } catch (err) {
+              console.error('[MetadataDialog] Failed to auto-download Nexus thumbnail:', err);
+            }
+          })();
+        }
+
+        setHasChanges(true);
+
+        // Clear the pending data
+        localStorage.removeItem('nexus_pending_thumbnail');
+        localStorage.removeItem('nexus_pending_mod_name');
+        localStorage.removeItem('nexus_pending_mod_author');
+        localStorage.removeItem('nexus_pending_mod_description');
+        localStorage.removeItem('nexus_pending_nexus_mod_id');
+      }
 
       // Reset crop dialog state
       setShowCropDialog(false);

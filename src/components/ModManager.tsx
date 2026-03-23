@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { listen } from '@tauri-apps/api/event';
 import { useGetAppSettings } from '../hooks/useSettings';
 import { useFileWatcher } from '../hooks/useFileWatcher';
 import { useGetMods } from '../hooks/useMods';
@@ -132,6 +133,18 @@ export function ModManager() {
       organizeMods();
     }
   }, [modsDirectory]); // Only run when modsDirectory becomes available
+
+  // Listen for Nexus Mods download events
+  useEffect(() => {
+    const unlisten = listen<string>('nexus-mod-downloaded', (event) => {
+      console.log('[ModManager] Nexus mod downloaded:', event.payload);
+      handleFileDrop([event.payload]);
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, []);
 
   // Process archive queue sequentially
   useEffect(() => {

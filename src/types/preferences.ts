@@ -8,6 +8,7 @@ export interface AppPreferences {
   theme: string
   font?: string
   backgroundIntensity?: BackgroundIntensity
+  nexusApiKey?: string
 }
 
 export const defaultPreferences: AppPreferences = {

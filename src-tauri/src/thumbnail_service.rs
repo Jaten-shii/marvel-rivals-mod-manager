@@ -95,14 +95,42 @@ impl ThumbnailService {
         Ok(img)
     }
 
-    /// Resizes an image to the specified dimensions
+    /// Center-crops an image to a target aspect ratio without stretching
+    /// Takes the largest centered rectangle of the target aspect ratio from the source
+    pub fn center_crop_to_aspect(&self, img: &DynamicImage, aspect_w: u32, aspect_h: u32) -> DynamicImage {
+        let (w, h) = (img.width(), img.height());
+        let target_ratio = aspect_w as f64 / aspect_h as f64;
+        let current_ratio = w as f64 / h as f64;
+
+        if (current_ratio - target_ratio).abs() < 0.01 {
+            // Already close enough to target aspect ratio
+            return img.clone();
+        }
+
+        let (crop_w, crop_h) = if current_ratio > target_ratio {
+            // Image is wider than target — crop sides
+            let new_w = (h as f64 * target_ratio) as u32;
+            (new_w, h)
+        } else {
+            // Image is taller than target — crop top/bottom
+            let new_h = (w as f64 / target_ratio) as u32;
+            (w, new_h)
+        };
+
+        let x = (w - crop_w) / 2;
+        let y = (h - crop_h) / 2;
+
+        img.crop_imm(x, y, crop_w, crop_h)
+    }
+
+    /// Resizes an image to fit within the specified dimensions while preserving aspect ratio
     pub fn resize_image(
         &self,
         img: &DynamicImage,
         width: u32,
         height: u32,
     ) -> DynamicImage {
-        img.resize_exact(width, height, FilterType::Lanczos3)
+        img.resize(width, height, FilterType::Lanczos3)
     }
 
     /// Crops an image based on the provided crop data
@@ -140,8 +168,9 @@ impl ThumbnailService {
         std::fs::create_dir_all(&self.metadata_dir)
             .map_err(|e| ThumbnailError::IoError(e.to_string()))?;
 
-        // Resize to high-quality thumbnail size (1920x1080 for 16:9 ratio, maintains HD quality)
-        let thumbnail = self.resize_image(img, 1920, 1080);
+        // Center-crop to 16:9 then resize to HD
+        let thumbnail = self.center_crop_to_aspect(img, 16, 9);
+        let thumbnail = self.resize_image(&thumbnail, 1920, 1080);
 
         // Generate thumbnail path
         let thumbnail_path = self.get_thumbnail_path(mod_id);

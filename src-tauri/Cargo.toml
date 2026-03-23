@@ -1,6 +1,6 @@
 [package]
 name = "marvel-rivals-mod-manager"
-version = "4.3.2"
+version = "5.1.0"
 description = "Professional mod manager for Marvel Rivals"
 authors = ["Marvel Rivals Mod Manager"]
 edition = "2021"
@@ -27,6 +27,8 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-log = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = "2"
 tauri-plugin-persisted-scope = "2"
 tauri-plugin-process = "2"
 log = "0.4"
