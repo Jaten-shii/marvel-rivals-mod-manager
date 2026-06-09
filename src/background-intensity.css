@@ -11,6 +11,11 @@ html.ice.bg-dim {
   --popover: oklch(0.16 0.01 260) !important;
   --secondary: oklch(0.12 0.008 242) !important;
   --muted: oklch(0.18 0.02 260) !important;
+  /* Warm-Dark Editorial surfaces — dim variant */
+  --rivals-bg: #0e0d09 !important;
+  --rivals-titlebar: #0a0906 !important;
+  --rivals-panel: #15130f !important;
+  --rivals-panel-hi: #1b1914 !important;
 }
 
 html.dark-classic.bg-black,
@@ -23,6 +28,11 @@ html.ice.bg-black {
   --popover: oklch(0.08 0.005 260) !important;
   --secondary: oklch(0.08 0.005 242) !important;
   --muted: oklch(0.12 0.01 260) !important;
+  /* Warm-Dark Editorial surfaces — true-black variant */
+  --rivals-bg: #000000 !important;
+  --rivals-titlebar: #000000 !important;
+  --rivals-panel: #0c0b08 !important;
+  --rivals-panel-hi: #141210 !important;
 }
 
 /* ============================================= */

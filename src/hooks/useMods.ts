@@ -1,6 +1,7 @@
+import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core'
-import type { ModInfo, ModMetadata, Costume, Character } from '@/types/mod.types'
+import type { ModInfo, ModMetadata, Costume, CostumeSyncResult, Character } from '@/types/mod.types'
 import { toast } from 'sonner'
 
 // Query keys factory
@@ -78,6 +79,37 @@ export function useToggleMod() {
         )
       })
       toast.success(`Mod ${action} successfully`)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/**
+ * Hook to enable/disable many mods in a single backend call.
+ *
+ * Bulk operations used to loop on the frontend, paying one IPC round-trip,
+ * one game-running check, one toast, and one cache write per mod. This does
+ * the whole batch in the backend (one IPC call), checks the game once, and
+ * refetches the list a single time. Toggling changes a mod's path-based ID,
+ * so we invalidate rather than optimistically patch by id.
+ */
+export function useSetModsEnabled() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ modIds, enabled }: { modIds: string[]; enabled: boolean }) => {
+      const isGameRunning = await checkGameRunning()
+      if (isGameRunning) {
+        throw new Error('Cannot enable/disable mods while Marvel Rivals is running. Please close the game first.')
+      }
+
+      const count = await invoke<number>('set_mods_enabled', { modIds, enabled })
+      return { count, enabled }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -280,4 +312,58 @@ export function useGetAllCostumes() {
     },
     staleTime: 300000,
   })
+}
+
+/**
+ * Hook to sync the costume database from GitHub (new skins + icons).
+ * Invalidates costume queries when new costumes arrive.
+ */
+export function useSyncCostumes() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      return await invoke<CostumeSyncResult>('sync_costumes')
+    },
+    onSuccess: (result) => {
+      if (result.newCostumes.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ['costumes'] })
+      }
+    },
+  })
+}
+
+/**
+ * Silently sync the costume database once on app startup.
+ * New skins pushed to the GitHub repo appear without an app update;
+ * failures (e.g. offline) are ignored — bundled costume data still works.
+ */
+export function useCostumeAutoSync() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    let cancelled = false
+
+    // Small delay so startup work (mod scan, settings) isn't competing with the sync
+    const timer = setTimeout(async () => {
+      try {
+        const result = await invoke<CostumeSyncResult>('sync_costumes')
+        if (cancelled) return
+        if (result.newCostumes.length > 0) {
+          queryClient.invalidateQueries({ queryKey: ['costumes'] })
+          const count = result.newCostumes.length
+          toast.success(`${count} new costume${count === 1 ? '' : 's'} added`, {
+            description: result.newCostumes.slice(0, 3).join(', ') + (count > 3 ? '…' : ''),
+          })
+        }
+      } catch {
+        // Offline or sync failed — bundled costume data still works
+      }
+    }, 2500)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [queryClient])
 }

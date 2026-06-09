@@ -45,6 +45,8 @@ const FOLDER_TO_CHARACTER = {
   46: 'Deadpool',
   47: 'Elsa Bloodstone',
   48: 'White Fox',
+  49: 'Black Cat',
+  50: 'Devil Dinosaur',
 };
 
 // Character slug used for the default costume icon (when it differs from the folder slug)

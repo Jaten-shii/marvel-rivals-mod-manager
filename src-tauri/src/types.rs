@@ -116,6 +116,10 @@ pub enum Character {
     ElsaBloodstone,
     #[serde(rename = "White Fox")]
     WhiteFox,
+    #[serde(rename = "Black Cat")]
+    BlackCat,
+    #[serde(rename = "Devil Dinosaur")]
+    DevilDinosaur,
 
     // Special
     #[serde(rename = "All Characters")]
@@ -174,6 +178,8 @@ impl Character {
             Character::RocketRaccoon,
             Character::ElsaBloodstone,
             Character::WhiteFox,
+            Character::BlackCat,
+            Character::DevilDinosaur,
             Character::AllCharacters,
         ]
     }
@@ -228,6 +234,16 @@ impl Character {
             Character::RocketRaccoon => &["rocketraccoon", "rocket", "raccoon"],
             Character::ElsaBloodstone => &["elsabloodstone", "elsa", "bloodstone"],
             Character::WhiteFox => &["whitefox", "white", "fox", "yoonji"],
+            Character::BlackCat => &["blackcat", "black", "cat", "felicia", "hardy"],
+            Character::DevilDinosaur => &[
+                "devildinosaur",
+                "devil",
+                "dinosaur",
+                "devildino",
+                "dino",
+                "moongirl",
+                "lunella",
+            ],
             Character::AllCharacters => &["allcharacters", "all", "everyone", "every"],
         }
     }
@@ -284,6 +300,8 @@ impl std::fmt::Display for Character {
             Character::RocketRaccoon => "Rocket Raccoon",
             Character::ElsaBloodstone => "Elsa Bloodstone",
             Character::WhiteFox => "White Fox",
+            Character::BlackCat => "Black Cat",
+            Character::DevilDinosaur => "Devil Dinosaur",
             Character::AllCharacters => "All Characters",
         };
         write!(f, "{}", name)
@@ -299,6 +317,9 @@ pub struct Costume {
     pub image_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_default: Option<bool>,
+    /// Absolute path to a synced icon in app data (set for costumes newer than this build)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_icon_path: Option<String>,
 }
 
 // ===== Mod Metadata =====

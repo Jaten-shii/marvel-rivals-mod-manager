@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
+import { onOpenUrl, getCurrent } from '@tauri-apps/plugin-deep-link';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
@@ -78,7 +78,7 @@ async function nexusFetch(endpoint: string, apiKey: string) {
     headers: {
       'APIKEY': apiKey,
       'Application-Name': 'Marvel Rivals Mod Manager',
-      'Application-Version': '5.1.0',
+      'Application-Version': '5.2.0',
     },
   });
 
@@ -132,12 +132,24 @@ export function useNxmDeepLink() {
     }
   }, []);
 
-  // Listen for nxm:// deep links from both sources
+  // Listen for nxm:// deep links from all sources
   useEffect(() => {
     if (listenerSetup.current) return;
     listenerSetup.current = true;
 
-    // Source 1: Tauri deep-link plugin (app opened fresh from NXM link)
+    // Source 0: Check if app was launched via a deep link (cold start)
+    getCurrent().then((urls) => {
+      if (urls && urls.length > 0) {
+        console.log('[NXM] App launched with deep link (cold start):', urls);
+        for (const url of urls) {
+          handleNxmUrl(String(url));
+        }
+      }
+    }).catch(err => {
+      console.error('[NXM] Failed to get startup URLs:', err);
+    });
+
+    // Source 1: Tauri deep-link plugin (app opened fresh from NXM link, late listener)
     onOpenUrl((urls) => {
       console.log('[NXM] Deep link received (onOpenUrl):', urls);
       for (const url of urls) {
@@ -190,7 +202,7 @@ export function useNxmDeepLink() {
 
       // 2. Get download URL
       setDownloadStatus('downloading');
-      setDownloadProgress(10);
+      setDownloadProgress(0);
       const downloadLinks = await getDownloadUrl(
         apiKey, nxmLink.game, nxmLink.modId, nxmLink.fileId, nxmLink.key, nxmLink.expires,
       );
@@ -201,15 +213,20 @@ export function useNxmDeepLink() {
 
       const downloadUrl = downloadLinks[0].URI;
       console.log('[NXM] Download URL:', downloadUrl);
-      setDownloadProgress(20);
 
-      // 3. Download via Rust backend
+      // Listen for real download progress from Rust backend
+      const unlisten = await listen<number>('nexus-download-progress', (event) => {
+        setDownloadProgress(event.payload);
+      });
+
+      // 3. Download via Rust backend with streaming progress
       const filePath = await invoke<string>('download_nexus_mod', {
         url: downloadUrl,
         modName,
       });
 
-      setDownloadProgress(80);
+      unlisten();
+      setDownloadProgress(100);
 
       // 4. Store Nexus metadata for the metadata dialog to pick up
       try {

@@ -1,30 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
-import { Button } from './ui/button';
 import { useUIStore } from '../stores';
 import { useUpdater } from '../hooks/useUpdater';
-import { Download, RefreshCw, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Download, RefreshCw, Loader2, CheckCircle2, Sparkles, ArrowUp } from 'lucide-react';
+import { c, tint } from '../shared/rivals-tokens';
+import { renderChangelog } from './changelog-markdown';
+
+function formatDate(dateString: string) {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 
 export function UpdateDialog() {
   const { updateDialogOpen, setUpdateDialogOpen } = useUIStore();
-  const {
-    isChecking,
-    isDownloading,
-    downloadProgress,
-    availableUpdate,
-    currentVersion,
-    checkForUpdates,
-    downloadAndInstall,
-    restartApp,
-  } = useUpdater();
+  const { isChecking, isDownloading, downloadProgress, availableUpdate, currentVersion, checkForUpdates, downloadAndInstall, restartApp } = useUpdater();
 
   const hasCheckedInDialog = useRef(false);
 
   useEffect(() => {
-    if (updateDialogOpen) {
-      hasCheckedInDialog.current = false;
-    }
+    if (updateDialogOpen) hasCheckedInDialog.current = false;
   }, [updateDialogOpen]);
 
   useEffect(() => {
@@ -34,229 +29,141 @@ export function UpdateDialog() {
     }
   }, [updateDialogOpen, availableUpdate, isChecking]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatChangelog = (body: string | null) => {
-    if (!body) return null;
-
-    const lines = body.split('\n');
-    const elements: React.JSX.Element[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
-      const trimmed = line.trim();
-
-      if (trimmed === '') {
-        elements.push(<div key={i} className="h-2" />);
-        continue;
-      }
-
-      if (trimmed.match(/^###\s+/)) {
-        const text = trimmed.replace(/^###\s+/, '');
-        elements.push(
-          <h3 key={i} className="text-sm font-semibold mt-4 mb-2 text-foreground/90">{text}</h3>
-        );
-        continue;
-      }
-
-      if (trimmed.match(/^##\s+/)) {
-        const text = trimmed.replace(/^##\s+/, '');
-        elements.push(
-          <h2 key={i} className="text-base font-bold mt-5 mb-2 text-foreground">{text}</h2>
-        );
-        continue;
-      }
-
-      if (trimmed.match(/^#\s+/) && !trimmed.startsWith('##')) {
-        const text = trimmed.replace(/^#\s+/, '');
-        elements.push(
-          <h1 key={i} className="text-lg font-bold mt-4 mb-3 text-foreground">{text}</h1>
-        );
-        continue;
-      }
-
-      if (trimmed.match(/^[-*]\s+/)) {
-        const cleanedText = trimmed
-          .replace(/^[-*]\s+/, '')
-          .replace(/^\*\*(.+?)\*\*:?\s*/, '$1: ')
-          .replace(/\*\*(.+?)\*\*/g, '$1');
-        elements.push(
-          <li key={i} className="ml-5 text-sm text-foreground/70 leading-relaxed mb-1 list-disc">{cleanedText}</li>
-        );
-        continue;
-      }
-
-      if (trimmed.includes('**')) {
-        const styledText = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
-        elements.push(
-          <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2" dangerouslySetInnerHTML={{ __html: styledText }} />
-        );
-        continue;
-      }
-
-      elements.push(
-        <p key={i} className="text-sm text-foreground/70 leading-relaxed mb-2">{trimmed}</p>
-      );
-    }
-
-    return elements;
-  };
-
   const updateInstalled = downloadProgress === 100 && !isDownloading;
+
+  const primaryBtn = (label: React.ReactNode, onClick?: () => void, disabled?: boolean) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="btn-primary inline-flex items-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+      style={{ padding: '9px 16px', borderRadius: 9, background: c.accent, color: c.onAccent, border: 'none', fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+    >
+      {label}
+    </button>
+  );
+
+  const ghostBtn = (label: string, onClick: () => void) => (
+    <button
+      onClick={onClick}
+      className="btn-outline cursor-pointer"
+      style={{ padding: '9px 16px', borderRadius: 9, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-      <DialogContent className="!max-w-2xl w-[85vw] p-0 gap-0 rounded-2xl overflow-hidden" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif' }}>
-        <div className="px-6 pt-6 pb-5 border-b border-border/40">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle className="text-xl font-bold tracking-tight">Check for Updates</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground mt-0.5">
-                Current version: v{currentVersion}
-              </DialogDescription>
-            </div>
+      <DialogContent
+        className="!max-w-2xl w-[85vw] p-0 gap-0 overflow-hidden"
+        style={{ background: c.bg, border: `1px solid ${c.line2}`, borderRadius: 16 }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3" style={{ padding: '20px 24px', borderBottom: `1px solid ${c.line}`, background: c.panel }}>
+          <div className="grid place-items-center" style={{ width: 40, height: 40, borderRadius: 10, background: tint(c.accent, 14), color: c.accent }}>
+            <RefreshCw className="w-5 h-5" />
+          </div>
+          <div>
+            <DialogTitle asChild>
+              <h2 className="rivals-display" style={{ color: c.ink, fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Check for Updates</h2>
+            </DialogTitle>
+            <DialogDescription asChild>
+              <p className="rivals-mono" style={{ color: c.ink3, fontSize: 11.5, marginTop: 2 }}>Current version · v{currentVersion}</p>
+            </DialogDescription>
           </div>
         </div>
 
-        {/* Checking State */}
+        {/* Checking */}
         {isChecking && (
-          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-4" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both' }}>
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center gap-4" style={{ padding: '64px 24px', animation: 'metadata-fade-in 300ms ease-out both' }}>
+            <div className="grid place-items-center" style={{ width: 80, height: 80, borderRadius: 20, background: tint(c.accent, 12) }}>
+              <Loader2 className="w-10 h-10 animate-spin" style={{ color: c.accent }} />
             </div>
-            <p className="text-sm text-muted-foreground" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>Checking for updates...</p>
+            <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 13 }}>Checking for updates…</p>
           </div>
         )}
 
-        {/* No Update Available */}
+        {/* Up to date */}
         {!isChecking && !availableUpdate && !updateInstalled && (
-          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-6">
-            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both, pulse-glow 3s ease-in-out 600ms infinite' }}>
-              <CheckCircle2 className="w-10 h-10 text-green-500" />
+          <div className="flex flex-col items-center justify-center gap-5" style={{ padding: '56px 24px' }}>
+            <div className="grid place-items-center" style={{ width: 80, height: 80, borderRadius: 20, background: tint(c.ok, 12), animation: 'icon-pop-in 400ms ease-out both' }}>
+              <CheckCircle2 className="w-10 h-10" style={{ color: c.ok }} />
             </div>
-            <div className="text-center space-y-1.5" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>
-              <h3 className="text-xl font-bold">You're up to date!</h3>
-              <p className="text-sm text-muted-foreground">
-                Running the latest version
-              </p>
+            <div className="text-center">
+              <h3 className="rivals-display" style={{ color: c.ink, fontSize: 20, fontWeight: 600 }}>You&apos;re up to date</h3>
+              <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 13, marginTop: 4 }}>Running the latest version.</p>
             </div>
-            <button
-              onClick={() => checkForUpdates()}
-              className="group flex items-center gap-2.5 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all duration-200"
-              style={{ animation: 'metadata-fade-in 300ms ease-out 400ms both' }}
-            >
-              <RefreshCw className="w-4 h-4 transition-transform duration-500 group-hover:rotate-180" />
-              Check Again
-            </button>
+            {primaryBtn(<><RefreshCw className="btn-glyph w-4 h-4" /> Check Again</>, () => checkForUpdates())}
           </div>
         )}
 
-        {/* Update Available */}
+        {/* Update available */}
         {!isChecking && availableUpdate && !updateInstalled && (
-          <div className="space-y-0" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
-            {/* Update banner */}
-            <div className="mx-6 p-4 rounded-xl bg-primary/8 border border-primary/15">
-              <div className="flex items-start gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-foreground">
-                    v{availableUpdate.version} Available
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Released {formatDate(availableUpdate.date)}
-                  </p>
-                </div>
+          <div>
+            {/* Banner */}
+            <div className="flex items-center gap-3.5" style={{ margin: '20px 24px 0', padding: 16, borderRadius: 12, background: tint(c.accent, 10), border: `1px solid ${tint(c.accent, 25)}`, animation: 'metadata-fade-in 340ms ease-out both' }}>
+              <div className="grid place-items-center flex-shrink-0 update-pill" style={{ width: 48, height: 48, borderRadius: 12, background: c.accent2, color: '#fff' }}>
+                <span className="update-arrow"><ArrowUp className="w-6 h-6" strokeWidth={2.5} /></span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="rivals-display flex items-center gap-2" style={{ color: c.ink, fontSize: 19, fontWeight: 600 }}>
+                  v{availableUpdate.version} available
+                  <Sparkles className="w-4 h-4" style={{ color: c.accent }} />
+                </h3>
+                {availableUpdate.date && (
+                  <p className="rivals-mono" style={{ color: c.ink3, fontSize: 11, marginTop: 2 }}>Released {formatDate(availableUpdate.date)}</p>
+                )}
               </div>
             </div>
 
             {/* Changelog */}
             {availableUpdate.body && (
-              <div className="px-6 pt-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">What's New</h4>
-                <ScrollArea className="h-52">
-                  <div className="pr-4 rounded-xl bg-muted/15 p-4">
-                    {formatChangelog(availableUpdate.body)}
+              <div style={{ padding: '16px 24px 0', animation: 'metadata-fade-in 340ms ease-out 120ms both' }}>
+                <h4 className="rivals-mono" style={{ color: c.ink3, fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 10 }}>What&apos;s New</h4>
+                <ScrollArea type="always" className="sidebar-scroll" style={{ height: 210 }}>
+                  <div style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 12, padding: 16, marginRight: 8 }}>
+                    {renderChangelog(availableUpdate.body, true)}
                   </div>
                 </ScrollArea>
               </div>
             )}
 
-            {/* Download Progress */}
+            {/* Download progress */}
             {isDownloading && (
-              <div className="px-6 pt-4 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Downloading...</span>
-                  <span className="font-bold text-foreground">{downloadProgress}%</span>
+              <div style={{ padding: '16px 24px 0' }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                  <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 13 }}>Downloading…</span>
+                  <span className="rivals-mono" style={{ color: c.ink, fontSize: 13, fontWeight: 600 }}>{downloadProgress}%</span>
                 </div>
-                <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-primary h-full rounded-full transition-all duration-300"
-                    style={{ width: `${downloadProgress}%` }}
-                  />
+                <div style={{ height: 8, background: c.line, borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ width: `${downloadProgress}%`, height: '100%', background: c.accent, transition: 'width .3s ease' }} />
                 </div>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4">
-              <Button
-                variant="outline"
-                onClick={() => setUpdateDialogOpen(false)}
-                className="rounded-xl border-border/40"
-              >
-                Later
-              </Button>
-              {isDownloading ? (
-                <Button disabled className="gap-2 rounded-xl">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Downloading...
-                </Button>
-              ) : (
-                <Button onClick={downloadAndInstall} className="gap-2 rounded-xl">
-                  <Download className="w-4 h-4" />
-                  Download & Install
-                </Button>
-              )}
+            <div className="flex items-center justify-end gap-2.5" style={{ padding: '20px 24px', animation: 'metadata-fade-in 340ms ease-out 240ms both' }}>
+              {ghostBtn('Later', () => setUpdateDialogOpen(false))}
+              {isDownloading
+                ? primaryBtn(<><Loader2 className="w-4 h-4 animate-spin" /> Downloading…</>, undefined, true)
+                : primaryBtn(<><Download className="btn-glyph w-4 h-4" /> Download &amp; Install</>, downloadAndInstall)}
             </div>
           </div>
         )}
 
-        {/* Update Installed */}
+        {/* Installed */}
         {updateInstalled && (
-          <div className="flex flex-col items-center justify-center px-6 py-16 space-y-6">
-            <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center" style={{ animation: 'icon-pop-in 400ms ease-out both, pulse-glow 3s ease-in-out 600ms infinite' }}>
-              <CheckCircle2 className="w-10 h-10 text-green-500" />
+          <div className="flex flex-col items-center justify-center gap-5" style={{ padding: '56px 24px' }}>
+            <div className="grid place-items-center" style={{ width: 80, height: 80, borderRadius: 20, background: tint(c.ok, 12), animation: 'icon-pop-in 400ms ease-out both' }}>
+              <CheckCircle2 className="w-10 h-10" style={{ color: c.ok }} />
             </div>
-            <div className="text-center space-y-1.5" style={{ animation: 'metadata-fade-in 300ms ease-out 200ms both' }}>
-              <h3 className="text-xl font-bold">Update Installed!</h3>
-              <p className="text-sm text-muted-foreground">
-                Restart to apply the update
-              </p>
+            <div className="text-center">
+              <h3 className="rivals-display" style={{ color: c.ink, fontSize: 20, fontWeight: 600 }}>Update installed</h3>
+              <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 13, marginTop: 4 }}>Restart to apply the update.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setUpdateDialogOpen(false)}
-                className="rounded-xl border-border/40"
-              >
-                Later
-              </Button>
-              <Button onClick={restartApp} className="gap-2 rounded-xl">
-                <RefreshCw className="w-4 h-4" />
-                Restart Now
-              </Button>
+            <div className="flex items-center gap-2.5">
+              {ghostBtn('Later', () => setUpdateDialogOpen(false))}
+              {primaryBtn(<><RefreshCw className="btn-glyph w-4 h-4" /> Restart Now</>, restartApp)}
             </div>
           </div>
         )}

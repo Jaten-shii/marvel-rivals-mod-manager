@@ -4,15 +4,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '../stores';
 import { useGetMods, useUpdateModMetadata, useGetCostumesForCharacter } from '../hooks/useMods';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ScrollArea } from './ui/scroll-area';
 import type { ModCategory, Character } from '../types/mod.types';
 import { ALL_CHARACTERS, MOD_CATEGORIES } from '../shared/constants';
-import { Upload, Download, Clipboard, Image as ImageIcon, Check, Monitor, Volume2, Shirt, Gamepad2, Loader2 } from 'lucide-react';
+import { Upload, Download, Clipboard, Image as ImageIcon, Check, Loader2, Pencil } from 'lucide-react';
+import { c, tint, categoryColor, getCostumeIconSrc } from '../shared/rivals-tokens';
+import { useDominantColor } from '../hooks/useDominantColor';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
@@ -35,21 +35,33 @@ function getCharacterIconPath(character: string): string {
   return `/assets/character-icons/${iconFileName}`;
 }
 
-// Helper function to get category icon
-function getCategoryIcon(category: ModCategory) {
-  switch (category) {
-    case 'UI':
-      return <Monitor className="w-4 h-4" />;
-    case 'Audio':
-      return <Volume2 className="w-4 h-4" />;
-    case 'Skins':
-      return <Shirt className="w-4 h-4" />;
-    case 'Gameplay':
-      return <Gamepad2 className="w-4 h-4" />;
-    default:
-      return null;
-  }
+// Round avatar whose ring is tinted by the image's most prominent color.
+// An outer wrapper adds transparent room so the hover glow paints INSIDE the
+// element's own footprint (never clipped by the overflow-hidden select boxes).
+function RingAvatar({ src, alt, size }: { src: string; alt: string; size: number }) {
+  const dominant = useDominantColor(src);
+  const ring = dominant ? `color-mix(in oklch, ${dominant} 65%, transparent)` : tint(c.accent, 35);
+  const glow = dominant ?? 'var(--rivals-accent)';
+  return (
+    <span className="ring-avatar flex-shrink-0" style={{ ['--ring-glow' as string]: glow }}>
+      <span
+        className="ring-avatar-ring rounded-full grid place-items-center"
+        style={{ width: size, height: size, padding: 2, background: c.bg, border: `2px solid ${ring}`, boxSizing: 'border-box', transition: 'box-shadow 200ms ease, border-color 200ms ease' }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="rounded-full object-cover w-full h-full"
+          style={{ boxShadow: `0 0 0 1px ${c.line}` }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      </span>
+    </span>
+  );
 }
+
 
 export function MetadataDialog() {
   const { metadataDialogOpen, metadataDialogModId, setMetadataDialogOpen } = useUIStore();
@@ -143,6 +155,9 @@ export function MetadataDialog() {
 
   // Fetch costumes for selected character
   const { data: costumes = [], isLoading: isLoadingCostumes } = useGetCostumesForCharacter(character || null);
+
+  // Currently selected costume object (for the select trigger preview)
+  const selectedCostume = costume ? costumes.find(c => c.id === costume) : undefined;
 
 
   // Auto-detect costume from Nexus mod name once costumes load
@@ -532,34 +547,44 @@ export function MetadataDialog() {
   return (
     <>
     <Dialog open={metadataDialogOpen && !showCropDialog} onOpenChange={handleClose}>
-      <DialogContent className="w-[92vw] sm:max-w-[1500px] max-h-[85vh] p-0 overflow-hidden bg-card overflow-x-hidden rounded-2xl flex flex-col">
+      <DialogContent
+        className="w-[92vw] sm:max-w-[1500px] max-h-[85vh] p-0 overflow-hidden overflow-x-hidden flex flex-col"
+        style={{ background: c.bg, border: `1px solid ${c.line2}`, borderRadius: 16 }}
+      >
         {!mod ? (
           <div className="p-12 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            <p className="text-gray-400">Loading mod data...</p>
+            <Loader2 className="w-12 h-12 animate-spin" style={{ color: c.accent }} />
+            <p style={{ color: c.ink3, fontFamily: c.font }}>Loading mod data…</p>
           </div>
         ) : (
           <>
         {/* Header */}
-        <div className="px-6 pt-4 pb-3 border-b border-border/40">
-          <DialogTitle className="text-2xl font-bold text-white tracking-tight">Edit Mod Metadata</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-0.5">
-            Update mod information and thumbnail
-          </DialogDescription>
+        <div className="flex items-center gap-3" style={{ padding: '18px 24px', borderBottom: `1px solid ${c.line}`, background: c.panel }}>
+          <div className="grid place-items-center" style={{ width: 40, height: 40, borderRadius: 10, background: tint(c.accent, 14), color: c.accent }}>
+            <Pencil className="w-5 h-5" />
+          </div>
+          <div>
+            <DialogTitle asChild>
+              <h2 className="rivals-display" style={{ color: c.ink, fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Edit Mod Metadata</h2>
+            </DialogTitle>
+            <DialogDescription asChild>
+              <p className="rivals-mono" style={{ color: c.ink3, fontSize: 11.5, marginTop: 2 }}>Update mod information &amp; thumbnail</p>
+            </DialogDescription>
+          </div>
         </div>
 
         {/* Two-Column Layout */}
-        <div className="grid grid-cols-[440px_1fr] flex-1 min-h-0 overflow-x-hidden">
+        <div className="grid grid-cols-[540px_1fr] flex-1 min-h-0 overflow-x-hidden">
           {/* Left Column - Thumbnail */}
-          <div className="px-6 py-5 border-r border-border/40 overflow-y-auto bg-background/50">
+          <div className="px-6 py-5 overflow-y-auto" style={{ borderRight: `1px solid ${c.line}`, background: c.panel }}>
             <div className="space-y-4" style={{ animation: 'metadata-fade-in 400ms ease-out both' }}>
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Thumbnail Preview</h3>
-                <p className="text-xs text-muted-foreground/60 mt-1">16:9 aspect ratio recommended</p>
+                <h3 className="rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Thumbnail Preview</h3>
+                <p className="mt-1" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11.5 }}>16:9 aspect ratio recommended</p>
               </div>
 
               {/* Current Thumbnail */}
-              <div className="aspect-video bg-black/40 rounded-xl overflow-hidden ring-1 ring-white/5">
+              <div className="aspect-video overflow-hidden" style={{ background: c.bg, borderRadius: 12, border: `1px solid ${c.line2}` }}>
                 {thumbnailSrcWithCache ? (
                   <img
                     src={thumbnailSrcWithCache}
@@ -567,10 +592,10 @@ export function MetadataDialog() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center" style={{ color: c.muted }}>
                     <div className="text-center">
-                      <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No thumbnail</p>
+                      <ImageIcon className="w-14 h-14 mx-auto mb-2 opacity-60" />
+                      <p style={{ fontFamily: c.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>No thumbnail</p>
                     </div>
                   </div>
                 )}
@@ -581,35 +606,37 @@ export function MetadataDialog() {
                 <button
                   onClick={handleUploadImage}
                   disabled={isUploadingThumbnail}
-                  className="px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
+                  className="thumb-btn up px-4 py-3 rounded-lg text-sm flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  style={{ fontFamily: c.font }}
                 >
                   {isUploadingThumbnail ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Upload className="w-4 h-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
+                    <Upload className="thumb-btn-icon w-4 h-4" />
                   )}
-                  {isUploadingThumbnail ? 'Uploading...' : 'Upload Image'}
+                  {isUploadingThumbnail ? 'Uploading…' : 'Upload Image'}
                 </button>
 
                 <button
                   onClick={handlePasteFromClipboard}
                   disabled={isUploadingThumbnail}
-                  className="px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
+                  className="thumb-btn px-4 py-3 rounded-lg text-sm flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  style={{ fontFamily: c.font }}
                 >
                   {isUploadingThumbnail ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Clipboard className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                    <Clipboard className="thumb-btn-icon w-4 h-4" />
                   )}
-                  {isUploadingThumbnail ? 'Processing...' : 'Paste Clipboard'}
+                  {isUploadingThumbnail ? 'Processing…' : 'Paste Clipboard'}
                 </button>
               </div>
 
               {/* OR Divider */}
               <div className="flex items-center gap-3 py-1">
-                <div className="flex-1 h-px bg-border/40"></div>
-                <span className="text-[11px] text-muted-foreground/50 uppercase tracking-wider">or</span>
-                <div className="flex-1 h-px bg-border/40"></div>
+                <div className="flex-1 h-px" style={{ background: c.line }}></div>
+                <span style={{ color: c.muted, fontFamily: c.mono, fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase' }}>or</span>
+                <div className="flex-1 h-px" style={{ background: c.line }}></div>
               </div>
 
               {/* URL Input */}
@@ -617,21 +644,22 @@ export function MetadataDialog() {
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://example.com/image.png"
-                className="bg-muted/30 border-border/40 h-11 text-sm rounded-xl"
+                style={{ background: c.bg, borderColor: c.line2 }} className="rivals-input h-11 text-sm rounded-lg"
               />
 
               {/* Download from URL Button */}
               <button
                 onClick={handleDownloadFromUrl}
                 disabled={isUploadingThumbnail || !imageUrl.trim()}
-                className="w-full px-4 py-3 bg-muted/40 text-foreground rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer group hover:bg-primary/15 hover:text-primary disabled:opacity-50 disabled:pointer-events-none"
+                className="thumb-btn down w-full px-4 py-3 rounded-lg text-sm flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                style={{ fontFamily: c.font }}
               >
                 {isUploadingThumbnail ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5" />
+                  <Download className="thumb-btn-icon w-4 h-4" />
                 )}
-                {isUploadingThumbnail ? 'Processing...' : 'Download from URL'}
+                {isUploadingThumbnail ? 'Processing…' : 'Download from URL'}
               </button>
             </div>
           </div>
@@ -641,11 +669,11 @@ export function MetadataDialog() {
             <div className="space-y-4">
               {/* Basic Information */}
               <div className="space-y-2.5" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basic Information</h3>
+                <h3 className="rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Basic Information</h3>
 
                 {/* Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium text-foreground">
+                  <Label htmlFor="title" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                     Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
@@ -653,26 +681,40 @@ export function MetadataDialog() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Mod name"
-                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
+                    style={{ background: c.bg, borderColor: c.line2 }} className="rivals-input h-9 text-sm rounded-lg"
                     autoComplete="off"
                   />
                 </div>
 
                 {/* Subtitle with preset chips */}
                 <div className="space-y-2">
-                  <Label htmlFor="subtitle" className="text-sm font-medium text-foreground">
-                    Subtitle
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="subtitle" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
+                      Subtitle
+                    </Label>
+                    {subtitle && (
+                      <button
+                        type="button"
+                        onClick={() => setSubtitle('')}
+                        className="rivals-mono inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        style={{ color: c.ink3, fontSize: 10, letterSpacing: '0.06em' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = c.nsfw as string)}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = c.ink3 as string)}
+                      >
+                        ✕ Clear
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="subtitle"
                     value={subtitle}
                     onChange={(e) => setSubtitle(e.target.value)}
                     placeholder="Click presets below or type custom..."
-                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
+                    style={{ background: c.bg, borderColor: c.line2 }} className="rivals-input h-9 text-sm rounded-lg"
                     autoComplete="off"
                   />
-                  {/* Compact preset chips */}
-                  <div className="flex flex-wrap gap-1 pt-1">
+                  {/* Compact preset chips — uniform grid for symmetry */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
                     {/* Type presets (orange) */}
                     {['Add-on'].map((preset) => {
                       const isSelected = subtitle.includes(preset);
@@ -688,10 +730,10 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${preset} • ${prev}` : preset);
                             }
                           }}
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
+                          className={`preset-pill w-full px-3 py-1.5 text-[11.5px] font-medium rounded-full border transition-all duration-200 ${
                             isSelected
                               ? 'bg-orange-500/25 text-orange-400'
-                              : 'bg-muted text-gray-500 hover:text-orange-400 hover:bg-orange-500/15'
+                              : 'bg-[var(--rivals-bg)] text-[var(--rivals-ink3)] hover:text-orange-400 hover:bg-orange-500/15'
                           }`}
                         >
                           {preset}
@@ -712,10 +754,10 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
+                          className={`preset-pill w-full px-3 py-1.5 text-[11.5px] font-medium rounded-full border transition-all duration-200 ${
                             isSelected
                               ? 'bg-emerald-500/25 text-emerald-400'
-                              : 'bg-muted text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/15'
+                              : 'bg-[var(--rivals-bg)] text-[var(--rivals-ink3)] hover:text-emerald-400 hover:bg-emerald-500/15'
                           }`}
                         >
                           {preset}
@@ -736,10 +778,10 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
+                          className={`preset-pill w-full px-3 py-1.5 text-[11.5px] font-medium rounded-full border transition-all duration-200 ${
                             isSelected
                               ? 'bg-cyan-500/25 text-cyan-400'
-                              : 'bg-muted text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/15'
+                              : 'bg-[var(--rivals-bg)] text-[var(--rivals-ink3)] hover:text-cyan-400 hover:bg-cyan-500/15'
                           }`}
                         >
                           {preset}
@@ -760,10 +802,10 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
+                          className={`preset-pill w-full px-3 py-1.5 text-[11.5px] font-medium rounded-full border transition-all duration-200 ${
                             isSelected
                               ? 'bg-purple-500/25 text-purple-400'
-                              : 'bg-muted text-gray-500 hover:text-purple-400 hover:bg-purple-500/15'
+                              : 'bg-[var(--rivals-bg)] text-[var(--rivals-ink3)] hover:text-purple-400 hover:bg-purple-500/15'
                           }`}
                         >
                           {preset}
@@ -784,32 +826,22 @@ export function MetadataDialog() {
                               setSubtitle(prev => prev ? `${prev} • ${preset}` : preset);
                             }
                           }}
-                          className={`px-2.5 py-0.5 text-[11px] rounded-full transition-all duration-200 ${
+                          className={`preset-pill w-full px-3 py-1.5 text-[11.5px] font-medium rounded-full border transition-all duration-200 ${
                             isSelected
                               ? 'bg-blue-500/25 text-blue-400'
-                              : 'bg-muted text-gray-500 hover:text-blue-400 hover:bg-blue-500/15'
+                              : 'bg-[var(--rivals-bg)] text-[var(--rivals-ink3)] hover:text-blue-400 hover:bg-blue-500/15'
                           }`}
                         >
                           {preset}
                         </button>
                       );
                     })}
-                    {/* Clear */}
-                    {subtitle && (
-                      <button
-                        type="button"
-                        onClick={() => setSubtitle('')}
-                        className="px-2 py-0.5 text-[11px] rounded bg-muted text-gray-500 hover:text-red-400 hover:bg-red-500/15 transition-all"
-                      >
-                        ✕
-                      </button>
-                    )}
                   </div>
                 </div>
 
                 {/* Author with autocomplete */}
                 <div className="space-y-2 relative">
-                  <Label htmlFor="author" className="text-sm font-medium text-foreground">
+                  <Label htmlFor="author" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                     Author
                   </Label>
                   <Input
@@ -823,37 +855,39 @@ export function MetadataDialog() {
                       setTimeout(() => setShowAuthorSuggestions(false), 150);
                     }}
                     placeholder="Mod author name..."
-                    className="bg-muted/30 border-border/40 h-9 text-sm rounded-xl"
+                    style={{ background: c.bg, borderColor: c.line2 }} className="rivals-input h-9 text-sm rounded-lg"
                     autoComplete="off"
                   />
                   {/* Author suggestions dropdown */}
                   {showAuthorSuggestions && filteredAuthors.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-card border border-border/40 rounded-xl shadow-lg overflow-hidden">
-                      <ScrollArea className="h-[200px]">
-                        <div className="py-1">
-                          {filteredAuthors.map((authorName) => (
-                            <button
-                              key={authorName}
-                              type="button"
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-primary/20 text-gray-300 hover:text-white transition-colors"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setAuthor(authorName);
-                                setShowAuthorSuggestions(false);
-                              }}
-                            >
-                              {authorName}
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                    <div
+                      className="absolute z-50 w-full mt-1 rounded-lg overflow-hidden py-1 overflow-y-auto thin-scrollbar"
+                      style={{ background: c.panel, border: `1px solid ${c.line2}`, boxShadow: '0 12px 28px rgba(0,0,0,0.5)', maxHeight: 200 }}
+                    >
+                      {filteredAuthors.map((authorName) => (
+                        <button
+                          key={authorName}
+                          type="button"
+                          className="w-full px-3 py-2 text-left transition-colors"
+                          style={{ color: c.ink2, fontFamily: c.font, fontSize: 13 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = tint(c.accent, 12); e.currentTarget.style.color = c.accent as string; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c.ink2 as string; }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setAuthor(authorName);
+                            setShowAuthorSuggestions(false);
+                          }}
+                        >
+                          {authorName}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium text-foreground">
+                  <Label htmlFor="description" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                     Description
                   </Label>
                   <Textarea
@@ -862,36 +896,36 @@ export function MetadataDialog() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter mod description..."
                     rows={2}
-                    className="bg-muted/30 border-border/40 text-sm resize-none rounded-xl"
+                    style={{ background: c.bg, borderColor: c.line2 }} className="rivals-input text-sm resize-none rounded-lg"
                   />
                 </div>
               </div>
 
               {/* Category & Character */}
               <div className="space-y-2.5" style={{ animation: 'metadata-fade-in 400ms ease-out 200ms both' }}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category & Character</h3>
+                <h3 className="rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Category & Character</h3>
 
-                {/* Horizontal Grid for Category, Character, and Costume */}
-                <div className="grid grid-cols-3 gap-3 min-w-0">
+                {/* Grid: narrower Category, wider Character + Costume */}
+                <div className="grid gap-3 min-w-0" style={{ gridTemplateColumns: '0.75fr 1.15fr 1.15fr' }}>
                   {/* Category */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="category" className="text-sm font-medium text-foreground">
+                    <Label htmlFor="category" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                       Category
                     </Label>
                     <Select value={category} onValueChange={(value) => setCategory(value as ModCategory)}>
-                      <SelectTrigger id="category" className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl">
+                      <SelectTrigger id="category" style={{ background: c.bg, borderColor: c.line2, height: 56 }} className="hover:brightness-110 transition-all rounded-lg">
                         <SelectValue>
                           <div className="flex items-center gap-2">
-                            {getCategoryIcon(category)}
-                            <span>{category}</span>
+                            <span style={{ width: 9, height: 9, borderRadius: 3, background: categoryColor(category), flex: '0 0 auto', boxShadow: `0 0 6px ${tint(categoryColor(category), 70)}` }} />
+                            <span style={{ fontSize: 15 }}>{category}</span>
                           </div>
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent style={{ background: c.panel, borderColor: c.line2 }}>
                         {MOD_CATEGORIES.map((cat) => (
                           <SelectItem key={cat} value={cat}>
                             <div className="flex items-center gap-2">
-                              {getCategoryIcon(cat)}
+                              <span style={{ width: 9, height: 9, borderRadius: 3, background: categoryColor(cat), flex: '0 0 auto' }} />
                               <span>{cat}</span>
                             </div>
                           </SelectItem>
@@ -902,48 +936,34 @@ export function MetadataDialog() {
 
                   {/* Character */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="character" className="text-sm font-medium text-foreground">
+                    <Label htmlFor="character" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                       Character
                     </Label>
                     <Select value={character || 'none'} onValueChange={(value) => {
                       setCharacter(value === 'none' ? '' : value as Character);
                       setCostumeLoadedFromMod(false); // Reset so new character auto-selects default costume
                     }}>
-                      <SelectTrigger id="character" className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl">
+                      <SelectTrigger id="character" style={{ background: c.bg, borderColor: c.line2, height: 56 }} className="hover:brightness-110 transition-all rounded-lg">
                         <SelectValue placeholder="Select character">
                           {character ? (
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <img
-                                src={getCharacterIconPath(character)}
-                                alt={character}
-                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                              <span className="truncate">{character}</span>
+                            <div className="ring-row flex items-center gap-2.5 min-w-0">
+                              <RingAvatar src={getCharacterIconPath(character)} alt={character} size={40} />
+                              <span className="truncate" style={{ fontSize: 15 }}>{character}</span>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">Select character</span>
                           )}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="max-h-[300px] scroll-smooth">
+                      <SelectContent style={{ background: c.panel, borderColor: c.line2 }} className="max-h-[320px] scroll-smooth">
                         <SelectItem value="none">
                           <span className="text-muted-foreground">None</span>
                         </SelectItem>
                         {ALL_CHARACTERS.map((char) => (
                           <SelectItem key={char} value={char}>
-                            <div className="flex items-center gap-2 overflow-hidden max-w-full">
-                              <img
-                                src={getCharacterIconPath(char)}
-                                alt={char}
-                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                              <span className="truncate flex-1">{char}</span>
+                            <div className="ring-row flex items-center gap-2.5 min-w-0 max-w-full">
+                              <RingAvatar src={getCharacterIconPath(char)} alt={char} size={36} />
+                              <span className="truncate flex-1" style={{ fontSize: 14 }}>{char}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -953,7 +973,7 @@ export function MetadataDialog() {
 
                   {/* Costume - Show always but disabled if no character */}
                   <div className="space-y-2 min-w-0">
-                    <Label htmlFor="costume" className="text-sm font-medium text-foreground">
+                    <Label htmlFor="costume" className="rivals-font" style={{ color: 'var(--rivals-ink2)', fontSize: 12.5, fontWeight: 600 }}>
                       Costume / Skin
                     </Label>
                     <Select
@@ -963,20 +983,17 @@ export function MetadataDialog() {
                     >
                       <SelectTrigger
                         id="costume"
-                        className="bg-muted/30 border-border/40 hover:bg-muted/50 transition-colors h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ background: c.bg, borderColor: c.line2, height: 56 }} className="hover:brightness-110 transition-all rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <SelectValue placeholder={!character ? "Select character first" : "Select costume"}>
-                          {costume && costumes.find(c => c.id === costume) ? (
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <img
-                                src={`/assets/costume-icons/${costumes.find(c => c.id === costume)?.imagePath}`}
-                                alt={costumes.find(c => c.id === costume)?.name}
-                                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
+                          {selectedCostume ? (
+                            <div className="ring-row flex items-center gap-2.5 min-w-0">
+                              <RingAvatar
+                                src={getCostumeIconSrc(selectedCostume)}
+                                alt={selectedCostume.name}
+                                size={40}
                               />
-                              <span className="truncate">{costumes.find(c => c.id === costume)?.name}</span>
+                              <span className="truncate" style={{ fontSize: 15 }}>{selectedCostume.name}</span>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">
@@ -985,7 +1002,7 @@ export function MetadataDialog() {
                           )}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="max-h-[300px] scroll-smooth">
+                      <SelectContent style={{ background: c.panel, borderColor: c.line2 }} className="max-h-[320px] scroll-smooth">
                         <SelectItem value="none">
                           <span className="text-muted-foreground">None</span>
                         </SelectItem>
@@ -996,16 +1013,9 @@ export function MetadataDialog() {
                         ) : costumes.length > 0 ? (
                           costumes.map((costumeItem) => (
                             <SelectItem key={costumeItem.id} value={costumeItem.id}>
-                              <div className="flex items-center gap-2 overflow-hidden max-w-full">
-                                <img
-                                  src={`/assets/costume-icons/${costumeItem.imagePath}`}
-                                  alt={costumeItem.name}
-                                  className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                  }}
-                                />
-                                <span className="truncate flex-1">{costumeItem.name}</span>
+                              <div className="ring-row flex items-center gap-2.5 min-w-0 max-w-full">
+                                <RingAvatar src={getCostumeIconSrc(costumeItem)} alt={costumeItem.name} size={36} />
+                                <span className="truncate flex-1" style={{ fontSize: 14 }}>{costumeItem.name}</span>
                                 {costumeItem.isDefault && (
                                   <span className="text-xs text-muted-foreground flex-shrink-0">(Default)</span>
                                 )}
@@ -1022,57 +1032,51 @@ export function MetadataDialog() {
                   </div>
                 </div>
 
-                {/* NSFW Toggle */}
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/10" style={{ animation: 'metadata-fade-in 400ms ease-out 300ms both' }}>
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      id="nsfw"
-                      checked={isNsfw}
-                      onChange={(e) => setIsNsfw(e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <label
-                      htmlFor="nsfw"
-                      className="w-4 h-4 mt-0.5 rounded border-2 border-red-400 bg-transparent cursor-pointer flex items-center justify-center peer-checked:bg-red-400 peer-checked:border-red-400 transition-colors"
-                    >
-                      {isNsfw && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </label>
-                  </div>
-                  <div className="flex-1">
-                    <Label htmlFor="nsfw" className="cursor-pointer text-red-400 font-medium text-sm">
-                      NSFW Content (18+)
-                    </Label>
-                    <p className="text-xs text-gray-500 mt-1">
+                {/* NSFW Toggle — full-card switch that lights up red when active */}
+                <button
+                  type="button"
+                  onClick={() => setIsNsfw(!isNsfw)}
+                  className={`nsfw-toggle w-full flex items-center gap-3 p-3.5 rounded-xl text-left cursor-pointer ${isNsfw ? 'is-on' : ''}`}
+                  style={{ animation: 'metadata-fade-in 400ms ease-out 300ms both' }}
+                >
+                  {/* animated checkbox */}
+                  <span className="nsfw-box grid place-items-center flex-shrink-0" style={{ width: 22, height: 22, borderRadius: 7 }}>
+                    <svg className="nsfw-check w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="nsfw-warn" style={{ fontSize: 13 }}>⚠</span>
+                      <span className="nsfw-title" style={{ fontFamily: c.font, fontSize: 13.5, fontWeight: 600 }}>NSFW Content (18+)</span>
+                    </div>
+                    <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 11.5, marginTop: 2 }}>
                       Mark this mod as containing Not Safe For Work content
                     </p>
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Parent Mod Picker — only visible when Add-on is in subtitle */}
               {isAddon && (
                 <div className="space-y-3" style={{ animation: 'metadata-fade-in 300ms ease-out both' }}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Parent Mod</h3>
+                  <h3 className="rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Parent Mod</h3>
 
                   {selectedParentMod ? (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20">
+                    <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line2}` }}>
                       {selectedParentMod.thumbnailPath && (
                         <img
                           src={convertFileSrc(selectedParentMod.thumbnailPath)}
                           alt=""
-                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                          className="rounded-lg object-cover flex-shrink-0"
+                          style={{ width: 72, height: 40, border: `1px solid ${c.line2}` }}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">
+                        <p className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: 13.5, fontWeight: 600 }}>
                           {selectedParentMod.metadata.title || selectedParentMod.name}
                         </p>
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="truncate" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11.5 }}>
                           {selectedParentMod.character || selectedParentMod.category}
                           {selectedParentMod.metadata.author && ` · ${selectedParentMod.metadata.author}`}
                         </p>
@@ -1080,7 +1084,10 @@ export function MetadataDialog() {
                       <button
                         type="button"
                         onClick={() => setParentModId(null)}
-                        className="text-xs text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-400/10"
+                        className="transition-colors px-2.5 py-1.5 rounded-lg"
+                        style={{ color: c.ink3, fontFamily: c.font, fontSize: 12, fontWeight: 600 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = tint(c.nsfw, 12); e.currentTarget.style.color = c.nsfw as string; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c.ink3 as string; }}
                       >
                         Remove
                       </button>
@@ -1096,16 +1103,20 @@ export function MetadataDialog() {
                           setShowParentPicker(true);
                         }}
                         onFocus={() => { updateParentPickerPos(); setShowParentPicker(true); }}
-                        placeholder="Search for parent mod..."
+                        placeholder="Search for parent mod…"
                         onBlur={() => setTimeout(() => setShowParentPicker(false), 200)}
-                        className="w-full px-3 py-2 text-sm rounded-xl bg-muted/30 border border-border/40 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+                        className="rivals-input w-full px-3 py-2.5 text-sm rounded-lg outline-none transition-colors"
+                        style={{ background: c.bg, border: `1px solid ${c.line2}` }}
                       />
                       {createPortal(
                         <div
                           onMouseDown={(e) => e.preventDefault()}
                           onWheel={(e) => e.stopPropagation()}
-                          className="fixed z-[9999] bg-card border border-border/40 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+                          className="fixed z-[9999] rounded-lg"
                           style={{
+                            background: c.panel,
+                            border: `1px solid ${c.line2}`,
+                            boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
                             opacity: showParentPicker ? 1 : 0,
                             transform: showParentPicker ? 'translateY(0)' : 'translateY(-8px)',
                             pointerEvents: showParentPicker ? 'auto' : 'none',
@@ -1121,7 +1132,7 @@ export function MetadataDialog() {
                             onWheel={(e) => e.stopPropagation()}
                           >
                             {filteredParentMods.length === 0 ? (
-                              <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                              <div className="px-3 py-4 text-center" style={{ color: c.ink3, fontFamily: c.font, fontSize: 12 }}>
                                 No mods found
                               </div>
                             ) : (
@@ -1129,7 +1140,9 @@ export function MetadataDialog() {
                                 <button
                                   key={m.id}
                                   type="button"
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg hover:bg-muted/30 transition-colors"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors"
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = tint(c.accent, 12))}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     setParentModId(m.id);
@@ -1141,18 +1154,19 @@ export function MetadataDialog() {
                                     <img
                                       src={convertFileSrc(m.thumbnailPath)}
                                       alt=""
-                                      className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+                                      className="rounded-md object-cover flex-shrink-0"
+                                      style={{ width: 56, height: 32, border: `1px solid ${c.line2}` }}
                                     />
                                   ) : (
-                                    <div className="w-9 h-9 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground text-xs flex-shrink-0">
+                                    <div className="rounded-md flex items-center justify-center flex-shrink-0" style={{ width: 56, height: 32, background: c.bg, border: `1px solid ${c.line2}`, color: c.muted, fontSize: 12 }}>
                                       ?
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground truncate">
+                                    <p className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: 13, fontWeight: 500 }}>
                                       {m.metadata.title || m.name}
                                     </p>
-                                    <p className="text-xs text-muted-foreground truncate">
+                                    <p className="truncate" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11.5 }}>
                                       {m.character || m.category}
                                       {m.metadata.author && ` · ${m.metadata.author}`}
                                     </p>
@@ -1174,12 +1188,12 @@ export function MetadataDialog() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-background/50">
+        <div className="flex items-center justify-between px-6 py-3.5" style={{ borderTop: `1px solid ${c.line}`, background: c.panel }}>
           <div className="flex items-center gap-2">
             {hasChanges ? (
-              <span className="text-sm text-yellow-400">Unsaved changes</span>
+              <span className="rivals-mono" style={{ color: c.warn, fontSize: 12, letterSpacing: '0.04em' }}>● Unsaved changes</span>
             ) : (
-              <div className="flex items-center gap-2 text-sm text-green-400">
+              <div className="flex items-center gap-1.5 rivals-mono" style={{ color: c.ok, fontSize: 12, letterSpacing: '0.04em' }}>
                 <Check className="w-4 h-4" />
                 No changes
               </div>
@@ -1195,16 +1209,21 @@ export function MetadataDialog() {
                 <span>Another mod exists with this name{character ? ` for ${character}` : ''}{costume ? ` (${costumes.find(c => c.id === costume)?.name || costume})` : ''}</span>
               </div>
             )}
-            <Button variant="outline" onClick={handleClose} className="border-border">
+            <button
+              onClick={handleClose}
+              className="btn-outline cursor-pointer"
+              style={{ padding: '9px 18px', borderRadius: 9, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+            >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleSave}
               disabled={updateMetadata.isPending || !hasChanges}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '9px 18px', borderRadius: 9, background: c.accent, color: c.onAccent, border: 'none', fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
             >
-              {updateMetadata.isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
+              {updateMetadata.isPending ? 'Saving…' : 'Save Changes'}
+            </button>
           </div>
         </div>
         </>

@@ -36,6 +36,7 @@ export function ModManager() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading, error } = useGetAppSettings();
   const leftSidebarOpen = useUIStore((state) => state.leftSidebarOpen);
+  const viewMode = useUIStore((state) => state.viewMode);
   const selectedModId = useUIStore((state) => state.selectedModId);
   const metadataDialogOpen = useUIStore((state) => state.metadataDialogOpen);
   const setMetadataDialogOpen = useUIStore((state) => state.setMetadataDialogOpen);
@@ -565,9 +566,9 @@ export function ModManager() {
 
           {/* Main Content - Sidebar + Mod List */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Left Sidebar */}
-            {leftSidebarOpen && (
-              <div className="w-64 flex-shrink-0">
+            {/* Left Sidebar — hidden in gallery mode (replaced by the gallery ribbon) */}
+            {leftSidebarOpen && viewMode !== 'gallery' && (
+              <div className="flex-shrink-0" style={{ width: 288 }}>
                 <Sidebar />
               </div>
             )}

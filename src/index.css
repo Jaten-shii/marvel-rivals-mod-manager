@@ -1,10 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Quicksand:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Barlow+Condensed:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /* Light (Classic) Theme (Default) */
 :root,
 .light-classic {
+  /*
+   * ── Warm-Dark Editorial redesign tokens ────────────────────────────────────
+   * Defined inside this theme block (not a standalone :root) so Tailwind v4's
+   * CSS optimizer keeps them — a bare :root{} block of custom properties gets
+   * purged because the optimizer doesn't see them referenced in inline JSX
+   * styles. Surfaces are fixed warm-dark; accents follow --primary so the
+   * swappable accent (ice/ruby/forest/yellow) recolors them. Tints use
+   * color-mix() since alpha can't be concatenated onto a CSS variable.
+   *
+   * NOTE: this :root selector is the LIGHT theme, so the rivals surface tokens
+   * here are the light variants. The dark variants live in .dark-classic etc.
+   */
+  --rivals-bg: #efe9d7;
+  --rivals-panel: #f6f1e3;
+  --rivals-panel-hi: #e8e0cc;
+  --rivals-line: #d8cfb8;
+  --rivals-line2: #c4b896;
+  --rivals-ink: #2a2620;
+  --rivals-ink2: #4a443a;
+  --rivals-ink3: #6f6857;
+  --rivals-muted: #938b76;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: #1a1610;
+  --rivals-ok: #6f9a4a;
+  --rivals-warn: #b8860b;
+  --rivals-err: #c0563f;
+  --rivals-nsfw: #c0563f;
+  --rivals-cat-skin: var(--primary);
+  --rivals-cat-audio: #4a8c89;
+  --rivals-cat-ui: #7a5fc0;
+  --rivals-cat-gameplay: #6f9a4a;
+  --rivals-font: 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.9751 0.0127 244.2507);
   --foreground: oklch(0.3729 0.0306 259.7328);
   --card: oklch(1.0000 0 0);
@@ -58,6 +95,32 @@
 
 /* Dark (Classic) Theme */
 .dark-classic {
+  /* Warm-Dark Editorial surfaces (fixed); accent follows --primary below. */
+  --rivals-bg: #16140f;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-cat-skin: var(--primary);
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -95,6 +158,31 @@
 
 /* Forest Theme */
 .forest {
+  --rivals-bg: #16140f;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-cat-skin: var(--primary);
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -132,6 +220,31 @@
 
 /* Ruby Theme */
 .ruby {
+  --rivals-bg: #16140f;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-cat-skin: var(--primary);
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -169,6 +282,31 @@
 
 /* Ice Theme */
 .ice {
+  --rivals-bg: #16140f;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-cat-skin: var(--primary);
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -203,6 +341,38 @@
   --sidebar-ring: oklch(0.789 0.154 211.53); /* Ice blue accent */
   --toast-background: oklch(0.2662 0.0134 253.0514); /* Dark background for toast notifications */
 }
+
+/*
+ * Warm-Dark Editorial utility classes.
+ * These real CSS rules reference every --rivals-* token so Lightning CSS keeps
+ * them (a token only set in :root and consumed via inline JSX styles gets
+ * tree-shaken away). Components use these classes / the matching CSS vars.
+ */
+.rivals-bg { background-color: var(--rivals-bg); }
+.rivals-panel { background-color: var(--rivals-panel); }
+.rivals-panel-hi { background-color: var(--rivals-panel-hi); }
+.rivals-text { color: var(--rivals-ink); }
+.rivals-text2 { color: var(--rivals-ink2); }
+.rivals-text3 { color: var(--rivals-ink3); }
+.rivals-muted-text { color: var(--rivals-muted); }
+.rivals-border { border-color: var(--rivals-line); }
+.rivals-border2 { border-color: var(--rivals-line2); }
+.rivals-accent-bg { background-color: var(--rivals-accent); }
+.rivals-accent-text { color: var(--rivals-accent); }
+.rivals-accent2-text { color: var(--rivals-accent2); }
+.rivals-on-accent { color: var(--rivals-on-accent); }
+.rivals-ok-text { color: var(--rivals-ok); }
+.rivals-warn-text { color: var(--rivals-warn); }
+.rivals-err-text { color: var(--rivals-err); }
+.rivals-nsfw-text { color: var(--rivals-nsfw); }
+.rivals-cat-skin { color: var(--rivals-cat-skin); }
+.rivals-cat-audio { color: var(--rivals-cat-audio); }
+.rivals-cat-ui { color: var(--rivals-cat-ui); }
+.rivals-cat-gameplay { color: var(--rivals-cat-gameplay); }
+.font-rivals { font-family: var(--rivals-font); }
+.font-rivals-mono { font-family: var(--rivals-mono); }
+.font-rivals-display { font-family: var(--rivals-display); }
+.font-rivals-condensed { font-family: var(--rivals-condensed); }
 
 
 @theme inline {

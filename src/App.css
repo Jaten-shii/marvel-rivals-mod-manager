@@ -1,6 +1,6 @@
+/* Fonts are bundled via @fontsource (imported in App.tsx) — no remote @import. */
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -44,6 +44,34 @@
 :root,
 .light-classic {
   --radius: 0.5rem;
+  /* Warm-Dark Editorial — light variant (surfaces lightened; accent follows --primary) */
+  --rivals-bg: #efe9d7;
+  --rivals-titlebar: #e3dcc8;
+  --rivals-panel: #f6f1e3;
+  --rivals-panel-hi: #e8e0cc;
+  --rivals-line: #d8cfb8;
+  --rivals-line2: #c4b896;
+  --rivals-ink: #2a2620;
+  --rivals-ink2: #4a443a;
+  --rivals-ink3: #6f6857;
+  --rivals-muted: #938b76;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: #1a1610;
+  --rivals-ok: #6f9a4a;
+  --rivals-warn: #b8860b;
+  --rivals-err: #c0563f;
+  --rivals-nsfw: #c0563f;
+  --rivals-nsfw-bright: #e23b32;
+  --rivals-cat-skin: #e0913a;
+  --rivals-cat-audio: #4a8c89;
+  --rivals-cat-ui: #7a5fc0;
+  --rivals-cat-gameplay: #6f9a4a;
+  --rivals-font: var(--app-body-font, 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif);
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.9751 0.0127 244.2507);
   --foreground: oklch(0.3729 0.0306 259.7328);
   --card: oklch(1.0000 0 0);
@@ -80,6 +108,33 @@
 
 /* Dark (Classic) Theme */
 .dark-classic {
+  --rivals-bg: #16140f;
+  --rivals-titlebar: #100e0a;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-nsfw-bright: #ff5a52;
+  --rivals-cat-skin: #e0913a;
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: var(--app-body-font, 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif);
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -116,6 +171,33 @@
 
 /* Forest Theme */
 .forest {
+  --rivals-bg: #16140f;
+  --rivals-titlebar: #100e0a;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-nsfw-bright: #ff5a52;
+  --rivals-cat-skin: #e0913a;
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: var(--app-body-font, 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif);
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -152,6 +234,33 @@
 
 /* Ruby Theme */
 .ruby {
+  --rivals-bg: #16140f;
+  --rivals-titlebar: #100e0a;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-nsfw-bright: #ff5a52;
+  --rivals-cat-skin: #e0913a;
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: var(--app-body-font, 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif);
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -188,6 +297,33 @@
 
 /* Ice Theme */
 .ice {
+  --rivals-bg: #16140f;
+  --rivals-titlebar: #100e0a;
+  --rivals-panel: #1c1a15;
+  --rivals-panel-hi: #23211b;
+  --rivals-line: #2c2922;
+  --rivals-line2: #3a362d;
+  --rivals-ink: #efe9d7;
+  --rivals-ink2: #c7c0aa;
+  --rivals-ink3: #8a8473;
+  --rivals-muted: #5f5a4d;
+  --rivals-accent: var(--primary);
+  --rivals-accent2: #c2693a;
+  --rivals-on-accent: var(--primary-foreground);
+  --rivals-ok: #9ec27a;
+  --rivals-warn: #e6c069;
+  --rivals-err: #d97a6c;
+  --rivals-nsfw: #d97a6c;
+  --rivals-nsfw-bright: #ff5a52;
+  --rivals-cat-skin: #e0913a;
+  --rivals-cat-audio: #7eb5b3;
+  --rivals-cat-ui: #a18bd4;
+  --rivals-cat-gameplay: #9ec27a;
+  --rivals-font: var(--app-body-font, 'Quicksand', 'Inter Tight', ui-sans-serif, system-ui, sans-serif);
+  --rivals-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --rivals-display: 'Fraunces', ui-serif, Georgia, serif;
+  --rivals-condensed: 'Barlow Condensed', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(0.2355 0.0131 243.4562);
   --foreground: oklch(0.8717 0.0093 258.3382);
   --card: oklch(0.2662 0.0134 253.0514);
@@ -231,7 +367,7 @@
 
   body {
     @apply text-foreground;
-    font-family: -apple-system, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: var(--app-body-font, -apple-system, 'Segoe UI', 'Roboto', sans-serif);
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -268,13 +404,797 @@
   }
 }
 
-/* Font Family Classes */
-.font-ubuntu,
-.font-ubuntu * {
-  font-family: 'Ubuntu', -apple-system, 'Segoe UI', sans-serif !important;
+/*
+ * Font Family Classes (body-font switcher).
+ * Set on the root element only and inherited — NOT a universal `* !important`
+ * override, so component fonts (inline fontFamily, the rivals-* classes, and
+ * editorial titles/numbers) cascade normally instead of being clobbered.
+ */
+.font-ubuntu {
+  --app-body-font: 'Ubuntu', -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--app-body-font);
 }
 
-.font-quicksand,
-.font-quicksand * {
-  font-family: 'Quicksand', -apple-system, 'Segoe UI', sans-serif !important;
+.font-quicksand {
+  --app-body-font: 'Quicksand', -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--app-body-font);
 }
+
+/*
+ * Warm-Dark Editorial — rivals font classes. Applied to specific elements that
+ * must use an editorial face regardless of the body-font switcher.
+ */
+.rivals-font { font-family: var(--rivals-font); }
+.rivals-mono { font-family: var(--rivals-mono); }
+.rivals-display { font-family: var(--rivals-display); }
+.rivals-condensed { font-family: var(--rivals-condensed); }
+
+/*
+ * Surface guard classes. Real CSS rules that reference every --rivals-* token
+ * so the optimizer keeps the variables (the app consumes them via inline
+ * styles, which the build can't see). Components may also use these classes.
+ */
+/*
+ * Accent-colored sidebar scrollbar. The Radix scrollbar is always mounted
+ * (type="always"), so it never pops in/out — we just fade its opacity: faint
+ * at rest, fully visible while hovering the sidebar.
+ */
+.sidebar-scroll [data-slot='scroll-area-thumb'] {
+  background-color: var(--rivals-accent) !important;
+}
+.sidebar-scroll [data-slot='scroll-area-scrollbar'] {
+  width: 8px;
+  opacity: 0.25;
+  transition: opacity 250ms ease;
+}
+.sidebar-scroll:hover [data-slot='scroll-area-scrollbar'] {
+  opacity: 1;
+}
+
+/* Bulk-action buttons: base look in CSS so :hover can win (hue via --bulk-hue). */
+.bulk-btn {
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--rivals-ink2);
+  border: 1px solid var(--rivals-line2);
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease,
+    color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.bulk-btn .bulk-btn-icon {
+  transition: transform 180ms ease;
+}
+.bulk-btn:hover {
+  background: color-mix(in oklch, var(--bulk-hue) 28%, transparent);
+  color: var(--bulk-hue);
+  border-color: var(--bulk-hue);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--bulk-hue) 40%, transparent);
+}
+.bulk-btn:active {
+  transform: translateY(0);
+}
+.bulk-btn:hover .bulk-btn-icon {
+  transform: scale(1.18) rotate(-6deg);
+}
+
+/*
+ * Toolbar icon buttons (NSFW lock, settings) — same hover personality as the
+ * bulk buttons: color shift + lift + colored glow + icon flair. Base look lives
+ * here so :hover can win over the element. Hue via --btn-hue; the "active"
+ * variant (e.g. NSFW unlocked) is set inline and persists.
+ */
+.icon-btn {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease,
+    color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.icon-btn:hover {
+  background: color-mix(in oklch, var(--btn-hue) 22%, transparent) !important;
+  color: var(--btn-hue) !important;
+  border-color: var(--btn-hue) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--btn-hue) 38%, transparent);
+}
+.icon-btn:active {
+  transform: translateY(0);
+}
+.icon-btn:hover .icon-btn-glyph {
+  transform: scale(1.15) rotate(-6deg);
+}
+.icon-btn .icon-btn-glyph {
+  transition: transform 180ms ease;
+}
+/* the settings gear should spin, not tilt */
+.icon-btn.gear:hover .icon-btn-glyph {
+  transform: rotate(90deg);
+}
+
+/* "What's new" text link — accent underline grows + slides on hover. */
+.link-btn {
+  transition: color 160ms ease, transform 160ms ease;
+}
+.link-btn:hover {
+  color: color-mix(in oklch, var(--rivals-accent) 80%, white);
+  transform: translateX(2px);
+}
+
+/* Primary toolbar button (Add Mod): lift + brighten + accent glow + icon spin. */
+.btn-primary {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 180ms ease, box-shadow 180ms ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 16px color-mix(in oklch, var(--rivals-accent) 45%, transparent);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary:hover .btn-glyph {
+  transform: rotate(90deg);
+}
+.btn-glyph {
+  transition: transform 180ms ease;
+}
+
+/* Outline toolbar buttons (Browse Nexus, Sort): lift + accent fill + glow. */
+.btn-outline {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease,
+    color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.btn-outline:hover {
+  background: color-mix(in oklch, var(--rivals-accent) 14%, transparent) !important;
+  color: var(--rivals-accent) !important;
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--rivals-accent) 32%, transparent);
+}
+.btn-outline:active {
+  transform: translateY(0);
+}
+
+/*
+ * Mod card hover (Cards + Gallery): lift, accent border, soft shadow, and the
+ * preview image zooms slightly. Base look stays inline; these only add motion.
+ */
+.mod-card {
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 200ms ease, box-shadow 240ms ease;
+}
+.mod-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px color-mix(in oklch, var(--rivals-accent) 25%, transparent);
+}
+.mod-card .mod-card-img {
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mod-card:hover .mod-card-img {
+  transform: scale(1.04);
+}
+
+/* List row hover: gentle accent wash + left accent edge. */
+.list-row {
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+.list-row:hover {
+  background: color-mix(in oklch, var(--rivals-accent) 8%, transparent) !important;
+  box-shadow: inset 2px 0 0 var(--rivals-accent);
+}
+
+/* Smoother dropdown open animation. */
+.menu-pop {
+  transform-origin: top right;
+  animation: menu-pop 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.menu-item {
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+/*
+ * Dominant-color ring avatar (metadata dialog): outward glow on hover. The avatar
+ * rows are forced to allow overflow (truncation lives on the name span instead),
+ * so the glow can bloom outward without being clipped.
+ */
+.ring-row { overflow: visible !important; }
+[data-slot='select-trigger'],
+[data-slot='select-trigger'] > span,
+[data-slot='select-value'] { overflow: visible !important; }
+
+.ring-avatar:hover .ring-avatar-ring,
+[data-slot='select-item']:hover .ring-avatar-ring,
+[data-slot='select-trigger']:hover .ring-avatar-ring {
+  border-color: var(--ring-glow);
+  box-shadow: 0 0 14px 1px color-mix(in oklch, var(--ring-glow) 80%, transparent);
+}
+.ring-avatar { transition: none; }
+
+/*
+ * NSFW toggle card (metadata dialog). Neutral warm-dark when off; lights up red
+ * with a glow when on. The checkbox box fills + the tick pops in.
+ */
+.nsfw-toggle {
+  background: var(--rivals-panel);
+  border: 1px solid var(--rivals-line2);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 160ms ease;
+}
+.nsfw-toggle:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklch, var(--rivals-nsfw-bright) 45%, transparent);
+}
+.nsfw-toggle.is-on {
+  background: color-mix(in oklch, var(--rivals-nsfw-bright) 12%, transparent);
+  border-color: color-mix(in oklch, var(--rivals-nsfw-bright) 55%, transparent);
+  box-shadow: 0 0 18px color-mix(in oklch, var(--rivals-nsfw-bright) 28%, transparent);
+}
+.nsfw-toggle .nsfw-box {
+  background: transparent;
+  border: 2px solid var(--rivals-ink3);
+  transition: background 200ms ease, border-color 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nsfw-toggle.is-on .nsfw-box {
+  background: var(--rivals-nsfw-bright);
+  border-color: var(--rivals-nsfw-bright);
+  transform: scale(1.08);
+  box-shadow: 0 0 12px color-mix(in oklch, var(--rivals-nsfw-bright) 60%, transparent);
+}
+.nsfw-toggle .nsfw-check {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+.nsfw-toggle.is-on .nsfw-check {
+  opacity: 1;
+  transform: scale(1);
+}
+.nsfw-toggle .nsfw-title,
+.nsfw-toggle .nsfw-warn {
+  color: var(--rivals-ink2);
+  transition: color 220ms ease;
+}
+.nsfw-toggle.is-on .nsfw-title,
+.nsfw-toggle.is-on .nsfw-warn {
+  color: var(--rivals-nsfw-bright);
+}
+
+/* Dominant-color ring avatar (cards/panels/sidebar/gallery rail): glows on hover. */
+.mod-card:hover .rivals-ring,
+.sidebar-char-row:hover .rivals-ring,
+.gallery-pill:hover .rivals-ring,
+.rivals-ring:hover {
+  border-color: var(--ring-glow);
+  box-shadow: 0 0 14px 1px color-mix(in oklch, var(--ring-glow) 70%, transparent);
+}
+
+/* Gallery ribbon character pills: lift + accent border on hover. */
+.gallery-pill {
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.gallery-pill:hover:not(.is-active) {
+  background: color-mix(in oklch, var(--rivals-accent) 10%, transparent);
+  border-color: color-mix(in oklch, var(--rivals-accent) 50%, transparent);
+  transform: translateY(-1.5px);
+}
+.gallery-pill:active {
+  transform: translateY(0);
+}
+
+/* Mod details panel action buttons: light up in their hue on hover. */
+.detail-btn {
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.detail-btn:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--btn-hue) 16%, transparent) !important;
+  color: var(--btn-hue) !important;
+  border-color: color-mix(in oklch, var(--btn-hue) 55%, transparent) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 14px color-mix(in oklch, var(--btn-hue) 30%, transparent);
+}
+.detail-btn:active:not(:disabled) { transform: translateY(0); }
+.detail-btn .detail-btn-icon { transition: transform 180ms ease; }
+.detail-btn:hover:not(:disabled) .detail-btn-icon { transform: rotate(12deg) scale(1.1); }
+
+/* Warm-dark text inputs (metadata dialog): warm typed text + placeholder. */
+.rivals-input {
+  color: var(--rivals-ink) !important;
+}
+.rivals-input::placeholder {
+  color: var(--rivals-muted) !important;
+  opacity: 1;
+}
+
+/* Indeterminate bulk-progress bar (enable/disable all run as one batch). */
+.bulk-indeterminate {
+  width: 40%;
+  border-radius: 999px;
+  animation: bulk-indeterminate 1.1s ease-in-out infinite;
+}
+@keyframes bulk-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ─── Settings modal hover polish ─────────────────────────────────────── */
+
+/* Choice tiles (theme / font / background): lift + accent glow on hover. */
+.settings-tile {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 180ms ease,
+    box-shadow 220ms ease, background 180ms ease !important;
+  will-change: transform;
+}
+.settings-tile:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px color-mix(in oklch, var(--rivals-accent) 16%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--rivals-accent) 30%, transparent);
+}
+.settings-tile:not(:disabled):active {
+  transform: translateY(-1px);
+}
+
+/* Nav rail items: glyph nudges right + brightens on hover. */
+.settings-nav-item {
+  transition: background 160ms ease, transform 160ms ease !important;
+}
+.settings-nav-item:hover .settings-nav-glyph {
+  transform: translateX(2px);
+}
+.settings-nav-glyph {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), color 160ms ease;
+}
+
+/* Settings text inputs: accent border + soft glow on hover & focus. */
+.settings-input {
+  transition: border-color 170ms ease, box-shadow 200ms ease, background 170ms ease !important;
+}
+.settings-input:hover:not(:focus) {
+  border-color: var(--rivals-line2) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rivals-accent) 7%, transparent);
+}
+.settings-input:focus {
+  border-color: color-mix(in oklch, var(--rivals-accent) 60%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rivals-accent) 20%, transparent);
+}
+
+/* Outlined action buttons (Browse / Open / skip-intro actions): lift + glow. */
+.settings-btn {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 170ms ease,
+    color 170ms ease, border-color 170ms ease, box-shadow 200ms ease !important;
+}
+.settings-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--settings-btn-hue, var(--rivals-accent)) 26%, transparent);
+}
+.settings-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Toolbar search: warm placeholder + accent border/glow on hover & focus,
+   magnifier glyph brightens to accent on interaction. */
+.toolbar-search {
+  transition: border-color 180ms ease, box-shadow 200ms ease, background 180ms ease;
+}
+.toolbar-search::placeholder {
+  color: var(--rivals-muted);
+  opacity: 1;
+}
+.search-wrap:hover .toolbar-search:not(:focus) {
+  border-color: var(--rivals-line2) !important;
+  background: var(--rivals-panel-hi);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rivals-accent) 8%, transparent);
+}
+.toolbar-search:focus {
+  border-color: color-mix(in oklch, var(--rivals-accent) 60%, transparent) !important;
+  background: var(--rivals-panel-hi);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rivals-accent) 22%, transparent),
+    0 4px 14px color-mix(in oklch, var(--rivals-accent) 18%, transparent);
+}
+.search-glyph {
+  transition: color 180ms ease;
+}
+.search-wrap:hover .search-glyph,
+.search-wrap:focus-within .search-glyph {
+  color: var(--rivals-accent);
+}
+
+/* Thumbnail action buttons (metadata dialog): lift + accent fill + glow, icon flair. */
+.thumb-btn {
+  background: var(--rivals-bg);
+  color: var(--rivals-ink2);
+  border: 1px solid var(--rivals-line2);
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease,
+    color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.thumb-btn:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--rivals-accent) 15%, transparent);
+  color: var(--rivals-accent);
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px color-mix(in oklch, var(--rivals-accent) 32%, transparent);
+}
+.thumb-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.thumb-btn .thumb-btn-icon {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.thumb-btn:hover:not(:disabled) .thumb-btn-icon { transform: scale(1.18); }
+.thumb-btn.up:hover:not(:disabled) .thumb-btn-icon { transform: translateY(-2px) scale(1.1); }
+.thumb-btn.down:hover:not(:disabled) .thumb-btn-icon { transform: translateY(2px) scale(1.1); }
+
+/*
+ * Auto-highlighted add-on rows/chips (filter match): an animated gradient
+ * "sheen" in the category color (--hl-color) sweeps across left→right, over a
+ * faint category-tinted base. Stands out vs a static highlight.
+ */
+.addon-hl {
+  position: relative;
+  box-shadow: inset 3px 0 0 var(--hl-color);
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in oklch, var(--hl-color) 8%, transparent) 0%,
+    color-mix(in oklch, var(--hl-color) 30%, transparent) 35%,
+    color-mix(in oklch, var(--hl-color) 8%, transparent) 70%
+  ) !important;
+  background-size: 220% 100%;
+  animation: addon-hl-sweep 2.6s linear infinite;
+}
+.addon-hl-chip {
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in oklch, var(--hl-color) 16%, transparent) 0%,
+    color-mix(in oklch, var(--hl-color) 38%, transparent) 35%,
+    color-mix(in oklch, var(--hl-color) 16%, transparent) 70%
+  ) !important;
+  background-size: 220% 100%;
+  animation: addon-hl-sweep 2.6s linear infinite;
+}
+@keyframes addon-hl-sweep {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
+/* Subtitle preset pills (metadata dialog): border tracks text color, lift on hover. */
+.preset-pill {
+  border-color: color-mix(in oklch, currentColor 30%, transparent);
+}
+.preset-pill:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklch, currentColor 50%, transparent);
+}
+.preset-pill:active {
+  transform: translateY(0);
+}
+
+/* Color picker Palette/Custom segmented tabs. */
+.cp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: var(--rivals-font);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rivals-ink3);
+  background: transparent;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 160ms ease;
+}
+.cp-tab:hover:not(.is-active) {
+  color: var(--rivals-ink);
+  background: color-mix(in oklch, var(--rivals-accent) 10%, transparent);
+}
+.cp-tab:hover:not(.is-active) .cp-tab-icon {
+  transform: scale(1.15) rotate(-8deg);
+}
+.cp-tab.is-active {
+  color: var(--rivals-accent);
+  background: color-mix(in oklch, var(--rivals-accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--rivals-accent) 45%, transparent);
+}
+.cp-tab .cp-tab-icon {
+  display: inline-flex;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cp-tab.is-active .cp-tab-icon {
+  transform: scale(1.1);
+}
+
+/* Color palette swatches: lift + glow in their own color on hover. */
+.cp-swatch {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease;
+}
+.cp-swatch:hover {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 5px 16px color-mix(in oklch, var(--swatch) 60%, transparent);
+}
+
+/* Crossfade/slide between Palette and Custom views. */
+.cp-view {
+  animation: cp-view-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes cp-view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/*
+ * ── Toast notifications (Sonner) — warm-dark editorial ──────────────────────
+ * Warm-dark panel, a type-colored left accent bar + icon, editorial fonts, and
+ * a smooth spring entrance/exit.
+ */
+.rivals-toast {
+  --toast-accent: var(--rivals-accent);
+  background: var(--rivals-panel) !important;
+  color: var(--rivals-ink) !important;
+  border: 1px solid var(--rivals-line2) !important;
+  border-radius: 12px !important;
+  padding: 13px 16px 13px 18px !important;
+  min-height: 56px !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45), 0 0 0 1px color-mix(in oklch, var(--toast-accent) 18%, transparent) !important;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+/* type-colored left accent bar */
+.rivals-toast::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--toast-accent);
+  box-shadow: 0 0 12px color-mix(in oklch, var(--toast-accent) 60%, transparent);
+}
+.rivals-toast-title {
+  color: var(--rivals-ink) !important;
+  font-family: var(--rivals-font) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+.rivals-toast-desc {
+  color: var(--rivals-ink3) !important;
+  font-family: var(--rivals-font) !important;
+  font-size: 12px !important;
+}
+.rivals-toast-icon {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--toast-accent) !important;
+}
+.rivals-toast-icon svg { color: var(--toast-accent) !important; }
+.rivals-toast-action {
+  border-radius: 7px !important;
+  background: var(--toast-accent) !important;
+  color: var(--rivals-on-accent) !important;
+  font-family: var(--rivals-font) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+}
+.rivals-toast-cancel {
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--rivals-ink3) !important;
+  border: 1px solid var(--rivals-line2) !important;
+  font-family: var(--rivals-font) !important;
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+}
+/* per-type accent colors */
+.rivals-toast-success { --toast-accent: var(--rivals-ok); }
+.rivals-toast-error { --toast-accent: var(--rivals-nsfw-bright); }
+.rivals-toast-info { --toast-accent: var(--rivals-accent); }
+.rivals-toast-warning { --toast-accent: var(--rivals-warn); }
+
+/* Sonner fully owns transform/positioning — we don't touch it (avoids broken
+   stacking). Only a gentle opacity fade-in on mount. */
+.rivals-toast[data-mounted='true'] {
+  animation: rivals-toast-fade 300ms ease both;
+}
+@keyframes rivals-toast-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Entrance animations used by dialogs (these live here, not the dead index.css). */
+@keyframes metadata-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes icon-pop-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(158, 194, 122, 0.3); }
+  50% { box-shadow: 0 0 20px 8px rgba(158, 194, 122, 0.15); }
+}
+
+/* "Update available" pill — grand, attention-grabbing. */
+.update-pill {
+  position: relative;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, filter 200ms ease;
+  animation: update-glow 2.2s ease-in-out infinite;
+}
+.update-pill:hover {
+  transform: translateY(-1.5px) scale(1.04);
+  filter: brightness(1.08);
+}
+.update-pill .update-arrow {
+  display: inline-block;
+  animation: update-bob 1.4s ease-in-out infinite;
+}
+/* pulsing halo ring behind the pill */
+.update-pill::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--rivals-accent2);
+  opacity: 0;
+  animation: update-ring 2.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes update-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--rivals-accent2) 60%, transparent); }
+  50% { box-shadow: 0 0 18px 2px color-mix(in oklch, var(--rivals-accent2) 55%, transparent); }
+}
+@keyframes update-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+@keyframes update-ring {
+  0% { opacity: 0.7; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Card favorite star: warm tint + pop + glow on hover. */
+.fav-btn {
+  transition: background 160ms ease, color 160ms ease, transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fav-btn:hover {
+  background: color-mix(in oklch, var(--rivals-warn) 16%, transparent);
+  color: var(--rivals-warn);
+  transform: scale(1.18) rotate(8deg);
+}
+.fav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Card "Enable" big button: lift + brighten + accent glow. */
+.enable-btn {
+  transition: filter 180ms ease, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+.enable-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 16px color-mix(in oklch, var(--rivals-accent) 38%, transparent);
+}
+/* disabled-state (outline) variant gets an accent wash on hover */
+.enable-btn.is-off:hover {
+  background: color-mix(in oklch, var(--rivals-accent) 12%, transparent) !important;
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent) !important;
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--rivals-accent) 26%, transparent);
+}
+.enable-btn:active {
+  transform: translateY(0);
+}
+
+/* Small enabled/disabled toggle pill (Cards footer): lift + brighten on hover. */
+.toggle-pill {
+  transition: filter 150ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease, background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.toggle-pill.is-on:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px color-mix(in oklch, var(--rivals-ok) 32%, transparent);
+}
+.toggle-pill.is-off:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--rivals-ok) 12%, transparent) !important;
+  color: var(--rivals-ok) !important;
+  border-color: color-mix(in oklch, var(--rivals-ok) 45%, transparent) !important;
+  transform: translateY(-1px);
+}
+.toggle-pill:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Add-on dropdown toggle (warn-hued): tint + lift + glow on hover. */
+.addon-btn {
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+}
+.addon-btn:hover {
+  background: color-mix(in oklch, var(--rivals-warn) 20%, transparent) !important;
+  border-color: color-mix(in oklch, var(--rivals-warn) 60%, transparent) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--rivals-warn) 32%, transparent);
+}
+.addon-btn:active {
+  transform: translateY(0);
+}
+
+/* Smooth transition when switching Cards / Gallery / List views. */
+.view-swap {
+  animation: view-swap 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes view-swap {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* View toggle (Cards / Gallery / List) segmented buttons. */
+.view-btn {
+  color: var(--rivals-ink3);
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 160ms ease;
+}
+.view-btn .view-btn-icon {
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* inactive hover */
+.view-btn:not(.is-active):hover {
+  background: color-mix(in oklch, var(--rivals-accent) 10%, transparent);
+  color: var(--rivals-ink);
+}
+.view-btn:not(.is-active):hover .view-btn-icon {
+  transform: scale(1.18);
+}
+/* active */
+.view-btn.is-active {
+  background: color-mix(in oklch, var(--rivals-accent) 18%, transparent);
+  color: var(--rivals-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--rivals-accent) 55%, transparent),
+    0 2px 10px color-mix(in oklch, var(--rivals-accent) 28%, transparent);
+}
+.view-btn.is-active .view-btn-icon {
+  transform: scale(1.1);
+}
+
+/* Gallery character rail: accent-themed horizontal scrollbar. */
+.gallery-rail {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rivals-accent) transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+}
+.gallery-rail::-webkit-scrollbar {
+  height: 7px;
+}
+.gallery-rail::-webkit-scrollbar-track {
+  background: color-mix(in oklch, var(--rivals-line) 60%, transparent);
+  border-radius: 999px;
+}
+.gallery-rail::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--rivals-accent) 70%, transparent);
+  border-radius: 999px;
+}
+.gallery-rail::-webkit-scrollbar-thumb:hover {
+  background: var(--rivals-accent);
+}
+
+.rivals-bg { background-color: var(--rivals-bg); }
+.rivals-titlebar { background-color: var(--rivals-titlebar); }
+.rivals-panel { background-color: var(--rivals-panel); }
+.rivals-panel-hi { background-color: var(--rivals-panel-hi); }
+.rivals-border { border-color: var(--rivals-line); }
+.rivals-border2 { border-color: var(--rivals-line2); }
+.rivals-ink { color: var(--rivals-ink); }
+.rivals-ink2 { color: var(--rivals-ink2); }
+.rivals-ink3 { color: var(--rivals-ink3); }
+.rivals-muted { color: var(--rivals-muted); }
+.rivals-accent-bg { background-color: var(--rivals-accent); }
+.rivals-accent-text { color: var(--rivals-accent); }
+.rivals-accent2-text { color: var(--rivals-accent2); }
+.rivals-on-accent { color: var(--rivals-on-accent); }
+.rivals-ok-text { color: var(--rivals-ok); }
+.rivals-warn-text { color: var(--rivals-warn); }
+.rivals-err-text { color: var(--rivals-err); }
+.rivals-nsfw-text { color: var(--rivals-nsfw); }
+.rivals-nsfw-bright-text { color: var(--rivals-nsfw-bright); }
+.rivals-cat-skin-text { color: var(--rivals-cat-skin); }
+.rivals-cat-audio-text { color: var(--rivals-cat-audio); }
+.rivals-cat-ui-text { color: var(--rivals-cat-ui); }
+.rivals-cat-gameplay-text { color: var(--rivals-cat-gameplay); }

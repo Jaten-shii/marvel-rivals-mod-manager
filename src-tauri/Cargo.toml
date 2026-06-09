@@ -1,6 +1,6 @@
 [package]
 name = "marvel-rivals-mod-manager"
-version = "5.1.0"
+version = "6.0.1"
 description = "Professional mod manager for Marvel Rivals"
 authors = ["Marvel Rivals Mod Manager"]
 edition = "2021"
@@ -40,7 +40,8 @@ notify = "6"                                     # File watching (replaces Choki
 zip = "2"                                       # ZIP extraction
 sevenz-rust = "0.6"                             # 7z extraction
 unrar = "0.5"                                   # RAR extraction (RAR4 and RAR5 support)
-reqwest = { version = "0.12", features = ["json", "multipart"] }  # HTTP for NexusMods API
+reqwest = { version = "0.12", features = ["json", "multipart", "stream"] }  # HTTP for NexusMods API
+futures-util = "0.3"  # Stream utilities for download progress
 sha2 = "0.10"                                   # Hash generation for mod IDs
 walkdir = "2"                                   # Directory traversal
 chrono = { version = "0.4", features = ["serde"] }  # Date/time handling

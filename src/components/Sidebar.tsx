@@ -1,178 +1,150 @@
 import { useState, useMemo, useCallback } from 'react'
-import { ChevronDown, Folder, Monitor, Volume2, Shirt, Gamepad2, FolderOpen, Settings, CircleCheck, CircleX, Trash2, Tag, Plus, Star, FolderCog, Info, BookOpen, RefreshCw, AlertCircle, Film, Check, Loader2 } from 'lucide-react'
+import { FolderOpen, Plus, Settings, Trash2 } from 'lucide-react'
 import { ScrollArea } from './ui/scroll-area'
 import { useUIStore } from '@/stores'
 import type { ModCategory, Character } from '@/types/mod.types'
-import { cn } from '@/lib/utils'
-import { useGetMods, useToggleMod, useDeleteMod, useRemoveProfileFromAllMods } from '@/hooks/useMods'
+import { useGetMods, useToggleMod, useRemoveProfileFromAllMods } from '@/hooks/useMods'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { toast } from 'sonner'
 import { ProfileItem } from './ProfileItem'
 import { ProfileDialog } from './ProfileDialog'
-import { invoke } from '@tauri-apps/api/core'
-import { APP_VERSION, ALL_CHARACTERS } from '@/shared/constants'
-import { useUpdater } from '@/hooks/useUpdater'
-import { useSkipIntros } from '@/hooks/useSkipIntros'
+import { ALL_CHARACTERS } from '@/shared/constants'
+import { c, tint, categoryColor, formatFileSize, getCharacterIconPath } from '@/shared/rivals-tokens'
+import { RingAvatar } from '@/shared/rivals-design'
 
-// Helper function to get character icon path
-function getCharacterIconPath(character: string): string {
-  // Map character names to their icon filenames
-  const iconMap: Record<string, string> = {
-    'Adam Warlock': 'Adam.png',
-    'Jeff the Land Shark': 'Jeff.png',
-    'The Punisher': 'Punisher.png',
-    'Mister Fantastic': 'Mr. Fantastic.png',
-    'Cloak and Dagger': 'Cloak & Dagger.png',
-    'Spider-Man': 'Spider-Man.png',
-    'Star-Lord': 'Star-Lord.png',
-  };
-
-  // Use mapping if exists, otherwise use character name directly
-  const iconFileName = iconMap[character] || `${character}.png`
-  return `/assets/character-icons/${iconFileName}`
+// Tracked uppercase mono micro-heading.
+function SectionLabel({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-[18px] pt-[18px] pb-1.5"
+      style={{ color: c.muted, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}
+    >
+      <span className="flex-1">{children}</span>
+      {right}
+    </div>
+  )
 }
 
-// Helper function to get category icon
-function getCategoryIcon(category: ModCategory) {
-  switch (category) {
-    case 'UI':
-      return <Monitor className="h-4 w-4" />
-    case 'Audio':
-      return <Volume2 className="h-4 w-4" />
-    case 'Skins':
-      return <Shirt className="h-4 w-4" />
-    case 'Gameplay':
-      return <Gamepad2 className="h-4 w-4" />
-    default:
-      return <Folder className="h-4 w-4" />
-  }
+// Quick-filter row (All Mods / Enabled / Favorites).
+function FilterRow({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md transition-colors"
+      style={{
+        background: active ? c.panelHi : 'transparent',
+        boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
+        color: active ? c.ink : c.ink2,
+        fontFamily: c.font,
+        fontSize: 14.5,
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+    >
+      <span className="flex-1 text-left">{label}</span>
+      <span style={{ color: active ? c.ink2 : c.muted, fontFamily: c.mono, fontSize: 12.5 }}>{count}</span>
+    </button>
+  )
 }
 
 export function Sidebar() {
-  // Selective Zustand subscriptions for performance - only subscribe to what we need
   const filters = useUIStore((state) => state.filters)
   const setFilters = useUIStore((state) => state.setFilters)
   const profiles = useUIStore((state) => state.profiles)
   const activeProfileFilter = useUIStore((state) => state.activeProfileFilter)
   const setProfileDialogOpen = useUIStore((state) => state.setProfileDialogOpen)
-  const setChangelogDialogOpen = useUIStore((state) => state.setChangelogDialogOpen)
-  const setUpdateDialogOpen = useUIStore((state) => state.setUpdateDialogOpen)
   const deleteProfile = useUIStore((state) => state.deleteProfile)
 
   const { data: mods } = useGetMods()
   const toggleMod = useToggleMod()
-  const deleteMod = useDeleteMod()
   const removeProfileFromAllMods = useRemoveProfileFromAllMods()
 
-  const [expandedCategories, setExpandedCategories] = useState<Record<ModCategory, boolean>>({
-    UI: false,
-    Audio: false,
-    Skins: false,
-    Gameplay: false,
-  })
-  const [profilesExpanded, setProfilesExpanded] = useState(false)
-  const [toolsExpanded, setToolsExpanded] = useState(false)
-  const [skipIntrosExpanded, setSkipIntrosExpanded] = useState(false)
-  const [appVersionExpanded, setAppVersionExpanded] = useState(false)
+  const [heroFilter, setHeroFilter] = useState('')
   const [showBulkProgress, setShowBulkProgress] = useState(false)
-  const [bulkOperation, setBulkOperation] = useState<'enable' | 'disable' | 'delete' | 'disableNsfw' | 'disableProfile'>('enable')
   const [bulkProgressCurrent, setBulkProgressCurrent] = useState(0)
   const [bulkProgressTotal, setBulkProgressTotal] = useState(0)
-
-  const { availableUpdate } = useUpdater()
-  const { status: skipIntrosStatus, install: installSkipIntros, uninstall: uninstallSkipIntros, isInstalling, isUninstalling } = useSkipIntros()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null)
 
-  // Memoized filtered mods based on NSFW setting
-  const filteredMods = useMemo(() =>
-    mods?.filter(mod => filters.showNsfw || !mod.metadata.isNsfw) || [],
+  // NSFW-respecting set drives all counts.
+  const filteredMods = useMemo(
+    () => mods?.filter((mod) => filters.showNsfw || !mod.metadata.isNsfw) || [],
     [mods, filters.showNsfw]
   )
 
-  // Memoized category counts (respecting NSFW filter)
-  const categoryCounts = useMemo(() =>
-    filteredMods.reduce((acc, mod) => {
-      acc[mod.category] = (acc[mod.category] || 0) + 1
-      return acc
-    }, {} as Record<ModCategory, number>),
+  const totalMods = filteredMods.length
+  const enabledCount = useMemo(() => filteredMods.filter((m) => m.enabled).length, [filteredMods])
+  const disabledCount = useMemo(() => filteredMods.filter((m) => !m.enabled).length, [filteredMods])
+  const favoriteCount = useMemo(() => filteredMods.filter((m) => m.isFavorite).length, [filteredMods])
+
+  const categoryCounts = useMemo(
+    () =>
+      filteredMods.reduce((acc, mod) => {
+        acc[mod.category] = (acc[mod.category] || 0) + 1
+        return acc
+      }, {} as Record<ModCategory, number>),
     [filteredMods]
   )
 
-  // Memoized character counts per category (respecting NSFW filter)
-  const characterCountsByCategory = useMemo(() =>
-    filteredMods.reduce((acc, mod) => {
-      if (mod.character) {
-        if (!acc[mod.category]) {
-          acc[mod.category] = {} as Record<Character, number>
-        }
-        acc[mod.category][mod.character] = (acc[mod.category][mod.character] || 0) + 1
-      }
-      return acc
-    }, {} as Record<ModCategory, Record<Character, number>>),
+  const characterCounts = useMemo(
+    () =>
+      filteredMods.reduce((acc, mod) => {
+        if (mod.character && mod.character !== 'All Characters') acc[mod.character] = (acc[mod.character] || 0) + 1
+        return acc
+      }, {} as Record<string, number>),
     [filteredMods]
   )
 
-  // Memoized profile counts (respecting NSFW filter)
-  const profileCounts = useMemo(() =>
-    profiles.reduce((acc, profile) => {
-      const count = filteredMods.filter(mod =>
-        mod.metadata.profileIds?.includes(profile.id)
-      ).length
-      acc[profile.id] = count
-      return acc
-    }, {} as Record<string, number>),
+  const profileCounts = useMemo(
+    () =>
+      profiles.reduce((acc, profile) => {
+        acc[profile.id] = filteredMods.filter((mod) => mod.metadata.profileIds?.includes(profile.id)).length
+        return acc
+      }, {} as Record<string, number>),
     [profiles, filteredMods]
   )
 
-  // Memoized check if any NSFW mods exist and are currently shown
-  const hasNsfwMods = useMemo(() =>
-    filteredMods.some(mod => mod.metadata.isNsfw),
-    [filteredMods]
-  )
+  // Storage usage bar: summed mod size vs an 8 GB visual scale (NOT real disk).
+  const totalSize = useMemo(() => filteredMods.reduce((s, m) => s + (m.fileSize || 0), 0), [filteredMods])
+  const sizePct = Math.min(100, Math.round((totalSize / (8 * 1024 * 1024 * 1024)) * 100))
 
-  // Memoized favorite count
-  const favoriteCount = useMemo(() =>
-    filteredMods.filter(mod => mod.isFavorite).length,
-    [filteredMods]
-  )
+  const visibleCharacters = useMemo(() => {
+    const q = heroFilter.trim().toLowerCase()
+    return ALL_CHARACTERS.filter((ch) => ch !== 'All Characters')
+      .filter((ch) => (characterCounts[ch] || 0) > 0)
+      .filter((ch) => !q || ch.toLowerCase().includes(q))
+  }, [characterCounts, heroFilter])
 
-  const selectCategory = useCallback((category: ModCategory | null) => {
+  const CATEGORY_ROWS: ModCategory[] = ['Skins', 'Audio', 'UI', 'Gameplay']
+  // Enabled/Disabled quick filters use the showEnabled/showDisabled flags.
+  const enabledOnly = filters.showEnabled && !filters.showDisabled
+  const disabledOnly = !filters.showEnabled && filters.showDisabled
+  const isAllActive = filters.category === null && filters.character === null && !filters.showFavorites && filters.showEnabled && filters.showDisabled
+
+  const selectCategory = useCallback((category: ModCategory) => {
     const { filters, setFilters } = useUIStore.getState()
-    // If clicking the already selected category AND no character is selected, toggle the dropdown
-    if (filters.category === category && category !== null && !filters.character) {
-      setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))
-    } else {
-      setFilters({ category, character: null, showFavorites: false })
-      // Auto-expand the selected category
-      if (category) {
-        setExpandedCategories(prev => ({ ...prev, [category]: true }))
-      }
-    }
+    if (filters.category === category && !filters.character) setFilters({ category: null })
+    else setFilters({ category, character: null, showFavorites: false })
   }, [])
 
-  const selectCharacter = useCallback((character: Character | null, category: ModCategory) => {
-    const { setFilters } = useUIStore.getState()
-    setFilters({ character, category, showFavorites: false })
+  const selectCharacterGlobal = useCallback((character: Character) => {
+    const { filters, setFilters } = useUIStore.getState()
+    if (filters.character === character) setFilters({ character: null })
+    else setFilters({ character, category: null, showFavorites: false })
   }, [])
 
   const handleOpenModDirectory = async () => {
     try {
-      // Get the first mod to determine the mods directory
       if (mods && mods.length > 0) {
         const firstMod = mods[0]
         if (!firstMod) {
           toast.error('Could not locate first mod')
           return
         }
-        // Extract the ~mods directory path (not the specific mod subfolder)
         const modsIndex = firstMod.filePath.indexOf('~mods')
         if (modsIndex !== -1) {
-          // Find the end of ~mods directory (next backslash after ~mods)
           const afterModsIndex = firstMod.filePath.indexOf('\\', modsIndex)
-          const modDirPath = afterModsIndex !== -1
-            ? firstMod.filePath.substring(0, afterModsIndex)
-            : firstMod.filePath.substring(0, modsIndex + 5) // 5 is length of "~mods"
+          const modDirPath = afterModsIndex !== -1 ? firstMod.filePath.substring(0, afterModsIndex) : firstMod.filePath.substring(0, modsIndex + 5)
           await openPath(modDirPath)
         } else {
           toast.error('Could not locate mods directory')
@@ -186,162 +158,38 @@ export function Sidebar() {
     }
   }
 
-  const handleEnableAll = async () => {
-    if (!filteredMods || filteredMods.length === 0) {
-      toast.info('No mods to enable')
-      return
-    }
-
-    const disabledMods = filteredMods.filter(mod => !mod.enabled)
-    if (disabledMods.length === 0) {
-      toast.info('All mods are already enabled')
-      return
-    }
-
-    setShowBulkProgress(true)
-    setBulkOperation('enable')
-    setBulkProgressTotal(disabledMods.length)
-    setBulkProgressCurrent(0)
-
-    let successCount = 0
-    for (let i = 0; i < disabledMods.length; i++) {
-      try {
-        await toggleMod.mutateAsync({ modId: disabledMods[i]!.id, enabled: true })
-        successCount++
-      } catch (error) {
-        console.error(`Failed to enable mod ${disabledMods[i]!.name}:`, error)
-      }
-      setBulkProgressCurrent(i + 1)
-    }
-
-    setShowBulkProgress(false)
-    toast.success(`Enabled ${successCount} mod${successCount !== 1 ? 's' : ''}`)
-  }
-
-  const handleDisableAll = async () => {
-    if (!filteredMods || filteredMods.length === 0) {
-      toast.info('No mods to disable')
-      return
-    }
-
-    const enabledMods = filteredMods.filter(mod => mod.enabled)
-    if (enabledMods.length === 0) {
-      toast.info('All mods are already disabled')
-      return
-    }
-
-    setShowBulkProgress(true)
-    setBulkOperation('disable')
-    setBulkProgressTotal(enabledMods.length)
-    setBulkProgressCurrent(0)
-
-    let successCount = 0
-    for (let i = 0; i < enabledMods.length; i++) {
-      try {
-        await toggleMod.mutateAsync({ modId: enabledMods[i]!.id, enabled: false })
-        successCount++
-      } catch (error) {
-        console.error(`Failed to disable mod ${enabledMods[i]!.name}:`, error)
-      }
-      setBulkProgressCurrent(i + 1)
-    }
-
-    setShowBulkProgress(false)
-    toast.success(`Disabled ${successCount} mod${successCount !== 1 ? 's' : ''}`)
-  }
-
-  const handleOrganizeMods = async () => {
-    try {
-      toast.info('Organizing loose mods...')
-      const count = await invoke<number>('organize_mods')
-      if (count > 0) {
-        toast.success(`Organized ${count} loose mod(s) into folders`)
-      } else {
-        toast.info('No loose mods found to organize')
-      }
-    } catch (error) {
-      console.error('Failed to organize mods:', error)
-      toast.error(`Failed to organize mods: ${error}`)
-    }
-  }
-
-  const handleDeleteAll = () => {
-    if (!filteredMods || filteredMods.length === 0) {
-      toast.info('No mods to delete')
-      return
-    }
-
-    setShowDeleteConfirm(true)
-  }
-
-  const confirmDeleteAll = async () => {
-    setShowDeleteConfirm(false)
-
-    if (!filteredMods) return
-
-    setShowBulkProgress(true)
-    setBulkOperation('delete')
-    setBulkProgressTotal(filteredMods.length)
-    setBulkProgressCurrent(0)
-
-    let successCount = 0
-    for (let i = 0; i < filteredMods.length; i++) {
-      try {
-        await deleteMod.mutateAsync(filteredMods[i]!.id)
-        successCount++
-      } catch (error) {
-        console.error(`Failed to delete mod ${filteredMods[i]!.name}:`, error)
-      }
-      setBulkProgressCurrent(i + 1)
-    }
-
-    setShowBulkProgress(false)
-    toast.success(`Deleted ${successCount} mod${successCount !== 1 ? 's' : ''}`)
-  }
-
-  // Profile handlers - using getState() for stable callbacks
+  // ── Profile handlers ──
   const handleSelectProfile = useCallback((profileId: string) => {
     const { activeProfileFilter, setActiveProfileFilter } = useUIStore.getState()
-    if (activeProfileFilter === profileId) {
-      setActiveProfileFilter(null) // Deselect if already selected
-    } else {
-      setActiveProfileFilter(profileId)
-    }
+    setActiveProfileFilter(activeProfileFilter === profileId ? null : profileId)
   }, [])
 
   const handleEditProfile = useCallback((profileId: string) => {
-    const { setProfileDialogOpen } = useUIStore.getState()
-    setProfileDialogOpen(true, 'edit', profileId)
+    useUIStore.getState().setProfileDialogOpen(true, 'edit', profileId)
   }, [])
 
   const handleDisableProfileMods = async (profileId: string) => {
-    const profileMods = filteredMods.filter(mod =>
-      mod.metadata.profileIds?.includes(profileId) && mod.enabled
-    )
-
+    const profileMods = filteredMods.filter((mod) => mod.metadata.profileIds?.includes(profileId) && mod.enabled)
     if (profileMods.length === 0) {
       toast.info('No enabled mods in this profile')
       return
     }
-
     setShowBulkProgress(true)
-    setBulkOperation('disableProfile')
     setBulkProgressTotal(profileMods.length)
     setBulkProgressCurrent(0)
-
-    let successCount = 0
-    for (let i = 0; i < profileMods.length; i++) {
+    let ok = 0
+    let i = 0
+    for (const mod of profileMods) {
       try {
-        await toggleMod.mutateAsync({ modId: profileMods[i]!.id, enabled: false })
-        successCount++
+        await toggleMod.mutateAsync({ modId: mod.id, enabled: false })
+        ok++
       } catch (error) {
-        console.error(`Failed to disable mod ${profileMods[i]!.name}:`, error)
+        console.error(`Failed to disable mod ${mod.name}:`, error)
       }
-      setBulkProgressCurrent(i + 1)
+      setBulkProgressCurrent(++i)
     }
-
     setShowBulkProgress(false)
-    toast.success(`Disabled ${successCount} mod${successCount !== 1 ? 's' : ''} from profile`)
+    toast.success(`Disabled ${ok} mod${ok !== 1 ? 's' : ''} from profile`)
   }
 
   const handleDeleteProfileTag = (profileId: string) => {
@@ -351,610 +199,247 @@ export function Sidebar() {
 
   const confirmDeleteProfileTag = async () => {
     if (!profileToDelete) return
-
-    const profile = profiles.find(p => p.id === profileToDelete)
+    const profile = profiles.find((p) => p.id === profileToDelete)
     if (!profile) return
-
     setShowDeleteConfirm(false)
-
     try {
-      // Remove profile ID from all mods in the backend
       await removeProfileFromAllMods.mutateAsync(profileToDelete)
-
-      // Delete the profile from the UI store
       deleteProfile(profileToDelete)
       setProfileToDelete(null)
-
       toast.success(`Profile "${profile.name}" deleted and removed from all mods`)
     } catch (error) {
       console.error('Failed to delete profile:', error)
-      // Still clean up the UI state even if backend fails
       deleteProfile(profileToDelete)
       setProfileToDelete(null)
     }
   }
 
-  const handleDisableAllNsfw = async () => {
-    const nsfwMods = filteredMods.filter(mod => mod.metadata.isNsfw && mod.enabled)
-
-    if (nsfwMods.length === 0) {
-      toast.info('No enabled NSFW mods to disable')
-      return
-    }
-
-    setShowBulkProgress(true)
-    setBulkOperation('disableNsfw')
-    setBulkProgressTotal(nsfwMods.length)
-    setBulkProgressCurrent(0)
-
-    let successCount = 0
-    for (let i = 0; i < nsfwMods.length; i++) {
-      try {
-        await toggleMod.mutateAsync({ modId: nsfwMods[i]!.id, enabled: false })
-        successCount++
-      } catch (error) {
-        console.error(`Failed to disable NSFW mod ${nsfwMods[i]!.name}:`, error)
-      }
-      setBulkProgressCurrent(i + 1)
-    }
-
-    setShowBulkProgress(false)
-    toast.success(`Disabled ${successCount} NSFW mod${successCount !== 1 ? 's' : ''}`)
-  }
-
-  const totalMods = filteredMods.length
-
   return (
-    <div className="flex flex-col h-full border-r bg-background">
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2">
-          {/* All Mods */}
-          <button
-            onClick={() => {
-              setFilters({ category: null, character: null, showFavorites: false })
-              setExpandedCategories({
-                Skins: false,
-                Audio: false,
-                UI: false,
-                Gameplay: false,
-              })
-            }}
-            className={cn(
-              'w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium group transition-all duration-200',
-              filters.category === null && filters.character === null && !filters.showFavorites
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-primary/20 hover:text-primary'
-            )}
-          >
-            <Folder className="h-4.5 w-4.5 transition-transform duration-200 group-hover:rotate-12" />
-            <span className="flex-1 text-left">All Mods</span>
-            <span className="text-xs opacity-70">{totalMods}</span>
-          </button>
-
-          {/* Favorites - only show if there are favorite mods */}
+    <div className="flex flex-col h-full" style={{ background: c.panel, borderRight: `1px solid ${c.line}` }}>
+      <ScrollArea type="always" className="flex-1 min-h-0 sidebar-scroll">
+        {/* Quick filters */}
+        <div className="px-3 pt-3 flex flex-col gap-0.5">
+          <FilterRow
+            label="All Mods"
+            count={totalMods}
+            active={isAllActive}
+            onClick={() => setFilters({ category: null, character: null, showFavorites: false, showEnabled: true, showDisabled: true })}
+          />
+          <FilterRow
+            label="Enabled"
+            count={enabledCount}
+            active={enabledOnly}
+            onClick={() => setFilters({ showFavorites: false, showEnabled: true, showDisabled: enabledOnly ? true : false })}
+          />
+          <FilterRow
+            label="Disabled"
+            count={disabledCount}
+            active={disabledOnly}
+            onClick={() => setFilters({ showFavorites: false, showDisabled: true, showEnabled: disabledOnly ? true : false })}
+          />
           {favoriteCount > 0 && (
-            <button
-              onClick={() => {
-                setFilters({ category: null, character: null, showFavorites: true })
-                setExpandedCategories({
-                  Skins: false,
-                  Audio: false,
-                  UI: false,
-                  Gameplay: false,
-                })
-              }}
-              className={cn(
-                'w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium group transition-all duration-200 mt-1',
-                filters.showFavorites
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-primary/20 hover:text-primary'
-              )}
-            >
-              <Star className={`h-4.5 w-4.5 transition-all duration-200 ${filters.showFavorites ? 'fill-current' : ''} group-hover:rotate-12`} />
-              <span className="flex-1 text-left">Favorites</span>
-              <span className="text-xs opacity-70">{favoriteCount}</span>
-            </button>
+            <FilterRow label="Favorites" count={favoriteCount} active={filters.showFavorites} onClick={() => setFilters({ category: null, character: null, showFavorites: true })} />
           )}
+        </div>
 
-          {/* Category Groups */}
-          {(['UI', 'Audio', 'Skins', 'Gameplay'] as ModCategory[]).map(category => (
-            <div key={category} className="mt-1">
+        {/* Categories */}
+        <SectionLabel>Categories</SectionLabel>
+        <div className="px-3 flex flex-col gap-0.5">
+          {CATEGORY_ROWS.map((category) => {
+            const active = filters.category === category && filters.character === null
+            return (
               <button
+                key={category}
                 onClick={() => selectCategory(category)}
-                className={cn(
-                  'w-full flex items-center gap-2 px-2 py-2.5 rounded-lg text-sm font-medium group transition-all duration-200',
-                  filters.category === category && filters.character === null
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-primary/20 hover:text-primary'
-                )}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors"
+                style={{
+                  background: active ? c.panelHi : 'transparent',
+                  boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
+                  color: active ? c.ink : c.ink2,
+                  fontFamily: c.font,
+                  fontSize: 14.5,
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
               >
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    expandedCategories[category] ? "rotate-0" : "-rotate-90"
-                  )}
-                />
-                <span className="transition-transform duration-200 group-hover:rotate-12 inline-flex">
-                  {getCategoryIcon(category)}
-                </span>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: categoryColor(category), flex: '0 0 auto' }} />
                 <span className="flex-1 text-left">{category}</span>
-                <span className="text-xs opacity-70">{categoryCounts[category] || 0}</span>
+                <span style={{ color: active ? c.ink2 : c.muted, fontFamily: c.mono, fontSize: 12.5 }}>{categoryCounts[category] || 0}</span>
               </button>
+            )
+          })}
+        </div>
 
-              {/* Character Filters with smooth CSS animation */}
-              <div
-                className={cn(
-                  "grid transition-all duration-200 ease-in-out overflow-hidden",
-                  expandedCategories[category]
-                    ? "grid-rows-[1fr] opacity-100"
-                    : "grid-rows-[0fr] opacity-0"
-                )}
+        {/* Characters with search */}
+        <SectionLabel
+          right={
+            filters.character ? (
+              <button
+                onClick={() => setFilters({ character: null })}
+                style={{ color: c.accent, fontFamily: c.mono, fontSize: 9, letterSpacing: '0.06em', border: `1px solid ${tint(c.accent, 45)}`, borderRadius: 4, padding: '2px 6px' }}
+                className="cursor-pointer"
               >
-                <div className="overflow-hidden">
-                  <div className="ml-4 mt-1 space-y-0.5 pb-1">
-                    {ALL_CHARACTERS.map(character => {
-                      const count = characterCountsByCategory[category]?.[character] || 0
-                      if (count === 0) return null
+                Clear
+              </button>
+            ) : undefined
+          }
+        >
+          Characters
+        </SectionLabel>
+        <div className="px-3 flex flex-col gap-px">
+          <div className="relative mb-1">
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: c.muted, fontFamily: c.mono, fontSize: 11 }}>⌕</span>
+            <input
+              value={heroFilter}
+              onChange={(e) => setHeroFilter(e.target.value)}
+              placeholder="Filter characters…"
+              className="w-full outline-none"
+              style={{ padding: '6px 8px 6px 26px', background: c.bg, color: c.ink2, border: `1px solid ${c.line}`, borderRadius: 5, fontFamily: c.font, fontSize: 13 }}
+            />
+          </div>
+          {visibleCharacters.map((character) => {
+            const active = filters.character === character
+            return (
+              <button
+                key={character}
+                onClick={() => selectCharacterGlobal(character)}
+                className="sidebar-char-row w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-colors"
+                style={{
+                  background: active ? c.panelHi : 'transparent',
+                  boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
+                  color: active ? c.ink : c.ink2,
+                  fontFamily: c.font,
+                  fontSize: 14,
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+              >
+                <RingAvatar src={getCharacterIconPath(character)} alt={character} size={26} />
+                <span className="flex-1 text-left">{character}</span>
+                <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 12 }}>{characterCounts[character]}</span>
+              </button>
+            )
+          })}
+          {visibleCharacters.length === 0 && (
+            <div style={{ color: c.muted, fontFamily: c.font, fontSize: 11.5, fontStyle: 'italic', padding: '6px 8px' }}>No characters match.</div>
+          )}
+        </div>
 
-                      return (
-                        <button
-                          key={character}
-                          onClick={() => selectCharacter(character, category)}
-                          className={cn(
-                            'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm group transition-all duration-200',
-                            filters.character === character && filters.category === category
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-primary/20 hover:text-primary'
-                          )}
-                        >
-                          <img
-                            src={getCharacterIconPath(character)}
-                            alt={character}
-                            loading="lazy"
-                            className="w-7 h-7 rounded-full object-cover border border-border flex-shrink-0"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement
-                              target.style.display = 'none'
-                              const fallback = target.nextElementSibling as HTMLElement
-                              if (fallback) fallback.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium border border-border flex-shrink-0" style={{ display: 'none' }}>
-                            {character.slice(0, 2).toUpperCase()}
-                          </div>
-                          <span className="flex-1 text-left font-medium">{character}</span>
-                          <span className="opacity-70 text-xs">{count}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Profiles */}
+        <SectionLabel
+          right={
+            <button
+              onClick={() => setProfileDialogOpen(true, 'create')}
+              title="New profile"
+              className="grid place-items-center cursor-pointer"
+              style={{ width: 18, height: 18, borderRadius: 4, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.mono, fontSize: 11, lineHeight: 1 }}
+            >
+              +
+            </button>
+          }
+        >
+          Profiles
+        </SectionLabel>
+        <div className="px-3 pb-3 flex flex-col gap-0.5">
+          {profiles.length === 0 ? (
+            <button
+              onClick={() => setProfileDialogOpen(true, 'create')}
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md cursor-pointer"
+              style={{ background: 'transparent', color: c.ink3, border: `1px dashed ${c.line2}`, fontFamily: c.font, fontSize: 12.5 }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New profile…</span>
+            </button>
+          ) : (
+            profiles.map((profile) => (
+              <ProfileItem
+                key={profile.id}
+                profile={profile}
+                active={activeProfileFilter === profile.id}
+                modCount={profileCounts[profile.id] || 0}
+                onSelect={handleSelectProfile}
+                onEdit={handleEditProfile}
+                onDisableAll={handleDisableProfileMods}
+                onDelete={handleDeleteProfileTag}
+              />
+            ))
+          )}
         </div>
       </ScrollArea>
 
-      {/* Profiles Section - CSS grid animation for performance */}
-      <div className="border-t border-border flex-shrink-0">
-        <button
-          onClick={() => setProfilesExpanded(!profilesExpanded)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
-        >
-          <Tag className="h-4 w-4" />
-          <span className="flex-1 text-left font-medium">Profiles</span>
-          <span className="text-xs text-muted-foreground">{profiles.length}</span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              profilesExpanded ? "rotate-0" : "-rotate-90"
-            )}
-          />
-        </button>
-
-        <div
-          className={cn(
-            "grid transition-all duration-200 ease-in-out overflow-hidden",
-            profilesExpanded
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="px-2 pb-2 space-y-1">
-              {/* Create New Profile Button */}
-              <button
-                onClick={() => setProfileDialogOpen(true, 'create')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-primary/20 hover:text-primary hover:border-primary/40"
-              >
-                <Plus className="h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />
-                <span className="flex-1 text-left">Create Profile</span>
-              </button>
-
-              {/* Profile List */}
-              {profiles.length === 0 ? (
-                <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-                  No profiles yet. Create one to organize your mods!
-                </div>
-              ) : (
-                profiles.map(profile => (
-                  <ProfileItem
-                    key={profile.id}
-                    profile={profile}
-                    active={activeProfileFilter === profile.id}
-                    modCount={profileCounts[profile.id] || 0}
-                    onSelect={handleSelectProfile}
-                    onEdit={handleEditProfile}
-                    onDisableAll={handleDisableProfileMods}
-                    onDelete={handleDeleteProfileTag}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+      {/* Footer: storage bar + Open Folder */}
+      <div className="px-[18px] py-3.5 flex-shrink-0" style={{ borderTop: `1px solid ${c.line}` }}>
+        <div className="flex justify-between" style={{ color: c.ink3, fontFamily: c.mono, fontSize: 12 }}>
+          <span>Mods size</span>
+          <span>{formatFileSize(totalSize)}</span>
         </div>
-      </div>
-
-      {/* Tools Section - CSS grid animation for performance */}
-      <div className="border-t border-border flex-shrink-0">
-        <button
-          onClick={() => setToolsExpanded(!toolsExpanded)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
-        >
-          <Settings className="h-4 w-4" />
-          <span className="flex-1 text-left font-medium">Tools</span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              toolsExpanded ? "rotate-0" : "-rotate-90"
-            )}
-          />
-        </button>
-
-        <div
-          className={cn(
-            "grid transition-all duration-200 ease-in-out overflow-hidden",
-            toolsExpanded
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="px-2 pb-2 space-y-1">
-              {/* Enable All */}
-              <button
-                onClick={handleEnableAll}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-green-500/20 hover:text-green-400 hover:border-green-500/40"
-              >
-                <CircleCheck className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-                <span className="flex-1 text-left">Enable All</span>
-              </button>
-
-              {/* Disable All */}
-              <button
-                onClick={handleDisableAll}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-yellow-500/20 hover:text-yellow-400 hover:border-yellow-500/40"
-              >
-                <CircleX className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-                <span className="flex-1 text-left">Disable All</span>
-              </button>
-
-              {/* Disable All NSFW - only show if NSFW mods exist and are shown */}
-              {hasNsfwMods && filters.showNsfw && (
-                <button
-                  onClick={handleDisableAllNsfw}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-orange-500/20 hover:text-orange-400 hover:border-orange-500/40"
-                >
-                  <CircleX className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-                  <span className="flex-1 text-left">Disable All NSFW</span>
-                </button>
-              )}
-
-              {/* Organize Mods Folder */}
-              <button
-                onClick={handleOrganizeMods}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/40"
-              >
-                <FolderCog className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                <span className="flex-1 text-left">Organize Mods Folder</span>
-              </button>
-
-              {/* Delete All */}
-              <button
-                onClick={handleDeleteAll}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/40"
-              >
-                <Trash2 className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-                <span className="flex-1 text-left">Delete All</span>
-              </button>
-            </div>
-          </div>
+        <div style={{ height: 4, marginTop: 8, background: c.line, borderRadius: 2, overflow: 'hidden' }}>
+          <div style={{ width: `${Math.max(2, sizePct)}%`, height: '100%', background: c.accent }} />
         </div>
-      </div>
-
-      {/* Skip Intros Section - CSS grid animation for performance */}
-      <div className="border-t border-border flex-shrink-0">
-        <button
-          onClick={() => setSkipIntrosExpanded(!skipIntrosExpanded)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
-        >
-          <div className="relative">
-            <Film className="h-4 w-4" />
-            {skipIntrosStatus?.installed && (
-              <div className="absolute -top-1 -right-1">
-                <Check className="h-3 w-3 text-green-500" />
-              </div>
-            )}
-          </div>
-          <span className="flex-1 text-left font-medium">Skip Intros</span>
-          <span className="text-xs opacity-70">
-            {skipIntrosStatus?.installed ? 'Installed' : 'Not Installed'}
-          </span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              skipIntrosExpanded ? "rotate-0" : "-rotate-90"
-            )}
-          />
-        </button>
-
-        <div
-          className={cn(
-            "grid transition-all duration-200 ease-in-out overflow-hidden",
-            skipIntrosExpanded
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="px-2 pb-2 space-y-2">
-              <p className="text-xs text-muted-foreground px-1">
-                Skip game intro videos for faster startup. Requires a separate download.
-              </p>
-
-              {skipIntrosStatus?.installed ? (
-                <div className="space-y-1">
-                  {/* Reinstall button */}
-                  <button
-                    onClick={() => installSkipIntros()}
-                    disabled={isInstalling}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isInstalling ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Reinstalling...</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" />
-                        <span>Reinstall (Season Update)</span>
-                      </>
-                    )}
-                  </button>
-                  {/* Uninstall button */}
-                  <button
-                    onClick={() => uninstallSkipIntros()}
-                    disabled={isUninstalling}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUninstalling ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Uninstalling...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-                        <span>Uninstall</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => installSkipIntros()}
-                  disabled={isInstalling}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-green-500/20 hover:text-green-400 hover:border-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isInstalling ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Installing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Film className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                      <span>Install from ZIP</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* App Version Section - CSS grid animation for performance */}
-      <div className="border-t border-border flex-shrink-0">
-        <button
-          onClick={() => setAppVersionExpanded(!appVersionExpanded)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
-        >
-          <div className="relative">
-            <Info className="h-4 w-4" />
-            {/* Alert badge when update is available - using CSS animation */}
-            {availableUpdate && (
-              <div className="absolute -top-1 -right-1 animate-pulse">
-                <AlertCircle className="h-3.5 w-3.5 text-red-500 fill-red-500" />
-              </div>
-            )}
-          </div>
-          <span className="flex-1 text-left font-medium">App Version</span>
-          <span className="text-xs opacity-70">v{APP_VERSION}</span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform duration-200",
-              appVersionExpanded ? "rotate-0" : "-rotate-90"
-            )}
-          />
-        </button>
-
-        <div
-          className={cn(
-            "grid transition-all duration-200 ease-in-out overflow-hidden",
-            appVersionExpanded
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="px-2 pb-2 space-y-1">
-              {/* Changelog */}
-              <button
-                onClick={() => setChangelogDialogOpen(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-purple-500/20 hover:text-purple-400 hover:border-purple-500/40"
-              >
-                <BookOpen className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                <span className="flex-1 text-left">Changelog</span>
-              </button>
-
-              {/* Check for Update */}
-              <button
-                onClick={() => setUpdateDialogOpen(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-transparent transition-all duration-200 group hover:bg-blue-500/20 hover:text-blue-400 hover:border-blue-500/40"
-              >
-                <div className="relative">
-                  <RefreshCw className="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" />
-                  {/* Alert badge when update is available - using CSS animation */}
-                  {availableUpdate && (
-                    <div className="absolute -top-1 -right-1 animate-pulse">
-                      <AlertCircle className="h-3.5 w-3.5 text-red-500 fill-red-500" />
-                    </div>
-                  )}
-                </div>
-                <span className="flex-1 text-left">Check for Updates</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Open Mod Directory Button */}
-      <div className="p-2 border-t border-border flex-shrink-0">
         <button
           onClick={handleOpenModDirectory}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-white bg-[#191F24] border border-border transition-all duration-200 group hover:bg-primary/20 hover:text-primary hover:border-primary/40"
+          className="w-full flex items-center justify-center gap-2 mt-3 px-3 py-2 rounded-md transition-colors cursor-pointer group"
+          style={{ background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13 }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = tint(c.accent, 14); e.currentTarget.style.color = c.accent as string; e.currentTarget.style.borderColor = tint(c.accent, 45) }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c.ink2 as string; e.currentTarget.style.borderColor = c.line2 }}
         >
           <FolderOpen className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
-          <span className="flex-1 text-left">Open Mod Directory</span>
+          <span>Open Folder</span>
         </button>
       </div>
 
-      {/* Bulk Operation Progress Dialog */}
+      {/* Bulk progress (profile disable-all) */}
       {showBulkProgress && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center gap-3">
-                <div className="animate-spin">
-                  <Settings className="w-5 h-5 text-primary" />
-                </div>
-                <h2 className="text-lg font-semibold">
-                  {bulkOperation === 'enable' && 'Enabling Mods'}
-                  {bulkOperation === 'disable' && 'Disabling Mods'}
-                  {bulkOperation === 'disableNsfw' && 'Disabling NSFW Mods'}
-                  {bulkOperation === 'disableProfile' && 'Disabling Profile Mods'}
-                  {bulkOperation === 'delete' && 'Deleting Mods'}
-                </h2>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full transition-all duration-300 ease-out",
-                      bulkOperation === 'enable' && "bg-green-500",
-                      (bulkOperation === 'disable' || bulkOperation === 'disableNsfw' || bulkOperation === 'disableProfile') && "bg-orange-500",
-                      bulkOperation === 'delete' && "bg-red-500"
-                    )}
-                    style={{ width: `${bulkProgressTotal > 0 ? Math.round((bulkProgressCurrent / bulkProgressTotal) * 100) : 0}%` }}
-                  />
-                </div>
-
-                {/* Progress Text */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Processing mod {bulkProgressCurrent} of {bulkProgressTotal}...</span>
-                  <span className="font-medium">{bulkProgressTotal > 0 ? Math.round((bulkProgressCurrent / bulkProgressTotal) * 100) : 0}%</span>
-                </div>
-              </div>
-
-              {/* Info Text */}
-              <p className="text-xs text-muted-foreground text-center">
-                Please wait while mods are being {bulkOperation === 'enable' ? 'enabled' : bulkOperation === 'disable' ? 'disabled' : 'deleted'}.
-                This may take a moment.
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md rounded-lg p-6 animate-in zoom-in-95 duration-200" style={{ background: c.panel, border: `1px solid ${c.line2}` }}>
+            <div className="flex items-center gap-3 mb-4">
+              <Settings className="w-5 h-5 animate-spin" style={{ color: c.accent }} />
+              <h2 className="rivals-display" style={{ color: c.ink, fontSize: 18, fontWeight: 600 }}>Disabling Profile Mods</h2>
+            </div>
+            <div style={{ height: 10, background: c.line, borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ width: `${bulkProgressTotal > 0 ? Math.round((bulkProgressCurrent / bulkProgressTotal) * 100) : 0}%`, height: '100%', background: c.warn, transition: 'width .3s ease' }} />
+            </div>
+            <div className="flex justify-between mt-2" style={{ color: c.ink3, fontFamily: c.mono, fontSize: 12 }}>
+              <span>Processing {bulkProgressCurrent} of {bulkProgressTotal}…</span>
+              <span>{bulkProgressTotal > 0 ? Math.round((bulkProgressCurrent / bulkProgressTotal) * 100) : 0}%</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete profile confirm */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-card border border-border rounded-lg p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
-                  <Trash2 className="h-5 w-5 text-red-500" />
-                </div>
-                <h2 className="text-lg font-semibold">
-                  {profileToDelete ? 'Delete Profile' : 'Delete All Mods'}
-                </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-md rounded-lg p-6 animate-in zoom-in-95 duration-200" style={{ background: c.panel, border: `1px solid ${c.line2}` }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="grid place-items-center" style={{ width: 40, height: 40, borderRadius: 999, background: tint(c.err, 18) }}>
+                <Trash2 className="h-5 w-5" style={{ color: c.err }} />
               </div>
-
-              {/* Description */}
-              <p className="text-sm text-muted-foreground">
-                {profileToDelete ? (
-                  <>
-                    Are you sure you want to delete the profile "{profiles.find(p => p.id === profileToDelete)?.name}"?
-                    This will remove the profile tag from all mods.
-                  </>
-                ) : (
-                  <>
-                    Are you sure you want to delete all {filteredMods?.length || 0} mod{filteredMods?.length !== 1 ? 's' : ''}?
-                    This action cannot be undone.
-                  </>
-                )}
-              </p>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteConfirm(false)
-                    setProfileToDelete(null)
-                  }}
-                  className="flex-1 px-4 py-2 rounded-md text-sm font-medium border border-border hover:bg-accent transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={profileToDelete ? confirmDeleteProfileTag : confirmDeleteAll}
-                  className="flex-1 px-4 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
-                >
-                  {profileToDelete ? 'Delete Profile' : 'Delete All'}
-                </button>
-              </div>
+              <h2 className="rivals-display" style={{ color: c.ink, fontSize: 18, fontWeight: 600 }}>Delete Profile</h2>
+            </div>
+            <p style={{ color: c.ink2, fontFamily: c.font, fontSize: 13 }} className="mb-4">
+              Are you sure you want to delete the profile &quot;{profiles.find((p) => p.id === profileToDelete)?.name}&quot;? This removes the profile tag from all mods.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setProfileToDelete(null) }}
+                className="flex-1 cursor-pointer"
+                style={{ padding: '8px 0', borderRadius: 6, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 500 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProfileTag}
+                className="flex-1 cursor-pointer"
+                style={{ padding: '8px 0', borderRadius: 6, background: c.err, color: '#fff', border: 'none', fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+              >
+                Delete Profile
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Profile Dialog */}
       <ProfileDialog />
     </div>
   )

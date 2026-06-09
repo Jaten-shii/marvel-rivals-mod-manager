@@ -19,7 +19,7 @@ use mod_service::ModService;
 use file_watcher::{start_file_watcher, stop_file_watcher};
 use archive_extractor::{extract_archive, detect_mods_in_archive, extract_and_detect_mods};
 use thumbnail_service::{ThumbnailService, CropData};
-use costume_service::{initialize_costume_service, get_costumes_for_character, get_all_costumes, get_costume};
+use costume_service::{initialize_costume_service, get_costumes_for_character, get_all_costumes, get_costume, sync_costumes};
 
 // Validation functions
 fn validate_filename(filename: &str) -> Result<(), String> {
@@ -598,6 +598,33 @@ async fn enable_mod(app: AppHandle, mod_id: String, enabled: bool) -> Result<(),
     service.enable_mod(&mod_id, enabled)
 }
 
+/// Enable/disable many mods in one call. Loops in the backend so bulk
+/// operations avoid one IPC round-trip (and one query refetch) per mod.
+/// Returns the number successfully toggled; individual failures are logged
+/// and skipped rather than aborting the whole batch.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BulkToggleProgress {
+    current: usize,
+    total: usize,
+    enabled: bool,
+}
+
+#[tauri::command]
+async fn set_mods_enabled(app: AppHandle, mod_ids: Vec<String>, enabled: bool) -> Result<usize, String> {
+    log::info!("Bulk setting {} mod(s) enabled status to: {}", mod_ids.len(), enabled);
+    let service = get_mod_service(&app)?;
+    let app_for_progress = app.clone();
+    let ok = service.set_mods_enabled(&mod_ids, enabled, move |current, total| {
+        let _ = app_for_progress.emit(
+            "bulk-toggle-progress",
+            BulkToggleProgress { current, total, enabled },
+        );
+    })?;
+    log::info!("Bulk toggle complete: {}/{} succeeded", ok, mod_ids.len());
+    Ok(ok)
+}
+
 #[tauri::command]
 async fn delete_mod(app: AppHandle, mod_id: String) -> Result<(), String> {
     log::info!("Deleting mod: {}", mod_id);
@@ -644,7 +671,9 @@ async fn migrate_to_costume_folders(app: AppHandle) -> Result<usize, String> {
 }
 
 #[tauri::command]
-async fn download_nexus_mod(url: String, mod_name: String) -> Result<String, String> {
+async fn download_nexus_mod(app: AppHandle, url: String, mod_name: String) -> Result<String, String> {
+    use tokio::io::AsyncWriteExt;
+
     log::info!("Downloading mod from Nexus: {} ({})", mod_name, url);
 
     let client = reqwest::Client::new();
@@ -656,6 +685,8 @@ async fn download_nexus_mod(url: String, mod_name: String) -> Result<String, Str
     if !response.status().is_success() {
         return Err(format!("Download failed with status: {}", response.status()));
     }
+
+    let total_size = response.content_length().unwrap_or(0);
 
     // Get the filename from Content-Disposition header or URL
     let filename = response.headers()
@@ -679,14 +710,37 @@ async fn download_nexus_mod(url: String, mod_name: String) -> Result<String, Str
 
     let file_path = temp_dir.join(&filename);
 
-    let bytes = response.bytes()
+    // Stream download in chunks with progress reporting
+    let mut stream = response.bytes_stream();
+    let mut file = tokio::fs::File::create(&file_path)
         .await
-        .map_err(|e| format!("Failed to read download: {e}"))?;
+        .map_err(|e| format!("Failed to create file: {e}"))?;
 
-    std::fs::write(&file_path, &bytes)
-        .map_err(|e| format!("Failed to save file: {e}"))?;
+    let mut downloaded: u64 = 0;
+    let mut last_progress: u64 = 0;
 
-    log::info!("Downloaded {} ({} bytes) to {:?}", filename, bytes.len(), file_path);
+    use futures_util::StreamExt;
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Download stream error: {e}"))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("Failed to write chunk: {e}"))?;
+
+        downloaded += chunk.len() as u64;
+
+        // Emit progress every 1% or every 100KB
+        if total_size > 0 {
+            let progress = (downloaded * 100) / total_size;
+            if progress != last_progress {
+                last_progress = progress;
+                let _ = app.emit("nexus-download-progress", progress);
+            }
+        }
+    }
+
+    file.flush().await.map_err(|e| format!("Failed to flush file: {e}"))?;
+
+    log::info!("Downloaded {} ({} bytes) to {:?}", filename, downloaded, file_path);
 
     Ok(file_path.to_string_lossy().to_string())
 }
@@ -1374,7 +1428,7 @@ pub fn run() {
 
             // Initialize costume service
             log::info!("");
-            if let Err(e) = initialize_costume_service() {
+            if let Err(e) = initialize_costume_service(app.handle()) {
                 log::error!("Failed to initialize costume service: {e}");
                 // Don't fail app startup if costume data fails to load
                 // The app can still function without costume data
@@ -1462,6 +1516,7 @@ pub fn run() {
             install_mod_to_folder,
             install_mod_to_folder_with_metadata,
             enable_mod,
+            set_mods_enabled,
             delete_mod,
             update_mod_metadata,
             remove_profile_from_all_mods,
@@ -1471,6 +1526,7 @@ pub fn run() {
             get_costumes_for_character,
             get_all_costumes,
             get_costume,
+            sync_costumes,
             // Thumbnails
             download_and_save_thumbnail,
             save_thumbnail_from_file,

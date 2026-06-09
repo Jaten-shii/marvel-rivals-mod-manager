@@ -117,8 +117,12 @@ impl ThumbnailService {
             (w, new_h)
         };
 
-        let x = (w - crop_w) / 2;
-        let y = (h - crop_h) / 2;
+        let x = (w - crop_w) / 2; // Always center horizontally
+        let y = if current_ratio < target_ratio {
+            0 // Image is taller than target — crop from top (keep top of image)
+        } else {
+            (h - crop_h) / 2 // Image is wider — center vertically
+        };
 
         img.crop_imm(x, y, crop_w, crop_h)
     }

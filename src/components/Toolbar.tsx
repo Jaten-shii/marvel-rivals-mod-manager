@@ -1,13 +1,33 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUIStore as useUIStoreOld } from '@/store/ui-store';
 import { useUIStore, type SortOption } from '../stores';
+import type { ViewMode } from '../types/mod.types';
 import { open } from '@tauri-apps/plugin-dialog';
 import * as opener from '@tauri-apps/plugin-opener';
 import { toast } from 'sonner';
+import { c, tint } from '../shared/rivals-tokens';
+import { APP_VERSION } from '../shared/constants';
+import { useUpdater } from '../hooks/useUpdater';
+import { Lock, Unlock, ArrowUp } from 'lucide-react';
 
 interface ToolbarProps {
   onArchiveSelect?: (filePaths: string[]) => void;
 }
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'character', label: 'Character' },
+  { value: 'name', label: 'Name' },
+  { value: 'updated', label: 'Recently Updated' },
+  { value: 'category', label: 'Category' },
+  { value: 'profile', label: 'Profile' },
+  { value: 'date', label: 'Date Installed' },
+];
+
+const VIEW_OPTIONS: { id: ViewMode; label: string; icon: string }[] = [
+  { id: 'grid', label: 'Cards', icon: '▦' },
+  { id: 'gallery', label: 'Gallery', icon: '◰' },
+  { id: 'list', label: 'List', icon: '☰' },
+];
 
 export function Toolbar({ onArchiveSelect }: ToolbarProps) {
   const filters = useUIStore((state) => state.filters);
@@ -16,22 +36,31 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
   const setViewMode = useUIStore((state) => state.setViewMode);
   const sortBy = useUIStore((state) => state.sortBy);
   const setSortBy = useUIStore((state) => state.setSortBy);
+  const setChangelogDialogOpen = useUIStore((state) => state.setChangelogDialogOpen);
+  const setUpdateDialogOpen = useUIStore((state) => state.setUpdateDialogOpen);
   const { setPreferencesOpen } = useUIStoreOld();
+  const { availableUpdate } = useUpdater();
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
 
-  // Handle Add Mod button click
+  // Close sort menu on outside click
+  useEffect(() => {
+    if (!showSortMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSortMenu]);
+
   const handleAddModClick = async () => {
     try {
       const files = await open({
         multiple: true,
-        filters: [
-          {
-            name: 'Mod Files',
-            extensions: ['pak', 'zip', '7z', 'rar'],
-          },
-        ],
+        filters: [{ name: 'Mod Files', extensions: ['pak', 'zip', '7z', 'rar'] }],
       });
-
       if (files) {
         const filePaths = Array.isArray(files) ? files : [files];
         onArchiveSelect?.(filePaths);
@@ -42,7 +71,6 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
     }
   };
 
-  // Handle Browse NexusMods button click
   const handleBrowseNexusMods = async () => {
     try {
       await opener.openUrl('https://www.nexusmods.com/marvelrivals');
@@ -52,157 +80,235 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
     }
   };
 
+  const nsfwShown = filters.showNsfw;
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Character';
+
   return (
-    <div className="border-b border-border bg-card px-3 py-2.5">
-      <div className="flex items-center gap-2">
-        {/* Left: Action Buttons */}
-        <button
-          onClick={handleAddModClick}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium text-sm hover:brightness-110 active:brightness-95 transition-all flex items-center gap-2 cursor-pointer group"
-        >
-          <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Mod
-        </button>
-
-        <button
-          onClick={handleBrowseNexusMods}
-          className="px-4 py-2 bg-[#191F24] text-white rounded-md font-medium text-sm border border-transparent transition-all duration-200 flex items-center gap-2 cursor-pointer hover:bg-primary/20 hover:text-primary hover:border-primary/40 group"
-        >
-          <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 01 9-9" />
-          </svg>
-          Browse Nexus Mods
-        </button>
-
-        {/* Center: Search */}
-        <div className="flex-1 flex items-center bg-[#191F24] rounded-md px-3 py-1.5">
-          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search mods..."
-            value={filters.search}
-            onChange={(e) => setFilters({ search: e.target.value })}
-            className="flex-1 bg-transparent border-none outline-none px-2 text-sm text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Right: Controls */}
-        <div className="flex items-center gap-2">
-          {/* Sort Dropdown */}
-          <div className="relative">
+    <div
+      className="flex items-center gap-2.5 py-3.5 pl-3 pr-[22px]"
+      style={{ background: c.bg, borderBottom: `1px solid ${c.line}` }}
+    >
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 mr-1">
+        <img
+          src="/icon.png"
+          alt="Marvel Rivals Mod Manager"
+          className="flex-shrink-0"
+          style={{ width: 32, height: 32, objectFit: 'contain' }}
+        />
+        <div className="flex flex-col">
+          <span className="rivals-display leading-tight" style={{ color: c.ink, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>
+            Marvel Rivals Mod Manager
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 9.5 }}>v {APP_VERSION}</span>
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: c.muted }} />
             <button
-              onClick={() => setShowSortMenu(!showSortMenu)}
-              className="px-3 py-2 bg-[#191F24] text-foreground rounded-md text-sm hover:bg-[#2a2a2a] hover:text-white transition-all flex items-center gap-2 cursor-pointer group"
+              onClick={() => setChangelogDialogOpen(true)}
+              className="rivals-mono link-btn cursor-pointer inline-block"
+              style={{ color: c.accent, fontSize: 11.5 }}
             >
-              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-              </svg>
-              Sort by {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-              <svg className="w-3 h-3 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              What&apos;s new →
             </button>
-
-            {/* Dropdown Menu */}
-            {showSortMenu && (
-              <div className="absolute right-0 mt-1 w-48 bg-card border border-border rounded-md shadow-lg z-50">
-                {[
-                  { value: 'date' as SortOption, label: 'Date Installed', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-                  { value: 'updated' as SortOption, label: 'Last Updated', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-                  { value: 'name' as SortOption, label: 'Name', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' },
-                  { value: 'category' as SortOption, label: 'Category', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
-                  { value: 'character' as SortOption, label: 'Character', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-                  { value: 'profile' as SortOption, label: 'Profile', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      setSortBy(option.value);
-                      setShowSortMenu(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2 ${
-                      sortBy === option.value ? 'bg-accent text-accent-foreground' : ''
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={option.icon} />
-                    </svg>
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-
-          {/* View Mode Toggles */}
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition-all cursor-pointer group ${
-              viewMode === 'grid'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-[#191F24] text-foreground hover:bg-[#2a2a2a] hover:text-white'
-            }`}
-            title="Grid View"
-          >
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md transition-all cursor-pointer group ${
-              viewMode === 'list'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-[#191F24] text-foreground hover:bg-[#2a2a2a] hover:text-white'
-            }`}
-            title="List View"
-          >
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          {/* NSFW Toggle Button */}
-          <button
-            onClick={() => setFilters({ showNsfw: !filters.showNsfw })}
-            className={`p-2 rounded-md transition-all cursor-pointer group ${
-              filters.showNsfw
-                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                : 'bg-[#191F24] text-foreground hover:bg-red-500/20 hover:text-red-400 hover:border hover:border-red-500/30'
-            }`}
-            title={filters.showNsfw ? 'Hide NSFW Mods' : 'Show NSFW Mods'}
-          >
-            {filters.showNsfw ? (
-              // Unlocked icon (NSFW shown)
-              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-              </svg>
-            ) : (
-              // Locked icon (NSFW hidden)
-              <svg className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 will-change-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            )}
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={() => setPreferencesOpen(true)}
-            className="p-2 bg-[#191F24] text-foreground rounded-md hover:bg-[#2a2a2a] hover:text-white transition-all cursor-pointer group"
-            title="Settings"
-          >
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
         </div>
+        {availableUpdate && (
+          <button
+            onClick={() => setUpdateDialogOpen(true)}
+            title={`Update available${availableUpdate.version ? ` — v${availableUpdate.version}` : ''}`}
+            className="update-pill flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+            style={{
+              marginLeft: 4,
+              padding: '6px 12px 6px 9px',
+              borderRadius: 999,
+              background: c.accent2,
+              color: '#fff',
+              border: 'none',
+              fontFamily: c.font,
+              fontWeight: 700,
+              fontSize: 12,
+            }}
+          >
+            <span className="update-arrow grid place-items-center" style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,255,255,0.22)' }}>
+              <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.5} />
+            </span>
+            Update
+          </button>
+        )}
       </div>
+
+      {/* divider */}
+      <span style={{ width: 1, height: 26, background: c.line }} />
+
+      {/* Add Mod */}
+      <button
+        onClick={handleAddModClick}
+        className="btn-primary flex items-center gap-2 px-3.5 py-2 rounded-[7px] cursor-pointer"
+        style={{
+          background: c.accent,
+          color: c.onAccent,
+          fontFamily: c.font,
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        <svg className="btn-glyph w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        Add Mod
+      </button>
+
+      {/* Browse Nexus */}
+      <button
+        onClick={handleBrowseNexusMods}
+        className="btn-outline px-3.5 py-2 rounded-[7px] cursor-pointer"
+        style={{
+          background: 'transparent',
+          color: c.ink,
+          border: `1px solid ${c.line2}`,
+          fontFamily: c.font,
+          fontSize: 13,
+        }}
+      >
+        Browse Nexus
+      </button>
+
+      {/* Search */}
+      <div className="search-wrap flex-1 relative ml-2">
+        <span
+          className="search-glyph absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: c.ink3, fontSize: 17 }}
+        >
+          ⌕
+        </span>
+        <input
+          type="text"
+          placeholder="Search mods, authors, tags…"
+          value={filters.search}
+          onChange={(e) => setFilters({ search: e.target.value })}
+          className="toolbar-search w-full py-2 pl-8 pr-3 rounded-[7px] outline-none"
+          style={{
+            background: c.panel,
+            color: c.ink,
+            border: `1px solid ${c.line}`,
+            fontFamily: c.font,
+            fontSize: 13,
+          }}
+        />
+      </div>
+
+      {/* View toggle */}
+      <div
+        className="flex gap-1 p-[3px] rounded-[7px]"
+        style={{ background: c.panel, border: `1px solid ${c.line}` }}
+      >
+        {VIEW_OPTIONS.map((v) => {
+          const active = viewMode === v.id;
+          return (
+            <button
+              key={v.id}
+              onClick={() => setViewMode(v.id)}
+              className={`view-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded cursor-pointer ${active ? 'is-active' : ''}`}
+              style={{ fontFamily: c.font, fontSize: 12 }}
+              title={`${v.label} view`}
+            >
+              <span className="view-btn-icon" style={{ fontSize: 11 }}>{v.icon}</span>
+              {v.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* NSFW lock — icon only; red (unlocked) when NSFW is shown */}
+      <button
+        onClick={() => setFilters({ showNsfw: !nsfwShown })}
+        className="icon-btn flex items-center justify-center w-8 h-8 rounded-[7px] cursor-pointer"
+        style={{
+          ['--btn-hue' as string]: c.nsfw,
+          background: nsfwShown ? tint(c.nsfw, 12) : c.panel,
+          color: nsfwShown ? c.nsfw : c.ink2,
+          border: `1px solid ${nsfwShown ? tint(c.nsfw, 40) : c.line}`,
+        }}
+        title={nsfwShown ? 'NSFW visible — click to hide' : 'NSFW hidden — click to show'}
+      >
+        <span className="icon-btn-glyph inline-flex">{nsfwShown ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}</span>
+      </button>
+
+      {/* Sort */}
+      <div className="relative" ref={sortRef}>
+        <button
+          onClick={() => setShowSortMenu((s) => !s)}
+          className="btn-outline flex items-center gap-1.5 px-3 py-[7px] rounded-[7px] cursor-pointer"
+          style={{
+            background: c.panel,
+            color: c.ink2,
+            border: `1px solid ${c.line}`,
+            fontFamily: c.font,
+            fontSize: 12.5,
+          }}
+        >
+          <span style={{ color: c.ink3 }}>Sort:</span> {sortLabel}{' '}
+          <span style={{ display: 'inline-block', transition: 'transform 180ms ease', transform: showSortMenu ? 'rotate(180deg)' : 'none', color: c.ink3 }}>▾</span>
+        </button>
+        {showSortMenu && (
+          <div
+            className="menu-pop absolute right-0 mt-1 w-52 rounded-lg z-50 overflow-hidden py-1"
+            style={{ background: c.panel, border: `1px solid ${c.line2}`, boxShadow: '0 12px 28px rgba(0,0,0,0.5)' }}
+          >
+            {SORT_OPTIONS.map((option) => {
+              const active = sortBy === option.value;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setSortBy(option.value);
+                    setShowSortMenu(false);
+                  }}
+                  className="menu-item w-full px-3.5 py-2 text-left cursor-pointer"
+                  style={{
+                    background: active ? c.panelHi : 'transparent',
+                    color: active ? c.ink : c.ink2,
+                    fontFamily: c.font,
+                    fontSize: 12.5,
+                    boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) { e.currentTarget.style.background = tint(c.accent, 12); e.currentTarget.style.color = c.accent as string; }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c.ink2 as string; }
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Settings */}
+      <button
+        onClick={() => setPreferencesOpen(true)}
+        className="icon-btn gear flex items-center justify-center w-8 h-8 rounded-[7px] cursor-pointer"
+        style={{ ['--btn-hue' as string]: c.accent, background: c.panel, color: c.ink2, border: `1px solid ${c.line}` }}
+        title="Settings"
+      >
+        <svg
+          className="icon-btn-glyph w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
     </div>
   );
 }

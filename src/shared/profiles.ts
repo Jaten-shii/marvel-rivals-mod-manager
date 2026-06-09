@@ -1,6 +1,7 @@
 /**
  * Profile system for organizing mods with custom tags
  */
+import type React from 'react'
 
 export interface Profile {
   id: string
@@ -16,35 +17,88 @@ export interface Profile {
  * Matching the icon grid shown in the design (4 rows × 6 columns)
  */
 export const DEFAULT_ICON_OPTIONS: string[] = [
-  // Row 1
+  // Combat / power
   'Zap',
   'Flame',
   'Sparkles',
   'Star',
   'Target',
   'Rocket',
-  // Row 2
-  'Diamond',
-  'Wand',
-  'Shield',
   'Sword',
+  'Swords',
+  'Shield',
+  'ShieldHalf',
+  'Axe',
+  'Bomb',
+  // Status / fantasy
+  'Diamond',
+  'Gem',
+  'Wand',
   'Trophy',
   'Crown',
-  // Row 3
-  'Gamepad2',
-  'Home',
+  'Medal',
+  'Award',
+  'Skull',
+  'Ghost',
+  'Atom',
+  'Orbit',
+  'Snowflake',
+  // Symbols
   'Heart',
-  'Cog',
+  'Eye',
+  'Anchor',
+  'Bolt',
+  'Sun',
+  'Moon',
   'Triangle',
   'Circle',
-  // Row 4
-  'StarIcon',
-  'Moon',
-  'ArrowRight',
-  'Volume2',
+  'Hexagon',
+  'Square',
+  'Cloud',
+  'Droplet',
+  // Utility / objects
+  'Gamepad2',
+  'Joystick',
+  'Home',
+  'Cog',
+  'Wrench',
   'Layers',
   'Disc',
+  'Volume2',
+  'Music',
+  'Palette',
+  'Tag',
+  'Bookmark',
 ]
+
+/**
+ * Maps a profile icon name to its Lucide component. Single source of truth so
+ * the picker, previews, sidebar items, and context menu all stay in sync.
+ * Pass `import * as LucideIcons from 'lucide-react'` to avoid importing the
+ * whole icon set into this shared module.
+ */
+type IconComp = React.ComponentType<{ className?: string }>;
+export function PROFILE_ICON_COMPONENTS(L: Record<string, unknown>): Record<string, IconComp> {
+  // Names whose Lucide export differs from the stored option name.
+  const aliases: Record<string, string> = {
+    Wand: 'Wand2',
+    Cog: 'Settings',
+    Bolt: 'Zap',
+  };
+  const map: Record<string, IconComp> = {};
+  for (const name of DEFAULT_ICON_OPTIONS) {
+    const exportName = aliases[name] ?? name;
+    const comp = (L[exportName] ?? L[name]) as IconComp | undefined;
+    if (comp) map[name] = comp;
+  }
+  // Legacy names that may exist on saved profiles but aren't in the picker.
+  const legacy: Record<string, string> = { StarIcon: 'Star', ArrowRight: 'ArrowRight' };
+  for (const [name, exportName] of Object.entries(legacy)) {
+    const comp = L[exportName] as IconComp | undefined;
+    if (comp) map[name] = comp;
+  }
+  return map;
+}
 
 /**
  * Default color palette for profile creation

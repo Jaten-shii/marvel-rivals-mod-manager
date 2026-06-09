@@ -1,7 +1,7 @@
 import type { Character, ModCategory } from '../types/mod.types';
 
 // App version (synchronized with package.json)
-export const APP_VERSION = '5.1.0';
+export const APP_VERSION = '6.0.1';
 
 // All Marvel Rivals characters in alphabetical order
 export const ALL_CHARACTERS: Character[] = [
@@ -10,11 +10,13 @@ export const ALL_CHARACTERS: Character[] = [
   'Angela',
   'Black Panther',
   'Black Widow',
+  'Black Cat',
   'Blade',
   'Captain America',
   'Cloak and Dagger',
   'Daredevil',
   'Deadpool',
+  'Devil Dinosaur',
   'Doctor Strange',
   'Elsa Bloodstone',
   'Emma Frost',

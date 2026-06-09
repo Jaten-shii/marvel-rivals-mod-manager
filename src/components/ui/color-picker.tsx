@@ -121,41 +121,34 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Color</label>
+      <label className="font-rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Color</label>
 
       {/* Tab Buttons */}
-      <div className="flex gap-1 p-1 bg-muted/20 rounded-xl w-fit">
+      <div
+        className="flex gap-1 p-1 rounded-xl w-fit"
+        style={{ background: 'var(--rivals-bg)', border: '1px solid var(--rivals-line)' }}
+      >
         <button
           type="button"
           onClick={() => setActiveTab('palette')}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200',
-            activeTab === 'palette'
-              ? 'bg-card text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
+          className={cn('cp-tab', activeTab === 'palette' && 'is-active')}
         >
-          <Palette className="w-3.5 h-3.5" />
+          <span className="cp-tab-icon"><Palette className="w-3.5 h-3.5" /></span>
           Palette
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('wheel')}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200',
-            activeTab === 'wheel'
-              ? 'bg-card text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
+          className={cn('cp-tab', activeTab === 'wheel' && 'is-active')}
         >
-          <Disc className="w-3.5 h-3.5" />
+          <span className="cp-tab-icon"><Disc className="w-3.5 h-3.5" /></span>
           Custom
         </button>
       </div>
 
       {/* Palette */}
       {activeTab === 'palette' && (
-        <div className="grid grid-cols-6 gap-2">
+        <div key="palette" className="cp-view grid grid-cols-10 gap-1.5">
           {DEFAULT_COLOR_PALETTE.map((color) => {
             const isSelected = value.toLowerCase() === color.toLowerCase()
             return (
@@ -164,10 +157,10 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                 type="button"
                 onClick={() => { onChange(color); setHexInput(color) }}
                 className={cn(
-                  'aspect-square rounded-xl transition-all duration-200',
-                  isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-card scale-105' : 'hover:scale-105'
+                  'cp-swatch aspect-square rounded-xl',
+                  isSelected && 'ring-2 ring-white ring-offset-2 ring-offset-card scale-105'
                 )}
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: color, ['--swatch' as string]: color }}
                 title={color}
               />
             )
@@ -177,7 +170,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
       {/* Wheel */}
       {activeTab === 'wheel' && (
-        <div className="space-y-4 p-4 bg-muted/15 rounded-xl">
+        <div key="wheel" className="cp-view space-y-4 p-4 bg-muted/15 rounded-xl">
           <div
             ref={saturationBoxRef}
             onMouseDown={handleSaturationMouseDown}

@@ -357,6 +357,13 @@ impl ModService {
                             let _ = fs::remove_file(&old_thumb);
                         }
 
+                        // Re-point any add-ons that referenced the old parent ID.
+                        // Without this, auto-organizing a loose parent on startup
+                        // changes its path-based ID and orphans its add-ons.
+                        if let Err(e) = self.migrate_addon_parent_ids(&old_mod_id, &new_mod_id) {
+                            log::warn!("Failed to migrate addon parent IDs for organized mod: {}", e);
+                        }
+
                         // Delete old metadata
                         let _ = self.delete_metadata(&old_mod_id);
                     }
@@ -584,6 +591,16 @@ impl ModService {
     /// Enable or disable a mod
     /// Preserves metadata and folder structure across enable/disable operations
     pub fn enable_mod(&self, mod_id: &str, enabled: bool) -> Result<(), String> {
+        // Single-mod path: re-point add-ons inline (scans metadata once).
+        self.enable_mod_inner(mod_id, enabled, true).map(|_| ())
+    }
+
+    /// Core enable/disable. When `migrate_addons` is true, any add-ons pointing
+    /// at this mod's old ID are re-pointed inline (one full metadata scan). Bulk
+    /// callers pass `false` and instead re-point all add-ons in a single pass
+    /// afterward, avoiding an O(mods²) scan. Returns the mod's new ID if it
+    /// changed (the path-based ID changes whenever the file moves).
+    fn enable_mod_inner(&self, mod_id: &str, enabled: bool, migrate_addons: bool) -> Result<Option<String>, String> {
         log::info!("[enable_mod] {} mod: {}", if enabled { "Enabling" } else { "Disabling" }, mod_id);
 
         // Step 1: Get current mod info and load existing metadata
@@ -738,15 +755,103 @@ impl ModService {
                 }
             }
 
-            // Step 8: Delete old metadata file
+            // Step 8: Re-point any add-ons that referenced the old parent ID.
+            // Enabling/disabling moves the parent between ~mods and disabled-mods,
+            // changing its path-based ID — without this its add-ons orphan.
+            // Bulk callers skip this and re-point everything in one pass.
+            if migrate_addons {
+                if let Err(e) = self.migrate_addon_parent_ids(mod_id, &new_mod_id) {
+                    log::warn!("[enable_mod] Failed to migrate addon parent IDs: {}", e);
+                }
+            }
+
+            // Step 9: Delete old metadata file
             let _ = self.delete_metadata(mod_id);
             log::info!("[enable_mod] Deleted old metadata");
+
+            log::info!("[enable_mod] Successfully {} mod", if enabled { "enabled" } else { "disabled" });
+            Ok(Some(new_mod_id))
         } else {
             // Same ID - just update metadata in place
             self.save_metadata(mod_id, &metadata)?;
+            log::info!("[enable_mod] Successfully {} mod", if enabled { "enabled" } else { "disabled" });
+            Ok(None)
+        }
+    }
+
+    /// Enable/disable many mods, re-pointing all add-ons in a single metadata
+    /// pass at the end instead of once per mod. Returns the number of mods
+    /// successfully toggled. Failures are logged and skipped.
+    ///
+    /// `on_progress(done, total)` is invoked after each mod so callers can drive
+    /// a real progress bar / ETA. It runs on the same thread as the loop.
+    pub fn set_mods_enabled<F>(&self, mod_ids: &[String], enabled: bool, mut on_progress: F) -> Result<usize, String>
+    where
+        F: FnMut(usize, usize),
+    {
+        let mut ok = 0;
+        let total = mod_ids.len();
+        // old parent ID -> new parent ID, for every mod whose ID changed.
+        let mut remap: HashMap<String, String> = HashMap::new();
+
+        for (i, mod_id) in mod_ids.iter().enumerate() {
+            match self.enable_mod_inner(mod_id, enabled, false) {
+                Ok(Some(new_id)) => {
+                    remap.insert(mod_id.clone(), new_id);
+                    ok += 1;
+                }
+                Ok(None) => ok += 1, // toggled but ID unchanged (no add-on impact)
+                Err(e) => log::warn!("[set_mods_enabled] Failed to toggle {}: {}", mod_id, e),
+            }
+            on_progress(i + 1, total);
         }
 
-        log::info!("[enable_mod] Successfully {} mod", if enabled { "enabled" } else { "disabled" });
+        // One pass over all metadata: rewrite any parent_mod_id that moved.
+        if !remap.is_empty() {
+            if let Err(e) = self.remap_addon_parent_ids(&remap) {
+                log::warn!("[set_mods_enabled] Failed to re-point add-ons: {}", e);
+            }
+        }
+
+        Ok(ok)
+    }
+
+    /// Re-point add-ons for many parents at once. Scans the metadata directory a
+    /// single time and rewrites any `parent_mod_id` found in `remap`. This is the
+    /// batch equivalent of calling migrate_addon_parent_ids per parent, but O(N)
+    /// instead of O(N²) over the mod count.
+    fn remap_addon_parent_ids(&self, remap: &HashMap<String, String>) -> Result<(), String> {
+        let mut migrated = 0;
+        let mut scanned = 0;
+
+        if let Ok(entries) = fs::read_dir(&self.metadata_directory) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                    continue;
+                }
+                scanned += 1;
+
+                let content = match fs::read_to_string(&path) {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+
+                if let Ok(mut metadata) = serde_json::from_str::<ModMetadata>(&content) {
+                    if let Some(parent) = metadata.parent_mod_id.as_deref() {
+                        if let Some(new_parent) = remap.get(parent) {
+                            metadata.parent_mod_id = Some(new_parent.clone());
+                            if let Ok(updated) = serde_json::to_string_pretty(&metadata) {
+                                let _ = fs::write(&path, updated);
+                                migrated += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        log::info!("[remap_addon_parent_ids] Scanned {} metadata files, re-pointed {} add-on(s) across {} moved parent(s)", scanned, migrated, remap.len());
         Ok(())
     }
 
@@ -964,6 +1069,11 @@ impl ModService {
                             let new_thumb = self.metadata_directory.join(format!("{}_thumbnail.png", new_mod_id));
                             let _ = fs::copy(&old_thumb, &new_thumb);
                             let _ = fs::remove_file(&old_thumb);
+                        }
+
+                        // Re-point any add-ons referencing the old parent ID
+                        if let Err(e) = self.migrate_addon_parent_ids(&mod_info.id, &new_mod_id) {
+                            log::warn!("      ⚠️  Failed to migrate addon parent IDs: {}", e);
                         }
 
                         // Delete old metadata

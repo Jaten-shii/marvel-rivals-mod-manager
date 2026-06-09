@@ -4,8 +4,10 @@ import { useDeleteMod, useToggleModEnabled, useToggleFavorite, useUpdateModMetad
 import type { ModInfo } from '../types/mod.types';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { dirname } from '@tauri-apps/api/path';
-import { Tag, ChevronRight, AlertTriangle } from 'lucide-react';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { Tag, ChevronRight, AlertTriangle, Pencil, Star, Power, FolderOpen, Trash2, Check } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import { PROFILE_ICON_COMPONENTS } from '../shared/profiles';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -15,6 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
+import { c, tint, categoryColor } from '../shared/rivals-tokens';
+import { CategoryIcon as CatIconSvg } from '../shared/rivals-design';
 
 interface ModContextMenuProps {
   mod: ModInfo;
@@ -23,32 +27,38 @@ interface ModContextMenuProps {
   onClose: () => void;
 }
 
-// Map icon names to Lucide components (same as ProfileItem and ModList)
-const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
-  Zap: LucideIcons.Zap,
-  Flame: LucideIcons.Flame,
-  Sparkles: LucideIcons.Sparkles,
-  Star: LucideIcons.Star,
-  Target: LucideIcons.Target,
-  Rocket: LucideIcons.Rocket,
-  Diamond: LucideIcons.Diamond,
-  Wand: LucideIcons.Wand2,
-  Shield: LucideIcons.Shield,
-  Sword: LucideIcons.Sword,
-  Trophy: LucideIcons.Trophy,
-  Crown: LucideIcons.Crown,
-  Gamepad2: LucideIcons.Gamepad2,
-  Home: LucideIcons.Home,
-  Heart: LucideIcons.Heart,
-  Cog: LucideIcons.Settings,
-  Triangle: LucideIcons.Triangle,
-  Circle: LucideIcons.Circle,
-  StarIcon: LucideIcons.Star,
-  Moon: LucideIcons.Moon,
-  ArrowRight: LucideIcons.ArrowRight,
-  Volume2: LucideIcons.Volume2,
-  Layers: LucideIcons.Layers,
-  Disc: LucideIcons.Disc,
+const iconComponents = PROFILE_ICON_COMPONENTS(LucideIcons as unknown as Record<string, unknown>);
+
+// A single editorial menu row.
+function MenuItem({
+  icon,
+  label,
+  onClick,
+  hue = c.accent,
+  trailing,
+  danger,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  hue?: string;
+  trailing?: React.ReactNode;
+  danger?: boolean;
+}) {
+  const accent = danger ? c.err : hue;
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 transition-colors group"
+      style={{ padding: '8px 12px', color: c.ink2, fontFamily: c.font, fontSize: 13 }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = tint(accent, 14); e.currentTarget.style.color = accent; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c.ink2 as string; }}
+    >
+      <span className="flex-shrink-0 inline-flex transition-transform duration-200 group-hover:scale-110">{icon}</span>
+      <span className="flex-1 text-left">{label}</span>
+      {trailing}
+    </button>
+  );
 }
 
 export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
@@ -63,320 +73,180 @@ export function ModContextMenu({ mod, x, y, onClose }: ModContextMenuProps) {
   const [showProfileSubmenu, setShowProfileSubmenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  const thumb = mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
+  const catColor = categoryColor(mod.category);
+
   useEffect(() => {
-    // Adjust position if menu would go off screen
     if (menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-
       let newX = x;
       let newY = y;
-
-      if (x + rect.width > viewportWidth) {
-        newX = viewportWidth - rect.width - 10;
-      }
-
-      if (y + rect.height > viewportHeight) {
-        newY = viewportHeight - rect.height - 10;
-      }
-
+      if (x + rect.width > window.innerWidth) newX = window.innerWidth - rect.width - 10;
+      if (y + rect.height > window.innerHeight) newY = window.innerHeight - rect.height - 10;
       setAdjustedPosition({ x: newX, y: newY });
     }
   }, [x, y]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);
 
-  const handleEditMetadata = () => {
-    setMetadataDialogOpen(true, mod.id);
-    onClose();
-  };
-
+  const handleEditMetadata = () => { setMetadataDialogOpen(true, mod.id); onClose(); };
   const handleShowInFolder = async () => {
-    try {
-      const dir = await dirname(mod.filePath);
-      await openPath(dir);
-    } catch (error) {
-      console.error('Failed to show in folder:', error);
-    }
+    try { await openPath(await dirname(mod.filePath)); } catch (e) { console.error('Failed to show in folder:', e); }
     onClose();
   };
-
-  const handleToggleEnabled = async () => {
-    await toggleEnabled.mutateAsync(mod.id);
-    onClose();
-  };
-
-  const handleToggleFavorite = async () => {
-    await toggleFavorite.mutateAsync(mod.id);
-    onClose();
-  };
-
-  const handleDelete = () => {
-    setShowDeleteDialog(true);
-  };
-
+  const handleToggleEnabled = async () => { await toggleEnabled.mutateAsync(mod.id); onClose(); };
+  const handleToggleFavorite = async () => { await toggleFavorite.mutateAsync(mod.id); onClose(); };
+  const handleDelete = () => setShowDeleteDialog(true);
   const confirmDelete = async () => {
-    try {
-      await deleteMod.mutateAsync(mod.id);
-      setShowDeleteDialog(false);
-      onClose();
-    } catch (error) {
-      // Error is already handled by the mutation's onError
-      setShowDeleteDialog(false);
-    }
+    try { await deleteMod.mutateAsync(mod.id); setShowDeleteDialog(false); onClose(); }
+    catch { setShowDeleteDialog(false); }
   };
 
   const handleToggleProfile = async (profileId: string) => {
-    // Toggle profile in mod's profileIds array
-    const currentProfileIds = mod.metadata.profileIds || [];
-
-    let updatedProfileIds: string[];
-    if (currentProfileIds.includes(profileId)) {
-      // Remove profile
-      updatedProfileIds = currentProfileIds.filter(id => id !== profileId);
-    } else {
-      // Add profile
-      updatedProfileIds = [...currentProfileIds, profileId];
-    }
-
-    const updatedMetadata = {
-      ...mod.metadata,
-      profileIds: updatedProfileIds.length > 0 ? updatedProfileIds : null,
-    };
-
-    await updateMetadata.mutateAsync({ modId: mod.id, metadata: updatedMetadata });
+    const current = mod.metadata.profileIds || [];
+    const updated = current.includes(profileId) ? current.filter((id) => id !== profileId) : [...current, profileId];
+    await updateMetadata.mutateAsync({ modId: mod.id, metadata: { ...mod.metadata, profileIds: updated.length > 0 ? updated : null } });
     onClose();
   };
 
   return (
     <>
-    <div
-      ref={menuRef}
-      className="fixed bg-card border border-border rounded-md shadow-lg z-50 min-w-[200px] py-1"
-      style={{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }}
-    >
-      <button
-        onClick={handleEditMetadata}
-        className="w-full px-4 py-2 text-left text-sm text-white group transition-all duration-200 hover:bg-primary/20 hover:text-primary flex items-center gap-2"
-      >
-        <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
-        Edit Metadata
-      </button>
-
-      <button
-        onClick={handleToggleFavorite}
-        className={`w-full px-4 py-2 text-left text-sm group transition-all duration-200 flex items-center gap-2 ${
-          mod.isFavorite
-            ? 'text-yellow-400 hover:bg-yellow-400/20 hover:text-yellow-300'
-            : 'text-white hover:bg-yellow-400/20 hover:text-yellow-400'
-        }`}
-      >
-        <svg className={`w-4 h-4 transition-transform duration-200 group-hover:rotate-12 ${mod.isFavorite ? 'fill-yellow-400' : ''}`} fill={mod.isFavorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-          />
-        </svg>
-        {mod.isFavorite ? 'Remove from Favorites' : 'Favorite'}
-      </button>
-
-      {/* Add Profile with Submenu */}
       <div
-        className="relative"
-        onMouseEnter={() => setShowProfileSubmenu(true)}
-        onMouseLeave={() => setShowProfileSubmenu(false)}
+        ref={menuRef}
+        className="fixed z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+        style={{ left: adjustedPosition.x, top: adjustedPosition.y, minWidth: 232, background: c.panel, border: `1px solid ${c.line2}`, borderRadius: 12, boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}
       >
-        <button
-          className="w-full px-4 py-2 text-left text-sm text-white group transition-all duration-200 hover:bg-primary/20 hover:text-primary flex items-center gap-2 justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
-            Manage Profiles
+        {/* Header: thumb + title + category */}
+        <div className="flex items-center gap-2.5" style={{ padding: '12px 12px 10px', borderBottom: `1px solid ${c.line}` }}>
+          <div style={{ width: 40, height: 40, borderRadius: 7, overflow: 'hidden', flex: '0 0 auto', background: c.bg, border: `1px solid ${c.line2}` }}>
+            {thumb && <img src={thumb} alt="" className="w-full h-full object-cover" />}
           </div>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-
-        {/* Profile Submenu */}
-        {showProfileSubmenu && profiles.length > 0 && (
-          <div className="absolute left-full top-0 ml-1 bg-card border border-border rounded-md shadow-lg min-w-[200px] py-1 z-50">
-            {profiles.map((profile) => {
-              const IconComponent = iconComponents[profile.icon] || Tag;
-              const isAdded = mod.metadata.profileIds?.includes(profile.id);
-
-              return (
-                <button
-                  key={profile.id}
-                  onClick={() => handleToggleProfile(profile.id)}
-                  className={`w-full px-4 py-2 text-left text-sm transition-all duration-200 flex items-center gap-2 justify-between ${
-                    isAdded
-                      ? 'hover:bg-red-400/20 hover:text-red-400'
-                      : 'hover:bg-green-400/20 hover:text-green-400'
-                  }`}
-                >
-                  <span
-                    className="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border"
-                    style={{
-                      backgroundColor: `${profile.color}33`,
-                      color: profile.color,
-                      borderColor: `${profile.color}4D`,
-                    }}
-                  >
-                    <IconComponent className="w-3 h-3" />
-                    {profile.name}
-                  </span>
-                  <span className="text-xs opacity-70">
-                    {isAdded ? 'Remove' : 'Add'}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="min-w-0 flex-1">
+            <div className="rivals-condensed truncate" style={{ color: c.ink, fontSize: 17, fontWeight: 700, lineHeight: 1.1, textTransform: 'uppercase' }}>
+              {mod.metadata.title || mod.name}
+            </div>
+            <span className="inline-flex items-center gap-1 mt-1" style={{ padding: '1px 7px', borderRadius: 999, background: tint(catColor, 15), color: catColor, border: `1px solid ${tint(catColor, 35)}`, fontFamily: c.font, fontSize: 10.5, fontWeight: 500 }}>
+              <CatIconSvg category={mod.category} stroke={catColor} size={9} />
+              {mod.category}
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* No Profiles Message */}
-        {showProfileSubmenu && profiles.length === 0 && (
-          <div className="absolute left-full top-0 ml-1 bg-card border border-border rounded-md shadow-lg min-w-[180px] py-2 px-4 z-50">
-            <div className="text-xs text-muted-foreground">No profiles available</div>
+        {/* Actions */}
+        <div className="py-1">
+          <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit Metadata" onClick={handleEditMetadata} />
+          <MenuItem
+            icon={<Star className="w-4 h-4" style={mod.isFavorite ? { fill: c.warn, color: c.warn } : undefined} />}
+            label={mod.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+            onClick={handleToggleFavorite}
+            hue={c.warn}
+          />
+
+          {/* Manage Profiles (submenu) */}
+          <div className="relative" onMouseEnter={() => setShowProfileSubmenu(true)} onMouseLeave={() => setShowProfileSubmenu(false)}>
+            <MenuItem icon={<Tag className="w-4 h-4" />} label="Manage Profiles" trailing={<ChevronRight className="w-4 h-4" style={{ color: c.ink3 }} />} />
+            {showProfileSubmenu && (
+              <div
+                className="absolute left-full top-0 ml-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                style={{ minWidth: 210, background: c.panel, border: `1px solid ${c.line2}`, borderRadius: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.5)', padding: profiles.length ? '4px 0' : '10px 14px' }}
+              >
+                {profiles.length === 0 ? (
+                  <div style={{ color: c.ink3, fontFamily: c.font, fontSize: 12 }}>No profiles available</div>
+                ) : (
+                  profiles.map((profile) => {
+                    const Icon = iconComponents[profile.icon] || Tag;
+                    const isAdded = mod.metadata.profileIds?.includes(profile.id);
+                    return (
+                      <button
+                        key={profile.id}
+                        onClick={() => handleToggleProfile(profile.id)}
+                        className="w-full flex items-center gap-2 justify-between transition-colors"
+                        style={{ padding: '7px 12px' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = tint(isAdded ? c.err : c.ok, 12))}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <span className="inline-flex items-center gap-1.5" style={{ padding: '2px 8px', borderRadius: 999, background: `${profile.color}22`, color: profile.color, border: `1px solid ${profile.color}55`, fontFamily: c.font, fontSize: 11.5, fontWeight: 500 }}>
+                          <Icon className="w-3 h-3" />
+                          {profile.name}
+                        </span>
+                        <span className="inline-flex items-center gap-1" style={{ color: isAdded ? c.err : c.ok, fontFamily: c.mono, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                          {isAdded ? '− Remove' : <><Check className="w-3 h-3" /> Add</>}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          <MenuItem
+            icon={<Power className="w-4 h-4" />}
+            label={mod.enabled ? 'Disable Mod' : 'Enable Mod'}
+            onClick={handleToggleEnabled}
+            hue={mod.enabled ? c.err : c.ok}
+          />
+          <MenuItem icon={<FolderOpen className="w-4 h-4" />} label="Show in Folder" onClick={handleShowInFolder} />
+        </div>
+
+        <div style={{ height: 1, background: c.line }} />
+
+        <div className="py-1">
+          <MenuItem icon={<Trash2 className="w-4 h-4" />} label="Delete Mod" onClick={handleDelete} danger />
+        </div>
       </div>
 
-      <button
-        onClick={handleToggleEnabled}
-        className={`w-full px-4 py-2 text-left text-sm text-white group transition-all duration-200 flex items-center gap-2 ${
-          mod.enabled
-            ? 'hover:bg-red-400/20 hover:text-red-400'
-            : 'hover:bg-green-400/20 hover:text-green-400'
-        }`}
-      >
-        <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d={mod.enabled
-              ? "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-              : "M13 10V3L4 14h7v7l9-11h-7z"
-            }
-          />
-        </svg>
-        {mod.enabled ? 'Disable Mod' : 'Enable Mod'}
-      </button>
-
-      <button
-        onClick={handleShowInFolder}
-        className="w-full px-4 py-2 text-left text-sm text-white group transition-all duration-200 hover:bg-primary/20 hover:text-primary flex items-center gap-2"
-      >
-        <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-          />
-        </svg>
-        Show in Folder
-      </button>
-
-      <div className="h-px bg-border my-1" />
-
-      <button
-        onClick={handleDelete}
-        className="w-full px-4 py-2 text-left text-sm text-white group transition-all duration-200 hover:bg-red-400/20 hover:text-red-400 flex items-center gap-2"
-      >
-        <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
-        Delete Mod
-      </button>
-
-      <div className="h-px bg-border my-1" />
-
-      <div className="px-4 py-2 text-xs text-muted-foreground">
-        <div className="font-medium truncate">{mod.name}</div>
-        <div className="opacity-70">{mod.category}</div>
-      </div>
-    </div>
-
-    {/* Delete Confirmation Dialog */}
-    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <AlertDialogContent className="sm:max-w-xl">
-        <AlertDialogHeader>
-          {/* Red flashing alert icon */}
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
-              <div className="relative bg-red-500/10 p-4 rounded-full border-2 border-red-500/50">
-                <AlertTriangle className="w-12 h-12 text-red-500" />
+      {/* Delete confirm */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="sm:max-w-md" style={{ background: c.panel, border: `1px solid ${c.line2}` }}>
+          <AlertDialogHeader>
+            <div className="flex justify-center mb-3">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full animate-ping" style={{ background: tint(c.err, 20) }} />
+                <div className="relative p-4 rounded-full" style={{ background: tint(c.err, 12), border: `2px solid ${tint(c.err, 50)}` }}>
+                  <AlertTriangle className="w-10 h-10" style={{ color: c.err }} />
+                </div>
               </div>
             </div>
-          </div>
-
-          <AlertDialogTitle className="text-center text-xl font-bold text-foreground">
-            Delete Mod
-          </AlertDialogTitle>
-
-          <AlertDialogDescription className="text-center text-base text-foreground/80 pt-2">
-            Are you sure you want to delete <span className="font-semibold text-foreground">"{mod.name}"</span>?
-            <br />
-            <span className="text-red-400 font-medium">This action cannot be undone.</span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        <AlertDialogFooter className="flex-row gap-3 sm:gap-3">
-          <AlertDialogCancel className="flex-1 m-0 h-9 text-sm font-semibold bg-[#191F24] text-white border border-border transition-all duration-200 hover:bg-[#252D35] hover:border-primary/40 hover:scale-105 hover:shadow-lg">
-            Cancel
-          </AlertDialogCancel>
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              confirmDelete();
-            }}
-            disabled={deleteMod.isPending}
-            className="flex-1 h-9 inline-flex items-center justify-center rounded-md bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-500 border-2 border-red-500 transition-all duration-200 hover:bg-red-500/30 hover:text-red-400 hover:border-red-400 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
-          >
-            {deleteMod.isPending ? 'Deleting...' : 'Delete'}
-          </button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            <AlertDialogTitle className="text-center rivals-display" style={{ color: c.ink, fontSize: 20, fontWeight: 600 }}>
+              Delete Mod
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center pt-1" style={{ color: c.ink2, fontFamily: c.font, fontSize: 13.5 }}>
+              Delete <span style={{ color: c.ink, fontWeight: 600 }}>&ldquo;{mod.metadata.title || mod.name}&rdquo;</span>?
+              <br />
+              <span style={{ color: c.err, fontWeight: 500 }}>This cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-3 sm:gap-3">
+            <AlertDialogCancel
+              className="flex-1 m-0"
+              style={{ height: 38, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 600, borderRadius: 8 }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <button
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); confirmDelete(); }}
+              disabled={deleteMod.isPending}
+              className="flex-1 inline-flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
+              style={{ height: 38, borderRadius: 8, background: c.err, color: '#fff', border: 'none', fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+            >
+              {deleteMod.isPending ? 'Deleting…' : 'Delete'}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

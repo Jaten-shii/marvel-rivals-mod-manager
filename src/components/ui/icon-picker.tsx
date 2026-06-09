@@ -1,11 +1,5 @@
-import React from 'react'
-import {
-  Zap, Flame, Sparkles, Star, Target, Rocket, Diamond,
-  Wand2 as Wand, Shield, Sword, Trophy, Crown, Gamepad2,
-  Home, Heart, Settings as Cog, Triangle, Circle,
-  Star as StarIcon, Moon, ArrowRight, Volume2, Layers, Disc,
-} from 'lucide-react'
-import { DEFAULT_ICON_OPTIONS } from '../../shared/profiles'
+import * as LucideIcons from 'lucide-react'
+import { DEFAULT_ICON_OPTIONS, PROFILE_ICON_COMPONENTS } from '../../shared/profiles'
 import { cn } from '../../lib/utils'
 
 interface IconPickerProps {
@@ -14,19 +8,15 @@ interface IconPickerProps {
   selectedColor?: string
 }
 
-const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
-  Zap, Flame, Sparkles, Star, Target, Rocket, Diamond, Wand,
-  Shield, Sword, Trophy, Crown, Gamepad2, Home, Heart, Cog,
-  Triangle, Circle, StarIcon, Moon, ArrowRight, Volume2, Layers, Disc,
-}
+const iconComponents = PROFILE_ICON_COMPONENTS(LucideIcons as unknown as Record<string, unknown>)
 
 export function IconPicker({ value, onChange, selectedColor }: IconPickerProps) {
   const activeColor = selectedColor || '#22c55e'
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Icon</label>
-      <div className="grid grid-cols-8 gap-1.5">
+      <label className="font-rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Icon</label>
+      <div className="grid grid-cols-12 gap-1.5">
         {DEFAULT_ICON_OPTIONS.map((iconName) => {
           const IconComponent = iconComponents[iconName]
           if (!IconComponent) return null

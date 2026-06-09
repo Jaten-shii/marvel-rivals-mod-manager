@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { useUpdater } from '@/hooks/useUpdater'
 import { useGetAppSettings } from '@/hooks/useSettings'
 import { useNxmDeepLink, syncNexusApiKeyFromPreferences } from '@/hooks/useNexusMods'
+import { useCostumeAutoSync } from '@/hooks/useMods'
 import { usePreferences } from '@/services/preferences'
 import { ModManager } from '../ModManager'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
@@ -25,6 +26,9 @@ export function MainWindow() {
 
   // Listen for NXM deep links (Nexus Mods "Download with Manager")
   const { downloadStatus, downloadModName, downloadProgress, downloadError, dismissDownload } = useNxmDeepLink()
+
+  // Pull newly released costumes/icons from GitHub on startup
+  useCostumeAutoSync()
 
   // Check for updates on startup if enabled in settings (only once per app session)
   useEffect(() => {
@@ -71,34 +75,25 @@ export function MainWindow() {
         onDismiss={dismissDownload}
       />
 
-      {/* Toast Notifications */}
+      {/* Toast Notifications — warm-dark editorial style */}
       <Toaster
         position="bottom-right"
         theme={theme.includes('light') ? 'light' : 'dark'}
-        gap={8}
+        gap={10}
         visibleToasts={4}
         expand
-        richColors
         toastOptions={{
-          className: 'toast-custom',
           classNames: {
-            toast:
-              'group toast !rounded-xl !border-0 !shadow-[0_8px_30px_rgba(0,0,0,0.3)] !px-4 !py-3.5 !text-sm !min-h-[56px] !backdrop-blur-sm',
-            title: '!text-sm !font-semibold',
-            description: '!text-xs !opacity-80',
-            icon: '!w-5 !h-5',
-            actionButton:
-              '!rounded-lg !bg-white/20 !text-white !font-medium !text-xs !px-3 !py-1.5 hover:!bg-white/30',
-            cancelButton:
-              '!rounded-lg !bg-white/10 !text-white/70 !font-medium !text-xs !px-3 !py-1.5 hover:!bg-white/20',
-            success:
-              '!bg-emerald-500/90 !text-white !border-emerald-400/30',
-            error:
-              '!bg-red-500/90 !text-white !border-red-400/30',
-            info:
-              '!bg-blue-500/90 !text-white !border-blue-400/30',
-            warning:
-              '!bg-amber-500/90 !text-white !border-amber-400/30',
+            toast: 'rivals-toast',
+            title: 'rivals-toast-title',
+            description: 'rivals-toast-desc',
+            icon: 'rivals-toast-icon',
+            actionButton: 'rivals-toast-action',
+            cancelButton: 'rivals-toast-cancel',
+            success: 'rivals-toast-success',
+            error: 'rivals-toast-error',
+            info: 'rivals-toast-info',
+            warning: 'rivals-toast-warning',
           },
         }}
       />

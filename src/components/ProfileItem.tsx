@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react'
 import { CircleX, Pencil, Trash2, Tag } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
-import { type Profile } from '../shared/profiles'
+import { type Profile, PROFILE_ICON_COMPONENTS } from '../shared/profiles'
 import { cn } from '../lib/utils'
 
 interface ProfileItemProps {
@@ -14,33 +14,8 @@ interface ProfileItemProps {
   onDelete: (profileId: string) => void
 }
 
-// Map icon names to Lucide components
-const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
-  Zap: LucideIcons.Zap,
-  Flame: LucideIcons.Flame,
-  Sparkles: LucideIcons.Sparkles,
-  Star: LucideIcons.Star,
-  Target: LucideIcons.Target,
-  Rocket: LucideIcons.Rocket,
-  Diamond: LucideIcons.Diamond,
-  Wand: LucideIcons.Wand2,
-  Shield: LucideIcons.Shield,
-  Sword: LucideIcons.Sword,
-  Trophy: LucideIcons.Trophy,
-  Crown: LucideIcons.Crown,
-  Gamepad2: LucideIcons.Gamepad2,
-  Home: LucideIcons.Home,
-  Heart: LucideIcons.Heart,
-  Cog: LucideIcons.Settings,
-  Triangle: LucideIcons.Triangle,
-  Circle: LucideIcons.Circle,
-  StarIcon: LucideIcons.Star,
-  Moon: LucideIcons.Moon,
-  ArrowRight: LucideIcons.ArrowRight,
-  Volume2: LucideIcons.Volume2,
-  Layers: LucideIcons.Layers,
-  Disc: LucideIcons.Disc,
-}
+// Shared icon map (single source of truth in profiles.ts)
+const iconComponents = PROFILE_ICON_COMPONENTS(LucideIcons as unknown as Record<string, unknown>)
 
 export const ProfileItem = memo(function ProfileItem({
   profile,

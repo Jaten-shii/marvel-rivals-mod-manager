@@ -59,6 +59,8 @@ export type Character =
   | 'Rocket Raccoon'
   | 'Elsa Bloodstone'
   | 'White Fox'
+  | 'Black Cat'
+  | 'Devil Dinosaur'
   // Special
   | 'All Characters';
 
@@ -68,6 +70,14 @@ export interface Costume {
   name: string; // Display name (e.g., "Symbiote Suit", "Spider-Man 2099")
   imagePath: string; // Path to costume icon image
   isDefault?: boolean; // Whether this is the default/classic skin
+  localIconPath?: string; // Absolute path to a synced icon in app data (costumes newer than this build)
+}
+
+// Result of syncing the costume database from GitHub
+export interface CostumeSyncResult {
+  newCostumes: string[]; // "Character: Costume Name" entries added by this sync
+  iconsDownloaded: number;
+  totalCostumes: number;
 }
 
 // ===== Mod Metadata =====
@@ -189,7 +199,7 @@ export interface ModFilters {
 }
 
 // ===== UI State Types =====
-export type ViewMode = 'grid' | 'list';
+export type ViewMode = 'grid' | 'gallery' | 'list';
 export type ThemeMode = 'dark-classic' | 'light-classic' | 'forest' | 'ruby' | 'ice' | 'system';
 
 export interface UIState {
