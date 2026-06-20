@@ -1,7 +1,7 @@
 import type { Character, ModCategory } from '../types/mod.types';
 
 // App version (synchronized with package.json)
-export const APP_VERSION = '6.0.1';
+export const APP_VERSION = '6.3.0';
 
 // All Marvel Rivals characters in alphabetical order
 export const ALL_CHARACTERS: Character[] = [
@@ -14,6 +14,7 @@ export const ALL_CHARACTERS: Character[] = [
   'Blade',
   'Captain America',
   'Cloak and Dagger',
+  'Cyclops',
   'Daredevil',
   'Deadpool',
   'Devil Dinosaur',

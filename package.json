@@ -1,7 +1,7 @@
 {
   "name": "marvel-rivals-mod-manager",
   "private": true,
-  "version": "6.0.1",
+  "version": "6.3.0",
   "type": "module",
   "author": "Marvel Rivals Mod Manager",
   "copyright": "Copyright © 2025 Marvel Rivals Mod Manager. All rights reserved.",
@@ -24,6 +24,7 @@
     "rust:clippy": "cd src-tauri && cargo clippy -- -D warnings",
     "rust:clippy:fix": "cd src-tauri && cargo clippy --fix --allow-dirty",
     "rust:test": "cd src-tauri && cargo test",
+    "rust:clean": "cd src-tauri && cargo clean --profile dev",
     "tauri": "tauri",
     "tauri:dev": "npm run tauri dev",
     "tauri:build": "npm run tauri build",

@@ -13,11 +13,11 @@ pub struct FileWatcher {
 
 impl FileWatcher {
     /// Create a new file watcher for the mods directory
-    pub fn new(
-        _watch_path: PathBuf,
-        app_handle: AppHandle,
-    ) -> Result<Self, String> {
-        let (tx, rx): (Sender<Result<Event, notify::Error>>, Receiver<Result<Event, notify::Error>>) = channel();
+    pub fn new(_watch_path: PathBuf, app_handle: AppHandle) -> Result<Self, String> {
+        let (tx, rx): (
+            Sender<Result<Event, notify::Error>>,
+            Receiver<Result<Event, notify::Error>>,
+        ) = channel();
 
         // Create watcher
         let watcher = RecommendedWatcher::new(
@@ -94,10 +94,7 @@ impl FileWatcher {
 
 /// Start watching the mods directory
 #[tauri::command]
-pub async fn start_file_watcher(
-    app: AppHandle,
-    mods_directory: String,
-) -> Result<(), String> {
+pub async fn start_file_watcher(app: AppHandle, mods_directory: String) -> Result<(), String> {
     let watch_path = PathBuf::from(mods_directory);
 
     if !watch_path.exists() {

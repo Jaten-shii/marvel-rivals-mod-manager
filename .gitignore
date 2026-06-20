@@ -69,3 +69,6 @@ RELEASE_NOTES_*.md
 
 # Local archives (e.g. packaged app zips)
 *.zip
+
+# Build timer state (written by build-release.bat)
+.last-build-seconds.txt

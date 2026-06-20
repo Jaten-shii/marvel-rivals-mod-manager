@@ -7,19 +7,22 @@ use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuild
 use tauri::{AppHandle, Emitter, Manager};
 
 // Marvel Rivals Mod Manager modules
-mod types;
-mod mod_service;
-mod file_watcher;
 mod archive_extractor;
-mod thumbnail_service;
 mod costume_service;
+mod file_watcher;
+mod mod_service;
+mod thumbnail_service;
+mod types;
 
-use types::*;
-use mod_service::ModService;
+use archive_extractor::{detect_mods_in_archive, extract_and_detect_mods, extract_archive};
+use costume_service::{
+    get_all_costumes, get_costume, get_costumes_for_character, initialize_costume_service,
+    sync_costumes,
+};
 use file_watcher::{start_file_watcher, stop_file_watcher};
-use archive_extractor::{extract_archive, detect_mods_in_archive, extract_and_detect_mods};
-use thumbnail_service::{ThumbnailService, CropData};
-use costume_service::{initialize_costume_service, get_costumes_for_character, get_all_costumes, get_costume, sync_costumes};
+use mod_service::ModService;
+use thumbnail_service::{CropData, ThumbnailService};
+use types::*;
 
 // Validation functions
 fn validate_filename(filename: &str) -> Result<(), String> {
@@ -55,7 +58,10 @@ fn validate_string_input(input: &str, max_len: usize, field_name: &str) -> Resul
 fn validate_theme(theme: &str) -> Result<(), String> {
     match theme {
         "dark-classic" | "light-classic" | "forest" | "ruby" | "ice" => Ok(()),
-        _ => Err("Invalid theme: must be 'dark-classic', 'light-classic', 'forest', 'ruby', or 'ice'".to_string()),
+        _ => Err(
+            "Invalid theme: must be 'dark-classic', 'light-classic', 'forest', 'ruby', or 'ice'"
+                .to_string(),
+        ),
     }
 }
 
@@ -383,7 +389,9 @@ async fn migrate_electron_data(app: AppHandle) -> Result<(usize, usize), String>
     let old_metadata_dir = old_app_data.join("metadata");
     let old_thumbnails_dir = old_app_data.join("thumbnails");
 
-    let new_app_data = app.path().app_data_dir()
+    let new_app_data = app
+        .path()
+        .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
 
     let new_metadata_dir = new_app_data.join("metadata");
@@ -456,19 +464,22 @@ async fn migrate_electron_data(app: AppHandle) -> Result<(usize, usize), String>
                 if let Some(char_name) = obj.get("character").and_then(|v| v.as_str()) {
                     // Only normalize special cases
                     let normalized_name = match char_name {
-                        "Cloak" => "Cloak and Dagger", // Old metadata might have just "Cloak"
+                        "Cloak" => "Cloak and Dagger",  // Old metadata might have just "Cloak"
                         "Dagger" => "Cloak and Dagger", // Old metadata might have just "Dagger"
                         "Cloak & Dagger" => "Cloak and Dagger", // Old metadata with ampersand
                         "Jeff" => "Jeff the Land Shark", // Old metadata might have just "Jeff"
-                        "Punisher" => "The Punisher", // Old metadata might have just "Punisher"
+                        "Punisher" => "The Punisher",   // Old metadata might have just "Punisher"
                         "Mister" => "Mister Fantastic", // Old metadata might have just "Mister"
-                        "Spider-Man" => "Spider Man", // Old metadata with hyphen
-                        "Star-Lord" => "Star Lord", // Old metadata with hyphen
-                        _ => char_name
+                        "Spider-Man" => "Spider Man",   // Old metadata with hyphen
+                        "Star-Lord" => "Star Lord",     // Old metadata with hyphen
+                        _ => char_name,
                     };
 
                     if normalized_name != char_name {
-                        obj.insert("character".to_string(), JsonValue::String(normalized_name.to_string()));
+                        obj.insert(
+                            "character".to_string(),
+                            JsonValue::String(normalized_name.to_string()),
+                        );
                     }
                 }
 
@@ -482,7 +493,10 @@ async fn migrate_electron_data(app: AppHandle) -> Result<(usize, usize), String>
                     obj.insert("version".to_string(), JsonValue::Null);
                 }
                 if !obj.contains_key("title") {
-                    obj.insert("title".to_string(), JsonValue::String("Untitled Mod".to_string()));
+                    obj.insert(
+                        "title".to_string(),
+                        JsonValue::String("Untitled Mod".to_string()),
+                    );
                 }
                 if !obj.contains_key("description") {
                     obj.insert("description".to_string(), JsonValue::String("".to_string()));
@@ -491,7 +505,10 @@ async fn migrate_electron_data(app: AppHandle) -> Result<(usize, usize), String>
                     obj.insert("tags".to_string(), JsonValue::Array(vec![]));
                 }
                 if !obj.contains_key("category") {
-                    obj.insert("category".to_string(), JsonValue::String("Skins".to_string()));
+                    obj.insert(
+                        "category".to_string(),
+                        JsonValue::String("Skins".to_string()),
+                    );
                 }
                 if !obj.contains_key("isNsfw") {
                     obj.insert("isNsfw".to_string(), JsonValue::Bool(false));
@@ -535,8 +552,11 @@ async fn migrate_electron_data(app: AppHandle) -> Result<(usize, usize), String>
         }
     }
 
-    log::info!("Migration complete: {} metadata files, {} thumbnails",
-        migrated_metadata, migrated_thumbnails);
+    log::info!(
+        "Migration complete: {} metadata files, {} thumbnails",
+        migrated_metadata,
+        migrated_thumbnails
+    );
 
     Ok((migrated_metadata, migrated_thumbnails))
 }
@@ -547,7 +567,8 @@ fn get_mod_service(app: &AppHandle) -> Result<ModService, String> {
     // Get settings to find game directory
     let app_settings = load_app_settings(app)?;
 
-    let game_directory = app_settings.game_directory
+    let game_directory = app_settings
+        .game_directory
         .ok_or("Game directory not configured")?;
 
     let metadata_dir = app
@@ -573,8 +594,16 @@ async fn install_mod(app: AppHandle, file_path: String) -> Result<ModInfo, Strin
 }
 
 #[tauri::command]
-async fn install_mod_to_folder(app: AppHandle, file_path: String, folder_name: String) -> Result<ModInfo, String> {
-    log::info!("Installing mod from {} to folder: {}", file_path, folder_name);
+async fn install_mod_to_folder(
+    app: AppHandle,
+    file_path: String,
+    folder_name: String,
+) -> Result<ModInfo, String> {
+    log::info!(
+        "Installing mod from {} to folder: {}",
+        file_path,
+        folder_name
+    );
     let service = get_mod_service(&app)?;
     service.install_mod_to_folder(PathBuf::from(file_path).as_path(), &folder_name)
 }
@@ -586,9 +615,17 @@ async fn install_mod_to_folder_with_metadata(
     folder_name: String,
     metadata: ModMetadata,
 ) -> Result<ModInfo, String> {
-    log::info!("Installing mod from {} to folder {} with custom metadata", file_path, folder_name);
+    log::info!(
+        "Installing mod from {} to folder {} with custom metadata",
+        file_path,
+        folder_name
+    );
     let service = get_mod_service(&app)?;
-    service.install_mod_to_folder_with_metadata(PathBuf::from(file_path).as_path(), &folder_name, metadata)
+    service.install_mod_to_folder_with_metadata(
+        PathBuf::from(file_path).as_path(),
+        &folder_name,
+        metadata,
+    )
 }
 
 #[tauri::command]
@@ -611,14 +648,26 @@ struct BulkToggleProgress {
 }
 
 #[tauri::command]
-async fn set_mods_enabled(app: AppHandle, mod_ids: Vec<String>, enabled: bool) -> Result<usize, String> {
-    log::info!("Bulk setting {} mod(s) enabled status to: {}", mod_ids.len(), enabled);
+async fn set_mods_enabled(
+    app: AppHandle,
+    mod_ids: Vec<String>,
+    enabled: bool,
+) -> Result<usize, String> {
+    log::info!(
+        "Bulk setting {} mod(s) enabled status to: {}",
+        mod_ids.len(),
+        enabled
+    );
     let service = get_mod_service(&app)?;
     let app_for_progress = app.clone();
     let ok = service.set_mods_enabled(&mod_ids, enabled, move |current, total| {
         let _ = app_for_progress.emit(
             "bulk-toggle-progress",
-            BulkToggleProgress { current, total, enabled },
+            BulkToggleProgress {
+                current,
+                total,
+                enabled,
+            },
         );
     })?;
     log::info!("Bulk toggle complete: {}/{} succeeded", ok, mod_ids.len());
@@ -633,7 +682,11 @@ async fn delete_mod(app: AppHandle, mod_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn update_mod_metadata(app: AppHandle, mod_id: String, metadata: ModMetadata) -> Result<ModInfo, String> {
+async fn update_mod_metadata(
+    app: AppHandle,
+    mod_id: String,
+    metadata: ModMetadata,
+) -> Result<ModInfo, String> {
     log::info!("Updating metadata for mod: {}", mod_id);
     let service = get_mod_service(&app)?;
     service.update_metadata(&mod_id, metadata)
@@ -665,48 +718,77 @@ async fn migrate_metadata_to_path_ids(app: AppHandle) -> Result<usize, String> {
 }
 
 #[tauri::command]
+async fn recover_orphaned_metadata(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.recover_orphaned_metadata()
+}
+
+#[tauri::command]
+async fn relocate_misplaced_mods(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.relocate_misplaced_mods()
+}
+
+#[tauri::command]
+async fn enforce_addon_load_order(app: AppHandle) -> Result<usize, String> {
+    let service = get_mod_service(&app)?;
+    service.enforce_addon_load_order()
+}
+
+#[tauri::command]
 async fn migrate_to_costume_folders(app: AppHandle) -> Result<usize, String> {
     let service = get_mod_service(&app)?;
     service.migrate_to_costume_folders()
 }
 
 #[tauri::command]
-async fn download_nexus_mod(app: AppHandle, url: String, mod_name: String) -> Result<String, String> {
+async fn download_nexus_mod(
+    app: AppHandle,
+    url: String,
+    mod_name: String,
+) -> Result<String, String> {
     use tokio::io::AsyncWriteExt;
 
     log::info!("Downloading mod from Nexus: {} ({})", mod_name, url);
 
     let client = reqwest::Client::new();
-    let response = client.get(&url)
+    let response = client
+        .get(&url)
         .send()
         .await
         .map_err(|e| format!("Download request failed: {e}"))?;
 
     if !response.status().is_success() {
-        return Err(format!("Download failed with status: {}", response.status()));
+        return Err(format!(
+            "Download failed with status: {}",
+            response.status()
+        ));
     }
 
     let total_size = response.content_length().unwrap_or(0);
 
     // Get the filename from Content-Disposition header or URL
-    let filename = response.headers()
+    let filename = response
+        .headers()
         .get("content-disposition")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| {
-            v.split("filename=").nth(1)
+            v.split("filename=")
+                .nth(1)
                 .map(|f| f.trim_matches('"').to_string())
         })
         .unwrap_or_else(|| {
-            url.split('/').last()
+            url.split('/')
+                .last()
                 .unwrap_or("nexus_mod.zip")
-                .split('?').next()
+                .split('?')
+                .next()
                 .unwrap_or("nexus_mod.zip")
                 .to_string()
         });
 
     let temp_dir = std::env::temp_dir().join("marvel_rivals_nexus");
-    std::fs::create_dir_all(&temp_dir)
-        .map_err(|e| format!("Failed to create temp dir: {e}"))?;
+    std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create temp dir: {e}"))?;
 
     let file_path = temp_dir.join(&filename);
 
@@ -738,9 +820,16 @@ async fn download_nexus_mod(app: AppHandle, url: String, mod_name: String) -> Re
         }
     }
 
-    file.flush().await.map_err(|e| format!("Failed to flush file: {e}"))?;
+    file.flush()
+        .await
+        .map_err(|e| format!("Failed to flush file: {e}"))?;
 
-    log::info!("Downloaded {} ({} bytes) to {:?}", filename, downloaded, file_path);
+    log::info!(
+        "Downloaded {} ({} bytes) to {:?}",
+        filename,
+        downloaded,
+        file_path
+    );
 
     Ok(file_path.to_string_lossy().to_string())
 }
@@ -770,7 +859,12 @@ async fn log_total_mods_found(app: AppHandle) -> Result<(), String> {
 
     log::info!("");
     if disabled_count > 0 {
-        log::info!("📦 Found {} mod(s) total ({} active, {} disabled)", mods.len(), active_count, disabled_count);
+        log::info!(
+            "📦 Found {} mod(s) total ({} active, {} disabled)",
+            mods.len(),
+            active_count,
+            disabled_count
+        );
     } else {
         log::info!("📦 Found {} mod(s) total", mods.len());
     }
@@ -822,7 +916,11 @@ async fn download_and_save_thumbnail(
     url: String,
     crop_data: Option<CropData>,
 ) -> Result<String, String> {
-    log::info!("Downloading and saving thumbnail for mod: {} from URL: {}", mod_id, url);
+    log::info!(
+        "Downloading and saving thumbnail for mod: {} from URL: {}",
+        mod_id,
+        url
+    );
 
     let service = get_thumbnail_service(&app)?;
 
@@ -844,7 +942,11 @@ async fn save_thumbnail_from_file(
     file_path: String,
     crop_data: Option<CropData>,
 ) -> Result<String, String> {
-    log::info!("Saving thumbnail for mod: {} from file: {}", mod_id, file_path);
+    log::info!(
+        "Saving thumbnail for mod: {} from file: {}",
+        mod_id,
+        file_path
+    );
 
     let service = get_thumbnail_service(&app)?;
 
@@ -868,9 +970,7 @@ async fn get_thumbnail_path(app: AppHandle, mod_id: String) -> Result<Option<Str
     if service.thumbnail_exists(&mod_id) {
         let path = service.get_thumbnail_path(&mod_id);
         Ok(Some(
-            path.to_str()
-                .ok_or("Invalid thumbnail path")?
-                .to_string()
+            path.to_str().ok_or("Invalid thumbnail path")?.to_string(),
         ))
     } else {
         Ok(None)
@@ -909,9 +1009,13 @@ async fn save_thumbnail_from_base64(
     mod_id: String,
     base64_data: String,
 ) -> Result<String, String> {
-    use base64::{Engine as _, engine::general_purpose};
+    use base64::{engine::general_purpose, Engine as _};
 
-    log::info!("Saving thumbnail for mod: {} from base64 data ({} bytes)", mod_id, base64_data.len());
+    log::info!(
+        "Saving thumbnail for mod: {} from base64 data ({} bytes)",
+        mod_id,
+        base64_data.len()
+    );
 
     // Decode base64 to bytes
     let image_bytes = general_purpose::STANDARD
@@ -968,8 +1072,12 @@ fn load_app_settings(app: &AppHandle) -> Result<AppSettings, String> {
     let content = std::fs::read_to_string(&settings_path)
         .map_err(|e| format!("Failed to read settings: {}", e))?;
 
-    let settings: AppSettings = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse settings: {}", e))?;
+    let settings: AppSettings =
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings: {}", e))?;
+
+    // Refresh the uninstaller's mods-path file (existing installs won't have it
+    // until settings are next saved otherwise)
+    write_uninstall_info(app, &settings);
 
     Ok(settings)
 }
@@ -993,10 +1101,38 @@ fn save_app_settings_internal(app: &AppHandle, settings: &AppSettings) -> Result
     let json = serde_json::to_string_pretty(&settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
 
-    std::fs::write(&settings_path, json)
-        .map_err(|e| format!("Failed to write settings: {}", e))?;
+    std::fs::write(&settings_path, json).map_err(|e| format!("Failed to write settings: {}", e))?;
+
+    write_uninstall_info(app, settings);
 
     Ok(())
+}
+
+/// Keep a plain-text copy of the game's ~mods path next to the settings file.
+/// The NSIS uninstaller can't parse settings.json, so it reads this file to
+/// offer removing installed mods on uninstall (see installer/hooks.nsh).
+fn write_uninstall_info(app: &AppHandle, settings: &AppSettings) {
+    let Ok(settings_path) = get_settings_path(app) else {
+        return;
+    };
+    let info_path = settings_path.with_file_name("game-mods-dir.txt");
+
+    match &settings.game_directory {
+        Some(game_dir) => {
+            let mods_dir = game_dir
+                .join("MarvelGame")
+                .join("Marvel")
+                .join("Content")
+                .join("Paks")
+                .join("~mods");
+            if let Err(e) = std::fs::write(&info_path, mods_dir.to_string_lossy().as_bytes()) {
+                log::warn!("Failed to write uninstall info: {e}");
+            }
+        }
+        None => {
+            let _ = std::fs::remove_file(&info_path);
+        }
+    }
 }
 
 #[tauri::command]
@@ -1086,7 +1222,8 @@ async fn is_game_running() -> Result<bool, String> {
 
 fn get_movies_logo_path(app: &AppHandle) -> Result<PathBuf, String> {
     let settings = load_app_settings(app)?;
-    let game_dir = settings.game_directory
+    let game_dir = settings
+        .game_directory
         .ok_or("Game directory not configured. Please set it in Settings.")?;
 
     Ok(game_dir
@@ -1100,7 +1237,8 @@ fn get_movies_logo_path(app: &AppHandle) -> Result<PathBuf, String> {
 
 fn get_movies_logo_backup_path(app: &AppHandle) -> Result<PathBuf, String> {
     let settings = load_app_settings(app)?;
-    let game_dir = settings.game_directory
+    let game_dir = settings
+        .game_directory
         .ok_or("Game directory not configured. Please set it in Settings.")?;
 
     Ok(game_dir
@@ -1121,7 +1259,11 @@ async fn get_skip_intros_status(app: AppHandle) -> Result<SkipIntrosStatus, Stri
     let has_backup = backup_path.exists();
     let installed = has_backup;
 
-    log::info!("Skip Intros status - installed: {}, has_backup: {}", installed, has_backup);
+    log::info!(
+        "Skip Intros status - installed: {}, has_backup: {}",
+        installed,
+        has_backup
+    );
 
     Ok(SkipIntrosStatus {
         installed,
@@ -1138,7 +1280,10 @@ async fn install_skip_intros(app: AppHandle, zip_path: String) -> Result<(), Str
 
     // Verify Logo folder exists
     if !logo_path.exists() {
-        return Err(format!("Logo folder not found at {:?}. Is the game installed correctly?", logo_path));
+        return Err(format!(
+            "Logo folder not found at {:?}. Is the game installed correctly?",
+            logo_path
+        ));
     }
 
     // If already installed (backup exists), restore originals first then reinstall
@@ -1147,7 +1292,10 @@ async fn install_skip_intros(app: AppHandle, zip_path: String) -> Result<(), Str
         log::info!("Skip Intros already installed - restoring originals before reinstall...");
 
         // Restore backed-up files first
-        fn restore_for_reinstall(backup_dir: &std::path::Path, target_dir: &std::path::Path) -> Result<(), String> {
+        fn restore_for_reinstall(
+            backup_dir: &std::path::Path,
+            target_dir: &std::path::Path,
+        ) -> Result<(), String> {
             let entries = std::fs::read_dir(backup_dir)
                 .map_err(|e| format!("Failed to read backup directory: {}", e))?;
 
@@ -1182,15 +1330,16 @@ async fn install_skip_intros(app: AppHandle, zip_path: String) -> Result<(), Str
 
     // Open zip file
     log::info!("Extracting Skip Intros mod...");
-    let zip_file = std::fs::File::open(&zip_path)
-        .map_err(|e| format!("Failed to open zip file: {}", e))?;
+    let zip_file =
+        std::fs::File::open(&zip_path).map_err(|e| format!("Failed to open zip file: {}", e))?;
 
-    let mut archive = zip::ZipArchive::new(zip_file)
-        .map_err(|e| format!("Failed to read zip archive: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(zip_file).map_err(|e| format!("Failed to read zip archive: {}", e))?;
 
     // Extract files, backing up originals that will be overwritten
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i)
+        let mut file = archive
+            .by_index(i)
             .map_err(|e| format!("Failed to read zip entry: {}", e))?;
 
         let file_path = file.name().to_string();
@@ -1264,7 +1413,10 @@ async fn uninstall_skip_intros(app: AppHandle) -> Result<(), String> {
     // Restore backed-up files by copying them back
     log::info!("Restoring original files from backup...");
 
-    fn restore_recursive(backup_dir: &std::path::Path, target_dir: &std::path::Path) -> Result<u32, String> {
+    fn restore_recursive(
+        backup_dir: &std::path::Path,
+        target_dir: &std::path::Path,
+    ) -> Result<u32, String> {
         let mut restored_count = 0;
 
         let entries = std::fs::read_dir(backup_dir)
@@ -1388,11 +1540,7 @@ pub fn run() {
                     log::LevelFilter::Info
                 })
                 .format(|out, message, record| {
-                    out.finish(format_args!(
-                        "[{}] {}",
-                        record.level(),
-                        message
-                    ))
+                    out.finish(format_args!("[{}] {}", record.level(), message))
                 })
                 .targets([
                     // Always log to stdout for development
@@ -1549,6 +1697,9 @@ pub fn run() {
             merge_duplicate_folders,
             migrate_metadata_to_path_ids,
             migrate_to_costume_folders,
+            recover_orphaned_metadata,
+            relocate_misplaced_mods,
+            enforce_addon_load_order,
             log_total_mods_found,
             get_metadata_directory,
             copy_metadata_from_old_id,

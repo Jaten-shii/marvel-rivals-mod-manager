@@ -1,11 +1,11 @@
+use sevenz_rust::SevenZReader;
 use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
+use unrar::Archive;
 use walkdir::WalkDir;
 use zip::ZipArchive;
-use sevenz_rust::SevenZReader;
-use unrar::Archive;
 
 const SUPPORTED_MOD_EXTENSIONS: &[&str] = &[".pak"];
 const MAX_ARCHIVE_SIZE: u64 = 5 * 1024 * 1024 * 1024; // 5GB limit
@@ -53,11 +53,11 @@ impl ArchiveExtractor {
         }
 
         // Open the ZIP file
-        let file = File::open(archive_path)
-            .map_err(|e| format!("Failed to open archive: {}", e))?;
+        let file =
+            File::open(archive_path).map_err(|e| format!("Failed to open archive: {}", e))?;
 
-        let mut archive = ZipArchive::new(file)
-            .map_err(|e| format!("Failed to read ZIP archive: {}", e))?;
+        let mut archive =
+            ZipArchive::new(file).map_err(|e| format!("Failed to read ZIP archive: {}", e))?;
 
         let total_files = archive.len();
         let mut extracted_mods = Vec::new();
@@ -69,7 +69,8 @@ impl ArchiveExtractor {
 
         // Extract each file
         for i in 0..total_files {
-            let mut file = archive.by_index(i)
+            let mut file = archive
+                .by_index(i)
                 .map_err(|e| format!("Failed to read archive entry: {}", e))?;
 
             let outpath = match file.enclosed_name() {
@@ -106,8 +107,8 @@ impl ArchiveExtractor {
                 }
 
                 // Extract file
-                let mut outfile = File::create(&outpath)
-                    .map_err(|e| format!("Failed to create file: {}", e))?;
+                let mut outfile =
+                    File::create(&outpath).map_err(|e| format!("Failed to create file: {}", e))?;
 
                 let bytes = io::copy(&mut file, &mut outfile)
                     .map_err(|e| format!("Failed to extract file: {}", e))?;
@@ -155,14 +156,19 @@ impl ArchiveExtractor {
         let mut file_count = 0usize;
 
         // Process all entries
-        while let Some(header) = archive.read_header().map_err(|e| format!("Failed to read header: {}", e))? {
+        while let Some(header) = archive
+            .read_header()
+            .map_err(|e| format!("Failed to read header: {}", e))?
+        {
             file_count += 1;
 
             let entry_name = header.entry().filename.to_string_lossy().to_string();
 
             // Skip directories
             if header.entry().is_directory() {
-                archive = header.skip().map_err(|e| format!("Failed to skip directory: {}", e))?;
+                archive = header
+                    .skip()
+                    .map_err(|e| format!("Failed to skip directory: {}", e))?;
                 continue;
             }
 
@@ -172,7 +178,9 @@ impl ArchiveExtractor {
             // Validate path to prevent directory traversal
             if !outpath.starts_with(dest_dir) {
                 log::warn!("Skipping file with invalid path: {:?}", outpath);
-                archive = header.skip().map_err(|e| format!("Failed to skip file: {}", e))?;
+                archive = header
+                    .skip()
+                    .map_err(|e| format!("Failed to skip file: {}", e))?;
                 continue;
             }
 
@@ -197,9 +205,7 @@ impl ArchiveExtractor {
                 .extract_to(&outpath)
                 .map_err(|e| format!("Failed to extract file: {}", e))?;
 
-            let file_size = outpath.metadata()
-                .map(|m| m.len())
-                .unwrap_or(0);
+            let file_size = outpath.metadata().map(|m| m.len()).unwrap_or(0);
             bytes_extracted += file_size;
 
             // Check if this is a .pak file
@@ -214,11 +220,7 @@ impl ArchiveExtractor {
     }
 
     /// Extract a 7z archive
-    pub fn extract_7z(
-        &self,
-        archive_path: &Path,
-        dest_dir: &Path,
-    ) -> Result<Vec<PathBuf>, String> {
+    pub fn extract_7z(&self, archive_path: &Path, dest_dir: &Path) -> Result<Vec<PathBuf>, String> {
         // Validate archive size
         let metadata = fs::metadata(archive_path)
             .map_err(|e| format!("Failed to read archive metadata: {}", e))?;
@@ -231,11 +233,12 @@ impl ArchiveExtractor {
         }
 
         // Open the archive file
-        let file = File::open(archive_path)
-            .map_err(|e| format!("Failed to open archive: {}", e))?;
+        let file =
+            File::open(archive_path).map_err(|e| format!("Failed to open archive: {}", e))?;
 
         // Get file size
-        let file_size = file.metadata()
+        let file_size = file
+            .metadata()
             .map_err(|e| format!("Failed to get file metadata: {}", e))?
             .len();
 
@@ -256,76 +259,81 @@ impl ArchiveExtractor {
 
         // Extract all files
         let mut current_index = 0;
-        reader.for_each_entries(|entry, reader| {
-            current_index += 1;
+        reader
+            .for_each_entries(|entry, reader| {
+                current_index += 1;
 
-            // Get file name
-            let file_name = entry.name();
+                // Get file name
+                let file_name = entry.name();
 
-            // Skip directories
-            if entry.is_directory() {
-                return Ok(true);
-            }
-
-            // Build output path
-            let outpath = dest_dir.join(file_name);
-
-            // Validate path to prevent directory traversal
-            if !outpath.starts_with(dest_dir) {
-                log::warn!("Skipping file with invalid path: {:?}", outpath);
-                return Ok(true);
-            }
-
-            // Send progress update
-            if let Err(e) = self.emit_progress(ExtractionProgress {
-                current_file: file_name.to_string(),
-                current: current_index,
-                total: total_files,
-                bytes_extracted,
-            }) {
-                log::error!("Failed to emit progress: {}", e);
-            }
-
-            // Ensure parent directory exists
-            if let Some(parent) = outpath.parent() {
-                if let Err(e) = fs::create_dir_all(parent) {
-                    log::error!("Failed to create parent directory: {}", e);
-                    return Err(sevenz_rust::Error::other(
-                        format!("Failed to create parent directory: {}", e)
-                    ));
+                // Skip directories
+                if entry.is_directory() {
+                    return Ok(true);
                 }
-            }
 
-            // Extract file
-            let mut outfile = match File::create(&outpath) {
-                Ok(f) => f,
-                Err(e) => {
-                    log::error!("Failed to create file: {}", e);
-                    return Err(sevenz_rust::Error::other(
-                        format!("Failed to create file: {}", e)
-                    ));
+                // Build output path
+                let outpath = dest_dir.join(file_name);
+
+                // Validate path to prevent directory traversal
+                if !outpath.starts_with(dest_dir) {
+                    log::warn!("Skipping file with invalid path: {:?}", outpath);
+                    return Ok(true);
                 }
-            };
 
-            match io::copy(reader, &mut outfile) {
-                Ok(bytes) => {
-                    bytes_extracted += bytes;
+                // Send progress update
+                if let Err(e) = self.emit_progress(ExtractionProgress {
+                    current_file: file_name.to_string(),
+                    current: current_index,
+                    total: total_files,
+                    bytes_extracted,
+                }) {
+                    log::error!("Failed to emit progress: {}", e);
+                }
 
-                    // Track mod files
-                    if self.is_mod_file(&outpath) {
-                        extracted_mods.push(outpath);
+                // Ensure parent directory exists
+                if let Some(parent) = outpath.parent() {
+                    if let Err(e) = fs::create_dir_all(parent) {
+                        log::error!("Failed to create parent directory: {}", e);
+                        return Err(sevenz_rust::Error::other(format!(
+                            "Failed to create parent directory: {}",
+                            e
+                        )));
                     }
                 }
-                Err(e) => {
-                    log::error!("Failed to extract file: {}", e);
-                    return Err(sevenz_rust::Error::other(
-                        format!("Failed to extract file: {}", e)
-                    ));
-                }
-            }
 
-            Ok(true)
-        }).map_err(|e| format!("Extraction failed: {}", e))?;
+                // Extract file
+                let mut outfile = match File::create(&outpath) {
+                    Ok(f) => f,
+                    Err(e) => {
+                        log::error!("Failed to create file: {}", e);
+                        return Err(sevenz_rust::Error::other(format!(
+                            "Failed to create file: {}",
+                            e
+                        )));
+                    }
+                };
+
+                match io::copy(reader, &mut outfile) {
+                    Ok(bytes) => {
+                        bytes_extracted += bytes;
+
+                        // Track mod files
+                        if self.is_mod_file(&outpath) {
+                            extracted_mods.push(outpath);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to extract file: {}", e);
+                        return Err(sevenz_rust::Error::other(format!(
+                            "Failed to extract file: {}",
+                            e
+                        )));
+                    }
+                }
+
+                Ok(true)
+            })
+            .map_err(|e| format!("Extraction failed: {}", e))?;
 
         Ok(extracted_mods)
     }
@@ -334,7 +342,9 @@ impl ArchiveExtractor {
     fn is_mod_file(&self, path: &Path) -> bool {
         path.extension()
             .and_then(|ext| ext.to_str())
-            .map(|ext| SUPPORTED_MOD_EXTENSIONS.contains(&format!(".{}", ext.to_lowercase()).as_str()))
+            .map(|ext| {
+                SUPPORTED_MOD_EXTENSIONS.contains(&format!(".{}", ext.to_lowercase()).as_str())
+            })
             .unwrap_or(false)
     }
 
@@ -412,21 +422,23 @@ pub async fn detect_mods_in_archive(
 
 /// Detect mod files in a ZIP archive
 fn detect_mods_in_zip(archive_path: &Path) -> Result<Vec<String>, String> {
-    let file = File::open(archive_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = File::open(archive_path).map_err(|e| format!("Failed to open archive: {}", e))?;
 
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| format!("Failed to read ZIP archive: {}", e))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| format!("Failed to read ZIP archive: {}", e))?;
 
     let mut mod_files = Vec::new();
 
     for i in 0..archive.len() {
-        let file = archive.by_index(i)
+        let file = archive
+            .by_index(i)
             .map_err(|e| format!("Failed to read archive entry: {}", e))?;
 
         if let Some(path) = file.enclosed_name() {
             if let Some(ext) = path.extension() {
-                if SUPPORTED_MOD_EXTENSIONS.contains(&format!(".{}", ext.to_string_lossy()).as_str()) {
+                if SUPPORTED_MOD_EXTENSIONS
+                    .contains(&format!(".{}", ext.to_string_lossy()).as_str())
+                {
                     mod_files.push(path.to_string_lossy().to_string());
                 }
             }
@@ -445,21 +457,28 @@ fn detect_mods_in_rar(archive_path: &Path) -> Result<Vec<String>, String> {
     let mut mod_files = Vec::new();
 
     // Iterate through all entries
-    while let Some(header) = archive.read_header().map_err(|e| format!("Failed to read header: {}", e))? {
+    while let Some(header) = archive
+        .read_header()
+        .map_err(|e| format!("Failed to read header: {}", e))?
+    {
         let entry = header.entry();
 
         // Skip directories
         if !entry.is_directory() {
             let file_name = entry.filename.to_string_lossy().to_string();
             if let Some(ext) = Path::new(&file_name).extension() {
-                if SUPPORTED_MOD_EXTENSIONS.contains(&format!(".{}", ext.to_string_lossy()).as_str()) {
+                if SUPPORTED_MOD_EXTENSIONS
+                    .contains(&format!(".{}", ext.to_string_lossy()).as_str())
+                {
                     mod_files.push(file_name);
                 }
             }
         }
 
         // Move to next entry
-        archive = header.skip().map_err(|e| format!("Failed to skip entry: {}", e))?;
+        archive = header
+            .skip()
+            .map_err(|e| format!("Failed to skip entry: {}", e))?;
     }
 
     Ok(mod_files)
@@ -467,11 +486,11 @@ fn detect_mods_in_rar(archive_path: &Path) -> Result<Vec<String>, String> {
 
 /// Detect mod files in a 7z archive
 fn detect_mods_in_7z(archive_path: &Path) -> Result<Vec<String>, String> {
-    let file = File::open(archive_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = File::open(archive_path).map_err(|e| format!("Failed to open archive: {}", e))?;
 
     // Get file size
-    let file_size = file.metadata()
+    let file_size = file
+        .metadata()
         .map_err(|e| format!("Failed to get file metadata: {}", e))?
         .len();
 
@@ -488,7 +507,9 @@ fn detect_mods_in_7z(archive_path: &Path) -> Result<Vec<String>, String> {
         if !entry.is_directory() {
             let file_name = entry.name();
             if let Some(ext) = Path::new(file_name).extension() {
-                if SUPPORTED_MOD_EXTENSIONS.contains(&format!(".{}", ext.to_string_lossy()).as_str()) {
+                if SUPPORTED_MOD_EXTENSIONS
+                    .contains(&format!(".{}", ext.to_string_lossy()).as_str())
+                {
                     mod_files.push(file_name.to_string());
                 }
             }
@@ -510,11 +531,13 @@ pub async fn extract_and_detect_mods(
     let archive_path = PathBuf::from(&archive_path);
 
     // Create temporary directory for extraction
-    let temp_dir = std::env::temp_dir().join(format!("marvel_rivals_extract_{}",
+    let temp_dir = std::env::temp_dir().join(format!(
+        "marvel_rivals_extract_{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs()));
+            .as_secs()
+    ));
 
     log::info!("Extracting to temporary directory: {:?}", temp_dir);
 
@@ -574,9 +597,7 @@ pub async fn extract_and_detect_mods(
                 }
 
                 // Get file size
-                let size = fs::metadata(path)
-                    .map(|m| m.len())
-                    .unwrap_or(0);
+                let size = fs::metadata(path).map(|m| m.len()).unwrap_or(0);
 
                 detected_mods.push(DetectedMod {
                     pak_file: pak_path_str,

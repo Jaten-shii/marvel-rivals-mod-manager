@@ -1,11 +1,11 @@
 {
-  "version": "v6.0.1",
-  "notes": "# Marvel Rivals Mod Manager v6.0.1\n\n## What's New\n\nSee full release notes on GitHub!\n\n## Installation\n- Download and run the installer\n- Existing users will receive automatic update notifications",
-  "pub_date": "2026-05-30T01:36:35.386Z",
+  "version": "v6.3.0",
+  "notes": "# Marvel Rivals Mod Manager v6.3.0\n\n## What's New\n\nSee full release notes on GitHub!\n\n## Installation\n- Download and run the installer\n- Existing users will receive automatic update notifications",
+  "pub_date": "2026-06-19T04:24:56.106Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWFByakFPOXJYbkpjVWI5ME9zLzdJRVM5cFJEV1pCRlVCQnljZU1yZXAvWGNXYjFTK3pNcjVHdTJIOEMzbW50NGNjRjFCb2RVVGs1czZtSFE5QnhaVUMzbXJaMVlreVFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTA0OTkzCWZpbGU6TWFydmVsLVJpdmFscy1Nb2QtTWFuYWdlcl82LjAuMV94NjQtc2V0dXAuZXhlCmlWUy9GN3haYjEzQ0VUWEh4UTgyUUE1QlhVNWpmSi9CL1Z2K1B3ZTgzeXk4dnZDNEY1L3MwTFhMOWd6c1FLVjlpY2JDVm9rbGxaN2FCVEJFaW1VRkJBPT0K",
-      "url": "https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases/download/v6.0.1/Marvel-Rivals-Mod-Manager_6.0.1_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWFByakFPOXJYbk5zWlFKcXZKNmNhK1diMERuTzBhZ1RuNWI0akpiU201bWZNMmJNOSs3enRORmN0RGJaaXJGNE9RbFRZeG9SYTQrVDJLcU9TUE83dGcydDBSeWF6VHdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxODQzMDkzCWZpbGU6TWFydmVsLVJpdmFscy1Nb2QtTWFuYWdlcl82LjMuMF94NjQtc2V0dXAuZXhlCmFCdElWM044R1JDc0FtMnQ1RVpIRjRPR0YvUmFJVHdXNzBrTlBjWHNFMUVxcHhtRURQWmdsWS80bE0zSkxBU29pbU8zcEVjaHMrdFphZ1JNaHJQNUNRPT0K",
+      "url": "https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases/download/v6.3.0/Marvel-Rivals-Mod-Manager_6.3.0_x64-setup.exe"
     }
   }
 }

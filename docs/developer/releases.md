@@ -247,3 +247,10 @@ All three files must have matching versions:
 - `src-tauri/tauri.conf.json` → `"version": "1.0.0"`
 
 The prepare-release script handles this automatically.
+
+## Installer Customization (NSIS)
+
+The Windows installer keeps Tauri's stock visuals but has two functional customizations (`tauri.conf.json` → `bundle.windows`):
+
+- **Silent WebView2 install** — `webviewInstallMode.silent: true`, so first-time installs on machines without WebView2 don't pop a second Microsoft wizard.
+- **Mod cleanup on uninstall** — `nsis.installerHooks` points at `src-tauri/installer/hooks.nsh`. Its `NSIS_HOOK_PREUNINSTALL` macro asks the user whether to also remove installed mods from the game's `~mods` folder. The path comes from `{appData}/game-mods-dir.txt`, a plain-text file maintained by `write_uninstall_info()` in `lib.rs` (NSIS can't parse `settings.json`). The hook skips silent uninstalls and only deletes paths ending in `~mods`.

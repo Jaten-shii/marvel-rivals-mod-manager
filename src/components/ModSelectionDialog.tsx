@@ -1,192 +1,501 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
-import { ScrollArea } from './ui/scroll-area';
+import { useState, useMemo, type CSSProperties } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from './ui/dialog'
+import { Checkbox } from './ui/checkbox'
+import { ScrollArea } from './ui/scroll-area'
+import { Package, Search } from 'lucide-react'
+import { c, tint, formatFileSize } from '../shared/rivals-tokens'
 
 export interface DetectedMod {
-  pakFile: string;
-  associatedFiles: string[];
-  size: number;
+  pakFile: string
+  associatedFiles: string[]
+  size: number
 }
 
 interface ModSelectionDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  detectedMods: DetectedMod[];
-  onConfirm: (selectedMods: DetectedMod[]) => void;
-}
-
-// Helper function to format file size
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  detectedMods: DetectedMod[]
+  onConfirm: (selectedMods: DetectedMod[]) => void
 }
 
 // Extract filename from full path
 function getFileName(path: string | undefined): string {
-  if (!path) return 'Unknown';
-  const parts = path.split(/[\\/]/);
-  return parts[parts.length - 1] || path;
+  if (!path) return 'Unknown'
+  const parts = path.split(/[\\/]/)
+  return parts[parts.length - 1] || path
 }
 
-// Extract folder path (without filename) for context
-// Only shows the relevant folders from the archive, skipping temp directory paths
+// Temp/extraction directories that carry no meaning for the user
+const NOISE_DIR_RE = /^(marvel_rivals_extract|mrmm|rar\$|7z|te?mp)/i
+
+// Folder path inside the archive (without filename), with temp noise stripped
 function getFolderPath(path: string | undefined): string | null {
-  if (!path) return null;
-  const parts = path.split(/[\\/]/);
-
-  // Remove the filename (last part)
-  parts.pop();
-
-  if (parts.length === 0) return null;
-
-  // Skip temp directory paths and only show the last 2 meaningful folder levels
-  // This shows the folder structure within the archive, not the system temp path
-  const meaningfulParts = parts.slice(-2);
-
-  const folderPath = meaningfulParts.join(' / ');
-  return folderPath || null;
+  if (!path) return null
+  const parts = path.split(/[\\/]/)
+  parts.pop() // drop the filename
+  const meaningful = parts.filter(p => p && !NOISE_DIR_RE.test(p)).slice(-2)
+  return meaningful.length > 0 ? meaningful.join(' / ') : null
 }
 
-export function ModSelectionDialog({ open, onOpenChange, detectedMods, onConfirm }: ModSelectionDialogProps) {
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+// Unique extensions of a mod's associated files (e.g. ['.ucas', '.utoc'])
+function associatedExtensions(files: string[]): string[] {
+  const exts = files.map(f => {
+    const name = getFileName(f)
+    const dot = name.lastIndexOf('.')
+    return dot > 0 ? name.slice(dot).toLowerCase() : null
+  })
+  return [...new Set(exts.filter((e): e is string => !!e))]
+}
 
-  // Reset selection when dialog opens or detectedMods changes
-  useEffect(() => {
-    if (open && detectedMods.length > 0) {
-      console.log('[ModSelectionDialog] Resetting selection for', detectedMods.length, 'mods');
-      // Start with nothing selected - let user choose what they want
-      setSelectedIndices(new Set());
-    }
-  }, [open, detectedMods]);
+// Shared prefix/suffix lengths across all names, so the part that actually
+// differs (e.g. the "14" in ..._Alt14_...) can be highlighted while the
+// repeated boilerplate is dimmed. Only kicks in for 3+ similarly named mods.
+function commonAffixes(names: string[]): { prefix: number; suffix: number } {
+  if (names.length < 3) return { prefix: 0, suffix: 0 }
 
-  const toggleSelection = (index: number) => {
-    const newSelection = new Set(selectedIndices);
-    if (newSelection.has(index)) {
-      newSelection.delete(index);
-    } else {
-      newSelection.add(index);
-    }
-    setSelectedIndices(newSelection);
-  };
+  let prefix = names[0] ?? ''
+  for (const n of names) {
+    while (prefix && !n.startsWith(prefix)) prefix = prefix.slice(0, -1)
+  }
+  let suffix = names[0] ?? ''
+  for (const n of names) {
+    while (suffix && !n.endsWith(suffix)) suffix = suffix.slice(1)
+  }
 
-  const selectAll = () => {
-    setSelectedIndices(new Set(detectedMods.map((_, index) => index)));
-  };
+  const minLen = Math.min(...names.map(n => n.length))
+  let p = prefix.length
+  let s = suffix.length
+  if (p + s > minLen) s = Math.max(0, minLen - p)
+  // Only dim affixes long enough to be real boilerplate
+  if (p < 5) p = 0
+  if (s < 4) s = 0
+  return { prefix: p, suffix: s }
+}
 
-  const deselectAll = () => {
-    setSelectedIndices(new Set());
-  };
+function ModName({
+  name,
+  prefix,
+  suffix,
+}: {
+  name: string
+  prefix: number
+  suffix: number
+}) {
+  if (prefix === 0 && suffix === 0) {
+    return <span style={{ color: c.ink }}>{name}</span>
+  }
+  const head = name.slice(0, prefix)
+  const middle = name.slice(prefix, name.length - suffix)
+  const tail = name.slice(name.length - suffix)
+  return (
+    <>
+      <span style={{ color: c.ink3 }}>{head}</span>
+      <span style={{ color: c.accent, fontWeight: 700 }}>{middle}</span>
+      <span style={{ color: c.ink3 }}>{tail}</span>
+    </>
+  )
+}
 
-  const handleConfirm = () => {
-    const selectedMods = detectedMods.filter((_, index) => selectedIndices.has(index));
-    onConfirm(selectedMods);
-    onOpenChange(false);
-  };
-
+export function ModSelectionDialog({
+  open,
+  onOpenChange,
+  detectedMods,
+  onConfirm,
+}: ModSelectionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-4xl w-[80vw] max-h-[92vh]">
-        <DialogHeader>
-          <DialogTitle>Select Mods to Install</DialogTitle>
-          <DialogDescription>
-            This archive contains {detectedMods.length} mod{detectedMods.length !== 1 ? 's' : ''}. Choose which ones you want to install (none selected by default).
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Select All/None buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={selectAll}
-              disabled={selectedIndices.size === detectedMods.length}
-            >
-              Select All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={deselectAll}
-              disabled={selectedIndices.size === 0}
-            >
-              Deselect All
-            </Button>
-            <div className="ml-auto text-sm text-muted-foreground">
-              {selectedIndices.size} of {detectedMods.length} selected
-            </div>
-          </div>
-
-          {/* Mod list */}
-          <ScrollArea className="h-[50vh] rounded-md border border-border">
-            <div className="p-4 space-y-2">
-              {detectedMods.map((mod, index) => {
-                const isSelected = selectedIndices.has(index);
-                const fileName = getFileName(mod.pakFile);
-                const folderPath = getFolderPath(mod.pakFile);
-                const hasAssociatedFiles = mod.associatedFiles.length > 0;
-
-                return (
-                  <div
-                    key={index}
-                    className={`flex items-start gap-3 p-3 rounded-md border transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-primary/10 border-primary/50'
-                        : 'bg-card border-border hover:bg-accent'
-                    }`}
-                    onClick={() => toggleSelection(index)}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleSelection(index)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-foreground truncate">
-                        {fileName}
-                      </div>
-                      {folderPath && (
-                        <div className="text-xs text-blue-400/80 mt-0.5 truncate font-mono">
-                          📁 {folderPath}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Size: {formatFileSize(mod.size)}
-                        {hasAssociatedFiles && (
-                          <span className="ml-2">
-                            • {mod.associatedFiles.length} associated file{mod.associatedFiles.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                      {hasAssociatedFiles && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {mod.associatedFiles.map((file, i) => (
-                            <div key={i} className="truncate">
-                              + {getFileName(file)}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={selectedIndices.size === 0}>
-            Install {selectedIndices.size} Mod{selectedIndices.size !== 1 ? 's' : ''}
-          </Button>
-        </DialogFooter>
+      <DialogContent
+        className="!max-w-6xl w-[92vw] p-0 gap-0 overflow-hidden"
+        style={{
+          background: c.bg,
+          border: `1px solid ${c.line2}`,
+          borderRadius: 16,
+        }}
+      >
+        {/* Radix unmounts the content when closed, so the body's selection
+            state starts fresh every time the dialog opens */}
+        <ModSelectionBody
+          detectedMods={detectedMods}
+          onConfirm={onConfirm}
+          onOpenChange={onOpenChange}
+        />
       </DialogContent>
     </Dialog>
-  );
+  )
+}
+
+function ModSelectionBody({
+  detectedMods,
+  onConfirm,
+  onOpenChange,
+}: Omit<ModSelectionDialogProps, 'open'>) {
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const [filter, setFilter] = useState('')
+
+  const affixes = useMemo(
+    () => commonAffixes(detectedMods.map(m => getFileName(m.pakFile))),
+    [detectedMods]
+  )
+
+  const visibleMods = useMemo(() => {
+    const query = filter.trim().toLowerCase()
+    return detectedMods
+      .map((mod, index) => ({ mod, index }))
+      .filter(
+        ({ mod }) =>
+          !query || getFileName(mod.pakFile).toLowerCase().includes(query)
+      )
+  }, [detectedMods, filter])
+
+  const toggleSelection = (index: number) => {
+    const newSelection = new Set(selectedIndices)
+    if (newSelection.has(index)) {
+      newSelection.delete(index)
+    } else {
+      newSelection.add(index)
+    }
+    setSelectedIndices(newSelection)
+  }
+
+  // Select/deselect operate on the visible (filtered) mods
+  const selectAll = () => {
+    const newSelection = new Set(selectedIndices)
+    visibleMods.forEach(({ index }) => newSelection.add(index))
+    setSelectedIndices(newSelection)
+  }
+
+  const deselectAll = () => {
+    const newSelection = new Set(selectedIndices)
+    visibleMods.forEach(({ index }) => newSelection.delete(index))
+    setSelectedIndices(newSelection)
+  }
+
+  const allVisibleSelected =
+    visibleMods.length > 0 &&
+    visibleMods.every(({ index }) => selectedIndices.has(index))
+  const noneVisibleSelected = visibleMods.every(
+    ({ index }) => !selectedIndices.has(index)
+  )
+
+  const totalSelectedSize = useMemo(
+    () =>
+      detectedMods.reduce(
+        (sum, mod, index) =>
+          selectedIndices.has(index) ? sum + mod.size : sum,
+        0
+      ),
+    [detectedMods, selectedIndices]
+  )
+
+  const handleConfirm = () => {
+    const selectedMods = detectedMods.filter((_, index) =>
+      selectedIndices.has(index)
+    )
+    onConfirm(selectedMods)
+    onOpenChange(false)
+  }
+
+  const ghostBtn: CSSProperties = {
+    padding: '9px 16px',
+    borderRadius: 8,
+    background: 'transparent',
+    color: c.ink2,
+    border: `1px solid ${c.line2}`,
+    fontFamily: c.font,
+    fontSize: 13.5,
+    fontWeight: 600,
+  }
+
+  return (
+    <>
+      {/* Header */}
+      <div
+        className="flex items-center gap-3"
+        style={{
+          padding: '22px 28px',
+          borderBottom: `1px solid ${c.line}`,
+          background: c.panel,
+        }}
+      >
+        <div
+          className="grid place-items-center flex-shrink-0"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 11,
+            background: tint(c.accent, 18),
+            color: c.accent,
+            border: `1px solid ${tint(c.accent, 40)}`,
+          }}
+        >
+          <Package className="w-6 h-6" />
+        </div>
+        <div className="min-w-0">
+          <DialogTitle asChild>
+            <h2
+              className="rivals-display"
+              style={{
+                color: c.ink,
+                fontSize: 25,
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Select Mods to Install
+            </h2>
+          </DialogTitle>
+          <DialogDescription asChild>
+            <p
+              className="rivals-mono"
+              style={{ color: c.ink3, fontSize: 12.5, marginTop: 3 }}
+            >
+              {detectedMods.length} mod{detectedMods.length !== 1 ? 's' : ''}{' '}
+              found in this archive · pick the ones you want
+            </p>
+          </DialogDescription>
+        </div>
+        <span
+          className="rivals-mono ml-auto flex-shrink-0"
+          style={{
+            padding: '6px 14px',
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            background: selectedIndices.size > 0 ? tint(c.accent, 16) : c.bg,
+            color: selectedIndices.size > 0 ? c.accent : c.ink3,
+            border: `1px solid ${selectedIndices.size > 0 ? tint(c.accent, 40) : c.line2}`,
+          }}
+        >
+          {selectedIndices.size} / {detectedMods.length}
+        </span>
+      </div>
+
+      {/* Toolbar */}
+      <div
+        className="flex items-center gap-2"
+        style={{
+          padding: '14px 28px',
+          background: c.panel,
+          borderBottom: `1px solid ${c.line}`,
+        }}
+      >
+        <button
+          onClick={selectAll}
+          disabled={allVisibleSelected}
+          className="btn-outline cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          style={ghostBtn}
+        >
+          Select All
+        </button>
+        <button
+          onClick={deselectAll}
+          disabled={noneVisibleSelected}
+          className="btn-outline cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          style={ghostBtn}
+        >
+          Deselect All
+        </button>
+        <div className="relative ml-auto" style={{ width: 300 }}>
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+            style={{ color: c.muted }}
+          />
+          <input
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            placeholder="Filter mods…"
+            className="w-full outline-none transition-colors"
+            style={{
+              padding: '9px 14px 9px 36px',
+              borderRadius: 8,
+              background: c.bg,
+              color: c.ink,
+              border: `1px solid ${c.line2}`,
+              fontFamily: c.font,
+              fontSize: 14,
+            }}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = c.accent as string
+              e.currentTarget.style.boxShadow = `0 0 0 3px ${tint(c.accent, 16)}`
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = c.line2
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Mod list */}
+      <ScrollArea
+        type="always"
+        className="sidebar-scroll"
+        style={{ height: 'min(64vh, 760px)', background: c.bg }}
+      >
+        <div>
+          {visibleMods.length === 0 && (
+            <div
+              className="grid place-items-center"
+              style={{
+                padding: '48px 24px',
+                color: c.ink3,
+                fontFamily: c.font,
+                fontSize: 15,
+              }}
+            >
+              No mods match “{filter}”
+            </div>
+          )}
+          {visibleMods.map(({ mod, index }, row) => {
+            const isSelected = selectedIndices.has(index)
+            const fileName = getFileName(mod.pakFile)
+            const folderPath = getFolderPath(mod.pakFile)
+            const extras = associatedExtensions(mod.associatedFiles)
+
+            return (
+              <div
+                key={index}
+                className="flex items-center gap-4 cursor-pointer"
+                style={{
+                  padding: '16px 28px 16px 24px',
+                  borderBottom: `1px solid ${c.line}`,
+                  background: isSelected ? tint(c.accent, 9) : 'transparent',
+                  boxShadow: isSelected ? `inset 3px 0 0 ${c.accent}` : 'none',
+                  transition: 'background 120ms ease',
+                  animation: `metadata-fade-in 260ms ease-out ${Math.min(row, 12) * 18}ms both`,
+                }}
+                onClick={() => toggleSelection(index)}
+                onMouseEnter={e => {
+                  if (!isSelected) e.currentTarget.style.background = c.panelHi
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = isSelected
+                    ? tint(c.accent, 9)
+                    : 'transparent'
+                }}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => toggleSelection(index)}
+                  onClick={e => e.stopPropagation()}
+                  className="mod-pick-check flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="truncate"
+                    style={{
+                      fontFamily: c.font,
+                      fontSize: 16.5,
+                      fontWeight: 600,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    <ModName
+                      name={fileName}
+                      prefix={affixes.prefix}
+                      suffix={affixes.suffix}
+                    />
+                  </div>
+                  {folderPath && (
+                    <div
+                      className="rivals-mono truncate"
+                      style={{ color: c.ink3, fontSize: 12, marginTop: 4 }}
+                    >
+                      {folderPath}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {extras.length > 0 && (
+                    <span
+                      className="rivals-mono"
+                      style={{
+                        padding: '4px 11px',
+                        borderRadius: 999,
+                        fontSize: 11.5,
+                        color: c.ink3,
+                        border: `1px solid ${c.line2}`,
+                        background: c.panel,
+                      }}
+                    >
+                      +{mod.associatedFiles.length} {extras.join(' ')}
+                    </span>
+                  )}
+                  <span
+                    className="rivals-mono"
+                    style={{
+                      minWidth: 76,
+                      textAlign: 'right',
+                      fontSize: 12.5,
+                      color: isSelected ? c.ink2 : c.ink3,
+                    }}
+                  >
+                    {formatFileSize(mod.size)}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div
+        className="flex items-center gap-2.5"
+        style={{
+          padding: '18px 28px',
+          borderTop: `1px solid ${c.line}`,
+          background: c.panel,
+        }}
+      >
+        <span className="rivals-mono" style={{ color: c.ink3, fontSize: 12.5 }}>
+          {selectedIndices.size > 0
+            ? `${formatFileSize(totalSelectedSize)} selected`
+            : 'Nothing selected yet'}
+        </span>
+        <div className="ml-auto flex items-center gap-2.5">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="btn-outline cursor-pointer"
+            style={{
+              padding: '11px 22px',
+              borderRadius: 9,
+              background: 'transparent',
+              color: c.ink2,
+              border: `1px solid ${c.line2}`,
+              fontFamily: c.font,
+              fontSize: 14.5,
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={selectedIndices.size === 0}
+            className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              padding: '11px 22px',
+              borderRadius: 9,
+              background: c.accent,
+              color: c.onAccent,
+              border: 'none',
+              fontFamily: c.font,
+              fontSize: 14.5,
+              fontWeight: 600,
+            }}
+          >
+            Install {selectedIndices.size} Mod
+            {selectedIndices.size !== 1 ? 's' : ''}
+          </button>
+        </div>
+      </div>
+    </>
+  )
 }

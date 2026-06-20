@@ -100,6 +100,14 @@ export function ModManager() {
             toast.success(`Auto-organized ${count} loose mod(s) into folders`);
           }
 
+          // Step 2.5: Move mod folders sitting directly under a category into
+          // their character subfolder (older versions skipped that level)
+          const relocatedCount = await invoke<number>('relocate_misplaced_mods');
+          if (relocatedCount > 0) {
+            console.log(`[ModManager] Relocated ${relocatedCount} mod folder(s) into character folders`);
+            toast.success(`Moved ${relocatedCount} mod(s) into character folders`);
+          }
+
           // Step 3: Merge duplicate folders (e.g., "Black Widow" and "Black-Widow")
           console.log('[ModManager] Checking for duplicate character folders...');
           const mergedCount = await invoke<number>('merge_duplicate_folders');
@@ -116,8 +124,24 @@ export function ModManager() {
             toast.success(`Migrated ${costumeMigratedCount} mod(s) to costume folder structure`);
           }
 
+          // Step 4.5: Recover metadata orphaned by past folder renames/merges
+          // (reattaches add-ons that detached before moves re-pointed them)
+          const recoveredCount = await invoke<number>('recover_orphaned_metadata');
+          if (recoveredCount > 0) {
+            console.log(`[ModManager] Recovered ${recoveredCount} orphaned metadata file(s)`);
+            toast.success(`Reattached ${recoveredCount} mod(s)/add-on(s) after folder changes`);
+          }
+
+          // Step 4.8: Make sure add-on paks load after their parents
+          // (the game mounts paks alphabetically; the last one wins conflicts)
+          const loadOrderCount = await invoke<number>('enforce_addon_load_order');
+          if (loadOrderCount > 0) {
+            console.log(`[ModManager] Adjusted load order for ${loadOrderCount} add-on(s)`);
+            toast.success(`Fixed load order for ${loadOrderCount} add-on(s)`);
+          }
+
           // If any migrations occurred, refresh the mods list to get updated file paths
-          if (migratedCount > 0 || count > 0 || mergedCount > 0 || costumeMigratedCount > 0) {
+          if (migratedCount > 0 || count > 0 || relocatedCount > 0 || mergedCount > 0 || costumeMigratedCount > 0 || recoveredCount > 0 || loadOrderCount > 0) {
             console.log('[ModManager] Refreshing mods list after migrations...');
             await queryClient.invalidateQueries({ queryKey: ['mods'] });
           }

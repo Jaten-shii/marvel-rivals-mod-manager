@@ -24,6 +24,7 @@ export type Character =
   | 'Blade'
   | 'Black Panther'
   | 'Black Widow'
+  | 'Cyclops'
   | 'Daredevil'
   | 'Deadpool'
   | 'Emma Frost'

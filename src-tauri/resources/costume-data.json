@@ -338,6 +338,11 @@
       "isDefault": true
     },
     {
+      "id": "coastal-couple",
+      "name": "Coastal Couple",
+      "imagePath": "cloak-and-dagger/img_icon_coastal-couple.png"
+    },
+    {
       "id": "dance-partner",
       "name": "Dance Partner",
       "imagePath": "cloak-and-dagger/img_icon_dance-partner.png"
@@ -373,6 +378,16 @@
       "imagePath": "cloak-and-dagger/img_icon_polarity-bond.png"
     },
     {
+      "id": "sapphire-splash",
+      "name": "Sapphire Splash",
+      "imagePath": "cloak-and-dagger/img_icon_sapphire-splash.png"
+    },
+    {
+      "id": "sunset-shores",
+      "name": "Sunset Shores",
+      "imagePath": "cloak-and-dagger/img_icon_sunset-shores.png"
+    },
+    {
       "id": "twilight-duo",
       "name": "Twilight Duo",
       "imagePath": "cloak-and-dagger/img_icon_twilight-duo.png"
@@ -381,6 +396,29 @@
       "id": "twisted-thorns",
       "name": "Twisted Thorns",
       "imagePath": "cloak-and-dagger/img_icon_twisted-thorns.png"
+    }
+  ],
+  "Cyclops": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "cyclops/img_icon_cyclops.png",
+      "isDefault": true
+    },
+    {
+      "id": "futuristic-focus",
+      "name": "Futuristic Focus",
+      "imagePath": "cyclops/img_icon_futuristic-focus.png"
+    },
+    {
+      "id": "shadowed-gaze",
+      "name": "Shadowed Gaze",
+      "imagePath": "cyclops/img_icon_shadowed-gaze.png"
+    },
+    {
+      "id": "weapon-m",
+      "name": "Weapon M",
+      "imagePath": "cyclops/img_icon_weapon-m.png"
     }
   ],
   "Daredevil": [
@@ -580,6 +618,11 @@
       "imagePath": "doctor-strange/img_icon_bleeker-street-strut.png"
     },
     {
+      "id": "crimson-conjurer",
+      "name": "Crimson Conjurer",
+      "imagePath": "doctor-strange/img_icon_crimson-conjurer.png"
+    },
+    {
       "id": "doctor-strange-in-the-multiverse-of-madness",
       "name": "Doctor Strange In The Multiverse Of Madness",
       "imagePath": "doctor-strange/img_icon_doctor-strange-in-the-multiverse-of-madness.png"
@@ -590,9 +633,19 @@
       "imagePath": "doctor-strange/img_icon_god-of-magic.png"
     },
     {
+      "id": "magical-mint",
+      "name": "Magical Mint",
+      "imagePath": "doctor-strange/img_icon_magical-mint.png"
+    },
+    {
       "id": "master-of-black-magic",
       "name": "Master Of Black Magic",
       "imagePath": "doctor-strange/img_icon_master-of-black-magic.png"
+    },
+    {
+      "id": "nautical-mystic",
+      "name": "Nautical Mystic",
+      "imagePath": "doctor-strange/img_icon_nautical-mystic.png"
     },
     {
       "id": "old-man-strange",
@@ -676,6 +729,11 @@
       "imagePath": "emma-frost/img_icon_blue-sapphire.png"
     },
     {
+      "id": "caviar-black",
+      "name": "Caviar Black",
+      "imagePath": "emma-frost/img_icon_caviar-black.png"
+    },
+    {
       "id": "gala-glam",
       "name": "Gala Glam",
       "imagePath": "emma-frost/img_icon_gala-glam.png"
@@ -699,6 +757,16 @@
       "id": "queen-of-diamonds",
       "name": "Queen Of Diamonds",
       "imagePath": "emma-frost/img_icon_queen-of-diamonds.png"
+    },
+    {
+      "id": "ravishing-red",
+      "name": "Ravishing Red",
+      "imagePath": "emma-frost/img_icon_ravishing-red.png"
+    },
+    {
+      "id": "white-wave-queen",
+      "name": "White Wave Queen",
+      "imagePath": "emma-frost/img_icon_white-wave-queen.png"
     },
     {
       "id": "will-of-galacta",
@@ -785,6 +853,11 @@
       "id": "holiday-happiness",
       "name": "Holiday Happiness",
       "imagePath": "groot/img_icon_holiday-happiness.png"
+    },
+    {
+      "id": "ironwood-serpent",
+      "name": "Ironwood Serpent",
+      "imagePath": "groot/img_icon_ironwood-serpent.png"
     },
     {
       "id": "mecha-flora",
@@ -1180,6 +1253,11 @@
       "imagePath": "iron-fist/img_icon_shenloong-champion.png"
     },
     {
+      "id": "shou-laos-champion",
+      "name": "Shou Laos Champion",
+      "imagePath": "iron-fist/img_icon_shou-laos-champion.png"
+    },
+    {
       "id": "sword-master",
       "name": "Sword Master",
       "imagePath": "iron-fist/img_icon_sword-master.png"
@@ -1560,6 +1638,11 @@
       "imagePath": "magik/img_icon_frozen-demon.png"
     },
     {
+      "id": "green-glow",
+      "name": "Green Glow",
+      "imagePath": "magik/img_icon_green-glow.png"
+    },
+    {
       "id": "infernal-idol",
       "name": "Infernal Idol",
       "imagePath": "magik/img_icon_infernal-idol.png"
@@ -1568,6 +1651,11 @@
       "id": "lavender-limbo",
       "name": "Lavender Limbo",
       "imagePath": "magik/img_icon_lavender-limbo.png"
+    },
+    {
+      "id": "neon-nemesis",
+      "name": "Neon Nemesis",
+      "imagePath": "magik/img_icon_neon-nemesis.png"
     },
     {
       "id": "netherworld-noble",
@@ -1598,6 +1686,11 @@
       "id": "rosy-resilience",
       "name": "Rosy Resilience",
       "imagePath": "magik/img_icon_rosy-resilience.png"
+    },
+    {
+      "id": "soulless-sword",
+      "name": "Soulless Sword",
+      "imagePath": "magik/img_icon_soulless-sword.png"
     },
     {
       "id": "will-of-galacta",
@@ -1752,6 +1845,11 @@
       "id": "danum-ket-the-professor",
       "name": "Danum Ket The Professor",
       "imagePath": "mister-fantastic/img_icon_danum-ket-the-professor.png"
+    },
+    {
+      "id": "fantastic-beach-dad",
+      "name": "Fantastic Beach Dad",
+      "imagePath": "mister-fantastic/img_icon_fantastic-beach-dad.png"
     },
     {
       "id": "first-family",
@@ -2013,6 +2111,11 @@
       "id": "verdant-vogue",
       "name": "Verdant Vogue",
       "imagePath": "phoenix/img_icon_verdant-vogue.png"
+    },
+    {
+      "id": "white-crown-phoenix",
+      "name": "White Crown Phoenix",
+      "imagePath": "phoenix/img_icon_white-crown-phoenix.png"
     },
     {
       "id": "will-of-galacta",
@@ -2360,6 +2463,11 @@
       "imagePath": "spider-man/img_icon_chasm.png"
     },
     {
+      "id": "coastal-wall-crawler",
+      "name": "Coastal Wall Crawler",
+      "imagePath": "spider-man/img_icon_coastal-wall-crawler.png"
+    },
+    {
       "id": "future-foundation",
       "name": "Future Foundation",
       "imagePath": "spider-man/img_icon_future-foundation.png"
@@ -2577,6 +2685,11 @@
       "id": "ultimate-wind-rider",
       "name": "Ultimate Wind Rider",
       "imagePath": "storm/img_icon_ultimate-wind-rider.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will Of Galacta",
+      "imagePath": "storm/img_icon_will-of-galacta.png"
     }
   ],
   "The Punisher": [

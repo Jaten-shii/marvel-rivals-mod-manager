@@ -1,7 +1,7 @@
-use image::{DynamicImage, ImageFormat, imageops::FilterType};
-use std::path::{Path, PathBuf};
+use image::{imageops::FilterType, DynamicImage, ImageFormat};
 use reqwest;
 use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CropData {
@@ -22,7 +22,9 @@ impl std::fmt::Display for ThumbnailError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ThumbnailError::DownloadFailed(msg) => write!(f, "Download failed: {}", msg),
-            ThumbnailError::ImageProcessingFailed(msg) => write!(f, "Image processing failed: {}", msg),
+            ThumbnailError::ImageProcessingFailed(msg) => {
+                write!(f, "Image processing failed: {}", msg)
+            }
             ThumbnailError::IoError(msg) => write!(f, "IO error: {}", msg),
         }
     }
@@ -47,15 +49,15 @@ impl ThumbnailService {
             let parts: Vec<&str> = url.splitn(2, ',').collect();
             if parts.len() != 2 {
                 return Err(ThumbnailError::DownloadFailed(
-                    "Invalid data URL format".to_string()
+                    "Invalid data URL format".to_string(),
                 ));
             }
 
             // Decode base64 data
-            use base64::{Engine as _, engine::general_purpose};
-            let bytes = general_purpose::STANDARD
-                .decode(parts[1])
-                .map_err(|e| ThumbnailError::DownloadFailed(format!("Failed to decode base64: {}", e)))?;
+            use base64::{engine::general_purpose, Engine as _};
+            let bytes = general_purpose::STANDARD.decode(parts[1]).map_err(|e| {
+                ThumbnailError::DownloadFailed(format!("Failed to decode base64: {}", e))
+            })?;
 
             // Load image from bytes
             let img = image::load_from_memory(&bytes)
@@ -70,8 +72,14 @@ impl ThumbnailService {
         let client = reqwest::Client::new();
         let response = client
             .get(url)
-            .header("Accept", "image/webp,image/png,image/jpeg,image/*;q=0.9,*/*;q=0.8")
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .header(
+                "Accept",
+                "image/webp,image/png,image/jpeg,image/*;q=0.9,*/*;q=0.8",
+            )
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            )
             .send()
             .await
             .map_err(|e| ThumbnailError::DownloadFailed(e.to_string()))?;
@@ -97,7 +105,12 @@ impl ThumbnailService {
 
     /// Center-crops an image to a target aspect ratio without stretching
     /// Takes the largest centered rectangle of the target aspect ratio from the source
-    pub fn center_crop_to_aspect(&self, img: &DynamicImage, aspect_w: u32, aspect_h: u32) -> DynamicImage {
+    pub fn center_crop_to_aspect(
+        &self,
+        img: &DynamicImage,
+        aspect_w: u32,
+        aspect_h: u32,
+    ) -> DynamicImage {
         let (w, h) = (img.width(), img.height());
         let target_ratio = aspect_w as f64 / aspect_h as f64;
         let current_ratio = w as f64 / h as f64;
@@ -128,12 +141,7 @@ impl ThumbnailService {
     }
 
     /// Resizes an image to fit within the specified dimensions while preserving aspect ratio
-    pub fn resize_image(
-        &self,
-        img: &DynamicImage,
-        width: u32,
-        height: u32,
-    ) -> DynamicImage {
+    pub fn resize_image(&self, img: &DynamicImage, width: u32, height: u32) -> DynamicImage {
         img.resize(width, height, FilterType::Lanczos3)
     }
 
@@ -145,19 +153,15 @@ impl ThumbnailService {
     ) -> Result<DynamicImage, ThumbnailError> {
         // Validate crop dimensions
         if crop_data.x + crop_data.width > img.width()
-            || crop_data.y + crop_data.height > img.height() {
+            || crop_data.y + crop_data.height > img.height()
+        {
             return Err(ThumbnailError::ImageProcessingFailed(
-                "Crop dimensions exceed image bounds".to_string()
+                "Crop dimensions exceed image bounds".to_string(),
             ));
         }
 
         // Crop the image
-        let cropped = img.crop_imm(
-            crop_data.x,
-            crop_data.y,
-            crop_data.width,
-            crop_data.height,
-        );
+        let cropped = img.crop_imm(crop_data.x, crop_data.y, crop_data.width, crop_data.height);
 
         Ok(cropped)
     }
@@ -260,10 +264,7 @@ mod tests {
         let service = ThumbnailService::new(temp_dir.clone());
 
         let path = service.get_thumbnail_path("test_mod_123");
-        assert_eq!(
-            path,
-            temp_dir.join("test_mod_123_thumbnail.png")
-        );
+        assert_eq!(path, temp_dir.join("test_mod_123_thumbnail.png"));
     }
 
     #[test]

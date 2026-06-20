@@ -1198,3 +1198,143 @@
 .rivals-cat-audio-text { color: var(--rivals-cat-audio); }
 .rivals-cat-ui-text { color: var(--rivals-cat-ui); }
 .rivals-cat-gameplay-text { color: var(--rivals-cat-gameplay); }
+
+/* ── Mod selection dialog — checkboxes ─────────────────────────────────── */
+/* Bigger, accent-colored, with a springy pop when checked. */
+.mod-pick-check {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 7px !important;
+  border: 1.5px solid var(--rivals-line2) !important;
+  background: var(--rivals-bg) !important;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 220ms ease;
+}
+.mod-pick-check:hover {
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent) !important;
+}
+.mod-pick-check[data-state='checked'] {
+  background: var(--rivals-accent) !important;
+  border-color: var(--rivals-accent) !important;
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--rivals-accent) 16%, transparent);
+  animation: mod-check-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mod-pick-check svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: var(--rivals-on-accent);
+  stroke-width: 3.2;
+  animation: mod-check-draw 220ms ease-out 30ms both;
+}
+@keyframes mod-check-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes mod-check-draw {
+  from {
+    transform: scale(0.3) rotate(-14deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+/* ── Image crop dialog — themed crop selection ─────────────────────────── */
+.rivals-crop .ReactCrop__crop-selection {
+  border: 2px solid var(--rivals-accent);
+  box-shadow: 0 0 0 9999em color-mix(in oklch, black 58%, transparent);
+  border-radius: 4px;
+  animation: none; /* disable the default marching-ants animation */
+}
+.rivals-crop .ReactCrop__drag-handle::after {
+  width: 12px;
+  height: 12px;
+  background-color: var(--rivals-accent);
+  border: 2px solid var(--rivals-bg);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.rivals-crop .ReactCrop__rule-of-thirds-vt::before,
+.rivals-crop .ReactCrop__rule-of-thirds-vt::after,
+.rivals-crop .ReactCrop__rule-of-thirds-hz::before,
+.rivals-crop .ReactCrop__rule-of-thirds-hz::after {
+  background-color: color-mix(in oklch, var(--rivals-accent) 35%, transparent);
+}
+
+/* ── Dropdown scrollbars (author autocomplete etc.) ─────────────────────── */
+/* Chromium ignores ::-webkit-scrollbar styling because index.css sets the
+   standard scrollbar-* properties globally — so theme those instead. */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent)
+    transparent;
+}
+
+/* ── Drag-and-drop overlay ──────────────────────────────────────────────── */
+/* Marching-ants crawl around the drop border */
+.dz-ants {
+  animation: dz-ants 1.1s linear infinite;
+}
+@keyframes dz-ants {
+  to {
+    stroke-dashoffset: -25; /* one dasharray period (10 + 15) */
+  }
+}
+/* Sonar rings radiating from the icon disc */
+.dz-pulse {
+  animation: dz-pulse 1.8s cubic-bezier(0.25, 0.6, 0.4, 1) infinite;
+}
+@keyframes dz-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+/* Gentle float on the icon disc */
+.dz-bob {
+  animation: dz-bob 2.4s ease-in-out infinite;
+}
+@keyframes dz-bob {
+  0%,
+  100% {
+    transform: translateY(3px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ── Loading skeleton shimmer ───────────────────────────────────────────── */
+.skel {
+  background: linear-gradient(
+    100deg,
+    var(--rivals-panel) 40%,
+    var(--rivals-panel-hi) 50%,
+    var(--rivals-panel) 60%
+  );
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skel-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

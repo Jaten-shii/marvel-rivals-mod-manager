@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { saveCrashState } from '@/lib/recovery'
 import { logger } from '@/lib/logger'
+import { c, tint } from '@/shared/rivals-tokens'
 
 interface Props {
   children: ReactNode
@@ -76,69 +77,134 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined })
   }
 
+  private handleCopy = () => {
+    const { error, errorInfo } = this.state
+    const text = [
+      `${error?.name}: ${error?.message}`,
+      error?.stack || '',
+      errorInfo?.componentStack || '',
+    ].join('\n\n')
+    void navigator.clipboard.writeText(text)
+  }
+
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
-          <div className="w-full max-w-md text-center">
-            <div className="mb-6">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                <svg
-                  className="h-8 w-8 text-destructive"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+        <div
+          className="flex min-h-screen flex-col items-center justify-center p-8"
+          style={{ background: c.bg }}
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden"
+            style={{
+              background: c.panel,
+              border: `1px solid ${c.line2}`,
+              borderRadius: 16,
+              boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.6)',
+              animation: 'metadata-fade-in 350ms ease-out both',
+            }}
+          >
+            <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${c.err}, transparent)` }} />
+            <div className="text-center" style={{ padding: '34px 32px 30px' }}>
+              <div
+                className="mx-auto grid place-items-center"
+                style={{
+                  width: 68,
+                  height: 68,
+                  borderRadius: 20,
+                  background: tint(c.err, 12),
+                  border: `1px solid ${tint(c.err, 35)}`,
+                  color: c.err,
+                  marginBottom: 20,
+                  animation: 'icon-pop-in 400ms ease-out 100ms both',
+                }}
+              >
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={1.8}
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+              <p
+                className="rivals-mono"
+                style={{ color: c.err, fontSize: 11, fontWeight: 600, letterSpacing: '0.28em', textTransform: 'uppercase' }}
+              >
+                Unexpected Error
+              </p>
+              <h1
+                className="rivals-display"
+                style={{ color: c.ink, fontSize: 30, fontWeight: 600, letterSpacing: '-0.01em', marginTop: 6 }}
+              >
                 Something went wrong
               </h1>
-              <p className="text-muted-foreground mb-6">
-                The application encountered an unexpected error. Your data has
-                been saved automatically.
+              <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 13.5, marginTop: 10, lineHeight: 1.55 }}>
+                The application hit an unexpected error. Your data has been saved
+                automatically, and reloading usually fixes it.
               </p>
-            </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={this.handleReload}
-                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                Reload Application
-              </button>
-
-              <button
-                onClick={this.handleReset}
-                className="w-full px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-6 text-left">
-                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-                  Error Details (Development Only)
-                </summary>
-                <div className="mt-2 p-3 bg-muted rounded-md text-xs font-mono">
-                  <div className="text-destructive font-semibold mb-1">
-                    {this.state.error.name}: {this.state.error.message}
-                  </div>
-                  {this.state.error.stack && (
-                    <pre className="whitespace-pre-wrap text-muted-foreground overflow-auto">
-                      {this.state.error.stack}
-                    </pre>
-                  )}
+              {this.state.error && (
+                <div
+                  className="rivals-mono text-left break-words"
+                  style={{
+                    marginTop: 18,
+                    padding: '10px 14px',
+                    borderRadius: 9,
+                    background: c.bg,
+                    border: `1px solid ${c.line2}`,
+                    color: c.ink3,
+                    fontSize: 11.5,
+                    maxHeight: 96,
+                    overflow: 'auto',
+                  }}
+                >
+                  {this.state.error.name}: {this.state.error.message}
                 </div>
-              </details>
-            )}
+              )}
+
+              <div className="flex items-center justify-center gap-2.5" style={{ marginTop: 22 }}>
+                <button
+                  onClick={this.handleCopy}
+                  className="btn-outline cursor-pointer"
+                  style={{ padding: '10px 16px', borderRadius: 9, background: 'transparent', color: c.ink3, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+                >
+                  Copy Error
+                </button>
+                <button
+                  onClick={this.handleReset}
+                  className="btn-outline cursor-pointer"
+                  style={{ padding: '10px 16px', borderRadius: 9, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={this.handleReload}
+                  className="btn-primary cursor-pointer"
+                  style={{ padding: '10px 18px', borderRadius: 9, background: c.accent, color: c.onAccent, border: 'none', fontFamily: c.font, fontSize: 13, fontWeight: 600 }}
+                >
+                  Reload Application
+                </button>
+              </div>
+
+              {process.env.NODE_ENV === 'development' && this.state.error?.stack && (
+                <details className="mt-5 text-left">
+                  <summary
+                    className="cursor-pointer rivals-mono"
+                    style={{ color: c.ink3, fontSize: 11 }}
+                  >
+                    Stack trace (development only)
+                  </summary>
+                  <pre
+                    className="rivals-mono whitespace-pre-wrap overflow-auto"
+                    style={{ marginTop: 8, padding: 12, borderRadius: 9, background: c.bg, border: `1px solid ${c.line}`, color: c.ink3, fontSize: 10.5, maxHeight: 200 }}
+                  >
+                    {this.state.error.stack}
+                  </pre>
+                </details>
+              )}
+            </div>
           </div>
         </div>
       )

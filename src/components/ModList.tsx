@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, memo } from 'react';
+import { PackageOpen, SearchX } from 'lucide-react';
 import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite } from '../hooks/useMods';
 import { useUIStore } from '../stores';
 import type { ModInfo, Costume, ModCategory, Character } from '../types/mod.types';
@@ -322,9 +323,31 @@ export function ModList() {
             : 'All Mods';
 
   if (isLoading) {
+    // Shimmer skeleton mirroring the card grid layout
     return (
-      <div className="flex items-center justify-center h-full" style={{ background: c.bg }}>
-        <div style={{ color: c.ink2, fontFamily: c.font, fontSize: 16 }}>Loading mods…</div>
+      <div className="h-full flex flex-col" style={{ background: c.bg }}>
+        <div className="flex items-baseline gap-3 px-[22px] pt-4 pb-1">
+          <div className="skel" style={{ width: 230, height: 42, borderRadius: 10 }} />
+          <div className="skel" style={{ width: 150, height: 14, borderRadius: 7 }} />
+        </div>
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20, padding: '12px 22px 18px', alignContent: 'start', overflow: 'hidden', flex: 1 }}
+        >
+          {Array.from({ length: 9 }, (_, i) => (
+            <div key={i} style={{ animation: `metadata-fade-in 400ms ease-out ${i * 55}ms both` }}>
+              <div className="skel" style={{ width: '100%', aspectRatio: '16 / 9', borderRadius: 12 }} />
+              <div className="flex items-center gap-2.5" style={{ marginTop: 10 }}>
+                <div className="skel" style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0 }} />
+                <div className="flex-1">
+                  <div className="skel" style={{ width: '72%', height: 13, borderRadius: 6 }} />
+                  <div className="skel" style={{ width: '46%', height: 10, borderRadius: 5, marginTop: 6 }} />
+                </div>
+                <div className="skel" style={{ width: 44, height: 24, borderRadius: 999, flexShrink: 0 }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -368,10 +391,21 @@ export function ModList() {
         <div className="flex-1 overflow-auto mod-list-scroll">
           <div key={viewMode} className="view-swap">
           {parentMods.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div style={{ color: c.ink3, fontFamily: c.font, fontSize: 15 }}>
-                {mods?.length === 0 ? 'No mods installed yet' : 'No mods match your filters'}
+            <div className="flex flex-col items-center justify-center h-full" style={{ paddingBottom: 48, animation: 'metadata-fade-in 350ms ease-out both' }}>
+              <div
+                className="grid place-items-center"
+                style={{ width: 76, height: 76, borderRadius: 22, background: tint(c.accent, 10), border: `1px solid ${tint(c.accent, 28)}`, color: c.accent, marginBottom: 18 }}
+              >
+                {mods?.length === 0 ? <PackageOpen className="w-9 h-9" strokeWidth={1.5} /> : <SearchX className="w-9 h-9" strokeWidth={1.5} />}
               </div>
+              <h3 className="rivals-display" style={{ color: c.ink2, fontSize: 25, fontWeight: 600, letterSpacing: '-0.01em' }}>
+                {mods?.length === 0 ? 'Your library is empty' : 'Nothing matches'}
+              </h3>
+              <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 13.5, marginTop: 7 }}>
+                {mods?.length === 0
+                  ? 'Drag and drop mod files anywhere in this window to install them'
+                  : 'Try clearing your search or switching filters'}
+              </p>
             </div>
           ) : viewMode === 'grid' ? (
             <div

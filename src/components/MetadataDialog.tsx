@@ -668,7 +668,9 @@ export function MetadataDialog() {
           <div className="px-6 py-4 overflow-y-auto">
             <div className="space-y-4">
               {/* Basic Information */}
-              <div className="space-y-2.5" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
+              {/* relative + z keep the author dropdown above the next section
+                  (the fade-in animation makes each section a stacking context) */}
+              <div className="space-y-2.5 relative z-20" style={{ animation: 'metadata-fade-in 400ms ease-out 100ms both' }}>
                 <h3 className="rivals-mono" style={{ color: 'var(--rivals-ink3)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Basic Information</h3>
 
                 {/* Name */}

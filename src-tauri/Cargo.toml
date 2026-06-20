@@ -1,6 +1,6 @@
 [package]
 name = "marvel-rivals-mod-manager"
-version = "6.0.1"
+version = "6.3.0"
 description = "Professional mod manager for Marvel Rivals"
 authors = ["Marvel Rivals Mod Manager"]
 edition = "2021"
@@ -59,4 +59,12 @@ lto = true               # Link-time optimizations
 opt-level = "s"          # Optimize for size over speed
 panic = "abort"          # Don't include panic unwinding code
 strip = true             # Remove debug symbols
+
+# Keep dev builds lean: full debug info is rarely needed for a Tauri app and
+# it dominates target/debug size (tens of GB over time)
+[profile.dev]
+debug = "line-tables-only" # Enough for readable backtraces
+
+[profile.dev.package."*"]
+debug = false # No debug symbols for dependencies (the bulk of the size)
 

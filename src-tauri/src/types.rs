@@ -120,6 +120,7 @@ pub enum Character {
     BlackCat,
     #[serde(rename = "Devil Dinosaur")]
     DevilDinosaur,
+    Cyclops,
 
     // Special
     #[serde(rename = "All Characters")]
@@ -180,6 +181,7 @@ impl Character {
             Character::WhiteFox,
             Character::BlackCat,
             Character::DevilDinosaur,
+            Character::Cyclops,
             Character::AllCharacters,
         ]
     }
@@ -209,7 +211,9 @@ impl Character {
             Character::HumanTorch => &["human", "torch", "humantorch", "johnny", "storm"],
             Character::IronFist => &["ironfist", "danny", "rand"],
             Character::Magik => &["magik", "illyana"],
-            Character::MisterFantastic => &["mister", "fantastic", "misterfantastic", "reed", "richards"],
+            Character::MisterFantastic => {
+                &["mister", "fantastic", "misterfantastic", "reed", "richards"]
+            }
             Character::MoonKnight => &["moonknight", "marc", "spector"],
             Character::Namor => &["namor", "submariner"],
             Character::Phoenix => &["phoenix", "jean", "grey"],
@@ -244,6 +248,7 @@ impl Character {
                 "moongirl",
                 "lunella",
             ],
+            Character::Cyclops => &["cyclops", "scott", "summers"],
             Character::AllCharacters => &["allcharacters", "all", "everyone", "every"],
         }
     }
@@ -302,6 +307,7 @@ impl std::fmt::Display for Character {
             Character::WhiteFox => "White Fox",
             Character::BlackCat => "Black Cat",
             Character::DevilDinosaur => "Devil Dinosaur",
+            Character::Cyclops => "Cyclops",
             Character::AllCharacters => "All Characters",
         };
         write!(f, "{}", name)
