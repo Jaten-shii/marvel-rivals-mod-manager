@@ -1,8 +1,11 @@
 name: 'Release Tauri Template App'
 
+# CI releases are disabled: this app is built and signed locally
+# (build-release.bat) and the installer is uploaded to the GitHub release
+# manually. The tag-push trigger only produced failing checks (macOS can't
+# install the win32-pinned deps, and the signing key isn't in repo secrets).
+# workflow_dispatch stays in case a manual CI build is ever wanted.
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
