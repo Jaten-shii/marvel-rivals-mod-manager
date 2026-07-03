@@ -184,6 +184,16 @@
       "isDefault": true
     },
     {
+      "id": "aquatic-assassin",
+      "name": "Aquatic Assassin",
+      "imagePath": "black-widow/img_icon_aquatic-assassin.png"
+    },
+    {
+      "id": "golden-gossamer",
+      "name": "Golden Gossamer",
+      "imagePath": "black-widow/img_icon_golden-gossamer.png"
+    },
+    {
       "id": "lethal-toxicity",
       "name": "Lethal Toxicity",
       "imagePath": "black-widow/img_icon_lethal-toxicity.png"
@@ -212,6 +222,11 @@
       "id": "red-runway-veil",
       "name": "Red Runway Veil",
       "imagePath": "black-widow/img_icon_red-runway-veil.png"
+    },
+    {
+      "id": "toxic-trace",
+      "name": "Toxic Trace",
+      "imagePath": "black-widow/img_icon_toxic-trace.png"
     },
     {
       "id": "white-suit",
@@ -323,6 +338,11 @@
       "id": "primal-patriot",
       "name": "Primal Patriot",
       "imagePath": "captain-america/img_icon_primal-patriot.png"
+    },
+    {
+      "id": "seaside-sentinel",
+      "name": "Seaside Sentinel",
+      "imagePath": "captain-america/img_icon_seaside-sentinel.png"
     },
     {
       "id": "star-spangled-style",
@@ -462,6 +482,11 @@
       "id": "shenloongs-creed",
       "name": "Shenloongs Creed",
       "imagePath": "daredevil/img_icon_shenloongs-creed.png"
+    },
+    {
+      "id": "sonar-savior",
+      "name": "Sonar Savior",
+      "imagePath": "daredevil/img_icon_sonar-savior.png"
     },
     {
       "id": "will-of-galacta",
@@ -1487,9 +1512,24 @@
       "imagePath": "loki/img_icon_robe-of-relaxation.png"
     },
     {
+      "id": "sapphire-sorceress",
+      "name": "Sapphire Sorceress",
+      "imagePath": "loki/img_icon_sapphire-sorceress.png"
+    },
+    {
+      "id": "seaside-siren",
+      "name": "Seaside Siren",
+      "imagePath": "loki/img_icon_seaside-siren.png"
+    },
+    {
       "id": "shin-sagi-shi",
       "name": "Shin Sagi Shi",
       "imagePath": "loki/img_icon_shin-sagi-shi.png"
+    },
+    {
+      "id": "sunlit-sovereign",
+      "name": "Sunlit Sovereign",
+      "imagePath": "loki/img_icon_sunlit-sovereign.png"
     },
     {
       "id": "the-avengers",
@@ -3035,6 +3075,21 @@
       "isDefault": true
     },
     {
+      "id": "coastal-kumiho",
+      "name": "Coastal Kumiho",
+      "imagePath": "white-fox/img_icon_coastal-kumiho.png"
+    },
+    {
+      "id": "magical-mint",
+      "name": "Magical Mint",
+      "imagePath": "white-fox/img_icon_magical-mint.png"
+    },
+    {
+      "id": "pink-paws",
+      "name": "Pink Paws",
+      "imagePath": "white-fox/img_icon_pink-paws.png"
+    },
+    {
       "id": "rosy-recon",
       "name": "Rosy Recon",
       "imagePath": "white-fox/img_icon_rosy-recon.png"
@@ -3159,6 +3214,11 @@
       "id": "weapon-x",
       "name": "Weapon X",
       "imagePath": "wolverine/img_icon_weapon-x.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will Of Galacta",
+      "imagePath": "wolverine/img_icon_will-of-galacta.png"
     },
     {
       "id": "winter-soldier",
