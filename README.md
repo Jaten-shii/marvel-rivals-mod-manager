@@ -16,6 +16,29 @@ A lightweight, fast desktop application built with Tauri for seamless mod manage
 
 ---
 
+<div align="center">
+
+<img src="docs/screenshots/app-main.png" alt="Mod library — card view" width="920" />
+
+<sub>Your library at a glance — artwork cards, category and character filters, one-click enable</sub>
+
+</div>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/app-details.png" alt="Mod details panel" />
+      <p align="center"><sub>Details panel with artwork, costume info, and file recovery</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/app-list.png" alt="List view grouped by character" />
+      <p align="center"><sub>List view grouped by character</sub></p>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## Features
 
 ### Core

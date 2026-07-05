@@ -10,7 +10,7 @@ import { ProfileItem } from './ProfileItem'
 import { ProfileDialog } from './ProfileDialog'
 import { ALL_CHARACTERS } from '@/shared/constants'
 import { c, tint, categoryColor, formatFileSize, getCharacterIconPath } from '@/shared/rivals-tokens'
-import { RingAvatar } from '@/shared/rivals-design'
+import { RingAvatar, SidebarCategoryIcon } from '@/shared/rivals-design'
 
 // Tracked uppercase mono micro-heading.
 function SectionLabel({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
@@ -251,7 +251,7 @@ export function Sidebar() {
               <button
                 key={category}
                 onClick={() => selectCategory(category)}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors"
+                className="cat-row w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors"
                 style={{
                   background: active ? c.panelHi : 'transparent',
                   boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
@@ -262,7 +262,9 @@ export function Sidebar() {
                 onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
                 onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
               >
-                <span style={{ width: 9, height: 9, borderRadius: 2, background: categoryColor(category), flex: '0 0 auto' }} />
+                <span className="grid place-items-center" style={{ width: 20, flex: '0 0 auto' }}>
+                  <SidebarCategoryIcon category={category} color={categoryColor(category)} size={18} />
+                </span>
                 <span className="flex-1 text-left">{category}</span>
                 <span style={{ color: active ? c.ink2 : c.muted, fontFamily: c.mono, fontSize: 12.5 }}>{categoryCounts[category] || 0}</span>
               </button>
@@ -303,20 +305,35 @@ export function Sidebar() {
               <button
                 key={character}
                 onClick={() => selectCharacterGlobal(character)}
-                className="sidebar-char-row w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-colors"
+                className={`sidebar-char-row w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-colors${active ? ' is-active' : ''}`}
                 style={{
                   background: active ? c.panelHi : 'transparent',
-                  boxShadow: active ? `inset 2px 0 0 ${c.accent}` : 'none',
                   color: active ? c.ink : c.ink2,
                   fontFamily: c.font,
                   fontSize: 14,
+                  fontWeight: active ? 600 : 400,
                 }}
                 onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
                 onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
               >
-                <RingAvatar src={getCharacterIconPath(character)} alt={character} size={26} />
-                <span className="flex-1 text-left">{character}</span>
-                <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 12 }}>{characterCounts[character]}</span>
+                <RingAvatar src={getCharacterIconPath(character)} alt={character} size={26} active={active} />
+                <span className="flex-1 text-left truncate">{character}</span>
+                <span
+                  className="rivals-mono"
+                  style={{
+                    minWidth: 22,
+                    textAlign: 'center',
+                    padding: '1px 7px',
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: active ? c.accent : tint(c.ink3, 12),
+                    color: active ? c.onAccent : c.ink3,
+                    transition: 'background 200ms ease, color 200ms ease',
+                  }}
+                >
+                  {characterCounts[character]}
+                </span>
               </button>
             )
           })}
@@ -330,7 +347,7 @@ export function Sidebar() {
           right={
             <button
               onClick={() => setProfileDialogOpen(true, 'create')}
-              title="New profile"
+              data-tip="New profile" aria-label="New profile"
               className="grid place-items-center cursor-pointer"
               style={{ width: 18, height: 18, borderRadius: 4, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontFamily: c.mono, fontSize: 11, lineHeight: 1 }}
             >

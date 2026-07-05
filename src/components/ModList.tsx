@@ -1,14 +1,15 @@
-import { useState, useMemo, useCallback, useRef, memo } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect, memo } from 'react';
 import { PackageOpen, SearchX } from 'lucide-react';
-import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite } from '../hooks/useMods';
+import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite, useModConflicts } from '../hooks/useMods';
 import { useUIStore } from '../stores';
 import type { ModInfo, Costume, ModCategory, Character } from '../types/mod.types';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ModContextMenu } from './ModContextMenu';
 import { BulkActionStrip } from './BulkActionStrip';
 import { ALL_CHARACTERS } from '../shared/constants';
-import { c, tint, categoryColor, parseTitleParts, formatFileSize, getCharacterIconPath, getCostumeIconSrc } from '../shared/rivals-tokens';
+import { c, tint, categoryColor, parseTitleParts, formatFileSize, getCharacterIconPath, getCostumeIconSrc, addonDisplayName } from '../shared/rivals-tokens';
 import { CategoryIcon, WarnIcon, PlusIcon, HeroChip, RingAvatar } from '../shared/rivals-design';
+import { useDominantColor } from '../hooks/useDominantColor';
 
 // Lightweight animated wrapper using CSS transitions (GPU-accelerated)
 const AnimatedCard = memo(function AnimatedCard({
@@ -42,6 +43,40 @@ function getCostumeForMod(
 // Resolve a mod's thumbnail to a usable src.
 function getThumbnailSrc(mod: ModInfo): string | null {
   return mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
+}
+
+// Cursor-tracked tilt + glow for mod cards. A callback ref attaches pointer
+// listeners imperatively and writes CSS variables (no React re-renders) — the
+// actual transform lives in App.css. MAX_TILT is small on purpose: a subtle
+// lean toward the cursor, not a flip.
+const MAX_TILT = 3; // degrees — subtle enough to keep text crisp
+function useCardTilt() {
+  return useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+
+    const handleMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;  // 0..1
+      const py = (e.clientY - r.top) / r.height;  // 0..1
+      // Tilt toward the cursor; rotateX inverted follows y, rotateY follows x.
+      el.style.setProperty('--tilt-x', `${(0.5 - py) * MAX_TILT * 2}deg`);
+      el.style.setProperty('--tilt-y', `${(px - 0.5) * MAX_TILT * 2}deg`);
+      el.style.setProperty('--glow-x', `${px * 100}%`);
+      el.style.setProperty('--glow-y', `${py * 100}%`);
+    };
+    const handleLeave = () => {
+      el.style.setProperty('--tilt-x', '0deg');
+      el.style.setProperty('--tilt-y', '0deg');
+    };
+
+    el.addEventListener('pointermove', handleMove);
+    el.addEventListener('pointerleave', handleLeave);
+    // Cleanup runs when React detaches the ref (element unmount)
+    return () => {
+      el.removeEventListener('pointermove', handleMove);
+      el.removeEventListener('pointerleave', handleLeave);
+    };
+  }, []);
 }
 
 // Category pill (filled, color-coded)
@@ -115,6 +150,31 @@ function NsfwPill({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   );
 }
 
+// ── Conflict badge (shown when a mod clashes with an unrelated mod) ───────────
+function ConflictPill({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
+  const pad = size === 'lg' ? '1.5px 10px' : '1px 9px';
+  const fs = size === 'lg' ? 12 : 11.5;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5"
+      style={{
+        padding: pad,
+        borderRadius: 999,
+        background: tint(c.warn, 20),
+        color: c.warn,
+        border: `1px solid ${tint(c.warn, 48)}`,
+        fontFamily: c.font,
+        fontSize: fs,
+        fontWeight: 600,
+      }}
+      data-tip="This mod overwrites the same files as another enabled mod"
+    >
+      <WarnIcon stroke={c.warn} size={size === 'lg' ? 11 : 10} />
+      Conflict
+    </span>
+  );
+}
+
 // ── Subtitle (italic variant · tag) ──────────────────────────────────────────
 function Subtitle({ variant, subtitle, fontSize }: { variant: string | null; subtitle: string | null; fontSize: number }) {
   if (!variant && !subtitle) return null;
@@ -130,6 +190,16 @@ function Subtitle({ variant, subtitle, fontSize }: { variant: string | null; sub
 export function ModList() {
   const { data: mods, isLoading, error } = useGetMods();
   const { data: allCostumes } = useGetAllCostumes();
+  const { data: conflicts } = useModConflicts();
+
+  // Set of mod ids involved in at least one conflict, for the per-card badge.
+  const conflictIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const cf of conflicts ?? []) {
+      for (const m of cf.mods) s.add(m.id);
+    }
+    return s;
+  }, [conflicts]);
 
   const filters = useUIStore((state) => state.filters);
   const setFilters = useUIStore((state) => state.setFilters);
@@ -140,14 +210,18 @@ export function ModList() {
   const activeProfileFilter = useUIStore((state) => state.activeProfileFilter);
 
   const [contextMenu, setContextMenu] = useState<{ mod: ModInfo; x: number; y: number } | null>(null);
-  // Per-mod add-on expansion (shared across views), keyed by mod id.
-  const [expandedAddons, setExpandedAddons] = useState<Set<string>>(new Set());
+  // Per-mod add-on drawer state (shared across views), keyed by mod id.
+  // Stored as explicit user overrides so a manual open/close always beats the
+  // search-driven auto-expand (presence in the map = the user chose).
+  const [addonOverrides, setAddonOverrides] = useState<Map<string, boolean>>(new Map());
+  // Latest auto-expand set, readable from the stable toggle callback.
+  const autoExpandRef = useRef<Set<string>>(new Set());
 
   const toggleExpand = useCallback((id: string) => {
-    setExpandedAddons((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+    setAddonOverrides((prev) => {
+      const current = prev.get(id) ?? autoExpandRef.current.has(id);
+      const next = new Map(prev);
+      next.set(id, !current);
       return next;
     });
   }, []);
@@ -273,8 +347,12 @@ export function ModList() {
 
       if (parentMatches || matchingAddons.length > 0) {
         shownParents.push(parent);
-        // Auto-open + highlight when add-ons are the reason (or also match) the filter.
-        if (filterActive && matchingAddons.length > 0) {
+        // Auto-open + highlight only when a matching ADD-ON is the reason the
+        // card is shown at all (the parent itself doesn't match the filter),
+        // e.g. the UI category revealing a UI add-on under a Skins mod. When
+        // the parent matches too (clicking a character matches the parent AND
+        // all its add-ons), force-opening every drawer would just hide the art.
+        if (!parentMatches && matchingAddons.length > 0) {
           autoExpandIds.add(parent.id);
           for (const a of matchingAddons) highlightAddonIds.add(a.id);
         }
@@ -308,8 +386,38 @@ export function ModList() {
     return { parentMods: shownParents, addonsByParent: allAddonsByParent, autoExpandIds, highlightAddonIds, addonCount };
   }, [visibleMods, sortedMods, filteredMods, matchesFilter, filters, activeProfileFilter]);
 
-  // Section header stats
-  const enabledCount = useMemo(() => filteredMods.filter((m) => m.enabled).length, [filteredMods]);
+  // Keep the stable toggle callback reading the current auto-expand set.
+  autoExpandRef.current = autoExpandIds;
+
+  // A drawer is open if the user said so, else if search auto-expanded it.
+  const isAddonsOpen = useCallback(
+    (id: string) => addonOverrides.get(id) ?? autoExpandIds.has(id),
+    [addonOverrides, autoExpandIds]
+  );
+
+  // New filter context, clean slate: drop manual open/close overrides so a
+  // fresh search can auto-reveal again and stale opens don't linger.
+  useEffect(() => {
+    setAddonOverrides((prev) => (prev.size ? new Map() : prev));
+  }, [filters.search, filters.category, filters.character, filters.showFavorites, activeProfileFilter]);
+
+  // Library-at-a-glance stats (whole library, not the current filter).
+  const libraryStats = useMemo(() => {
+    const all = mods ?? [];
+    const total = all.length;
+    const enabled = all.filter((m) => m.enabled).length;
+    const totalSize = all.reduce((s, m) => s + (m.fileSize || 0), 0);
+    const charCounts = all.reduce<Record<string, number>>((acc, m) => {
+      if (m.character && m.character !== 'All Characters') acc[m.character] = (acc[m.character] || 0) + 1;
+      return acc;
+    }, {});
+    let topChar: string | null = null;
+    let topCount = 0;
+    for (const [ch, n] of Object.entries(charCounts)) {
+      if (n > topCount) { topChar = ch; topCount = n; }
+    }
+    return { total, enabled, disabled: total - enabled, totalSize, topChar, topCount };
+  }, [mods]);
   const headerTitle = filters.showFavorites
     ? 'Favorites'
     : filters.character
@@ -375,20 +483,49 @@ export function ModList() {
         )}
 
         {/* Section header */}
-        <div className="flex items-baseline gap-3 px-[22px] pt-4 pb-1">
-          <h1 className="rivals-display" style={{ color: c.ink, fontSize: 40, fontWeight: 500, letterSpacing: '-0.02em' }}>
-            {headerTitle}
-          </h1>
-          <span className="rivals-mono" style={{ color: c.ink3, fontSize: 15 }}>
-            {parentMods.length} shown{addonCount > 0 ? ` · ${addonCount} add-on${addonCount > 1 ? 's' : ''}` : ''} · {enabledCount} active
-          </span>
+        <div className="flex items-center gap-3 px-[22px] pt-4 pb-1">
+          <div className="flex items-baseline gap-3 min-w-0">
+            <h1 className="rivals-display" style={{ color: c.ink, fontSize: 40, fontWeight: 500, letterSpacing: '-0.02em' }}>
+              {headerTitle}
+            </h1>
+            <span className="rivals-mono whitespace-nowrap" style={{ color: c.ink3, fontSize: 15 }}>
+              {parentMods.length} shown{addonCount > 0 ? ` · ${addonCount} add-on${addonCount > 1 ? 's' : ''}` : ''}
+            </span>
+          </div>
+          {/* Library-at-a-glance: one cohesive segmented bar (hidden when empty) */}
+          {libraryStats.total > 0 && (
+            <div className="ml-auto flex items-stretch flex-shrink-0 stat-strip">
+              <div className="stat-seg" data-tip={`${libraryStats.enabled} enabled · ${libraryStats.disabled} disabled`}>
+                <span className="stat-seg-bar">
+                  <span className="stat-seg-bar-fill" style={{ width: `${(libraryStats.enabled / libraryStats.total) * 100}%` }} />
+                </span>
+                <span className="rivals-mono stat-seg-val">{libraryStats.enabled} / {libraryStats.total}</span>
+                <span className="rivals-mono stat-seg-label">active</span>
+              </div>
+              <div className="stat-seg">
+                <span className="rivals-mono stat-seg-val">{formatFileSize(libraryStats.totalSize)}</span>
+                <span className="rivals-mono stat-seg-label">on disk</span>
+              </div>
+              {libraryStats.topChar && (
+                <button
+                  onClick={() => setFilters({ character: libraryStats.topChar as Character, category: null, showFavorites: false })}
+                  className="stat-seg stat-seg-char cursor-pointer"
+                  data-tip={`Most modded: ${libraryStats.topChar} (${libraryStats.topCount})`}
+                >
+                  <RingAvatar src={getCharacterIconPath(libraryStats.topChar)} alt={libraryStats.topChar} size={22} />
+                  <span className="rivals-mono stat-seg-val">{libraryStats.topCount}</span>
+                  <span className="rivals-mono stat-seg-label">top hero</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Bulk action strip (Cards + Gallery only) */}
         {viewMode !== 'list' && parentMods.length > 0 && <BulkActionStrip />}
 
         {/* Content */}
-        <div className="flex-1 overflow-auto mod-list-scroll">
+        <div className={`flex-1 overflow-auto mod-list-scroll${isGallery ? ' gallery-scroll-fade' : ''}`}>
           <div key={viewMode} className="view-swap">
           {parentMods.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full" style={{ paddingBottom: 48, animation: 'metadata-fade-in 350ms ease-out both' }}>
@@ -419,7 +556,8 @@ export function ModList() {
                     allCostumes={allCostumes}
                     sortBy={sortBy}
                     addons={addonsByParent.get(mod.id)}
-                    expanded={expandedAddons.has(mod.id) || autoExpandIds.has(mod.id)}
+                    expanded={isAddonsOpen(mod.id)}
+                    hasConflict={conflictIds.has(mod.id)}
                     highlightAddonIds={highlightAddonIds}
                     onToggleExpand={() => toggleExpand(mod.id)}
                     onClick={() => setSelectedModId(mod.id)}
@@ -442,7 +580,8 @@ export function ModList() {
                     allCostumes={allCostumes}
                     sortBy={sortBy}
                     addons={addonsByParent.get(mod.id)}
-                    expanded={expandedAddons.has(mod.id) || autoExpandIds.has(mod.id)}
+                    expanded={isAddonsOpen(mod.id)}
+                    hasConflict={conflictIds.has(mod.id)}
                     highlightAddonIds={highlightAddonIds}
                     onToggleExpand={() => toggleExpand(mod.id)}
                     onClick={() => setSelectedModId(mod.id)}
@@ -458,8 +597,7 @@ export function ModList() {
               parentMods={parentMods}
               addonsByParent={addonsByParent}
               allCostumes={allCostumes}
-              expandedAddons={expandedAddons}
-              autoExpandIds={autoExpandIds}
+              isAddonsOpen={isAddonsOpen}
               highlightAddonIds={highlightAddonIds}
               onToggleExpand={toggleExpand}
               onSelect={setSelectedModId}
@@ -479,21 +617,42 @@ export function ModList() {
 
 // ── Enable / Disable pill (shared) ───────────────────────────────────────────
 function EnablePill({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent) => void }) {
+  // Pulse the pill the moment it flips to enabled ("powering on"). Driven
+  // imperatively on the DOM node so we never setState during render.
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const prevEnabled = useRef(enabled);
+  useEffect(() => {
+    if (enabled && !prevEnabled.current && btnRef.current) {
+      const el = btnRef.current;
+      el.classList.add('powering-on');
+      const t = setTimeout(() => el.classList.remove('powering-on'), 520);
+      prevEnabled.current = enabled;
+      return () => clearTimeout(t);
+    }
+    prevEnabled.current = enabled;
+  }, [enabled]);
+
+  // A typographic "stamp" in the app's condensed face: state reads through the
+  // fill and lettering (solid = live, hollow = off), with hover tinting toward
+  // the action it would take (green = will enable, red = will disable).
   return (
     <button
+      ref={btnRef}
       onClick={onClick}
-      className={`toggle-pill cursor-pointer whitespace-nowrap ${enabled ? 'is-on' : 'is-off'}`}
+      className={`toggle-pill rivals-condensed cursor-pointer whitespace-nowrap ${enabled ? 'is-on' : 'is-off'}`}
       style={{
-        padding: '4px 11px',
+        padding: '3px 11px',
         borderRadius: 6,
         background: enabled ? tint(c.ok, 16) : 'transparent',
         color: enabled ? c.ok : c.ink3,
         border: `1px solid ${enabled ? tint(c.ok, 35) : c.line2}`,
-        fontFamily: c.font,
-        fontSize: 11.5,
-        fontWeight: 600,
+        fontSize: 13.5,
+        fontWeight: 700,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        lineHeight: 1.45,
       }}
-      title={enabled ? 'Click to disable' : 'Click to enable'}
+      data-tip={enabled ? 'Click to disable' : 'Click to enable'}
     >
       {enabled ? 'Enabled' : 'Disabled'}
     </button>
@@ -505,7 +664,7 @@ function AddonTrigger({ count, expanded, onClick }: { count: number; expanded: b
   return (
     <button
       onClick={onClick}
-      title={`${count} attached add-on${count > 1 ? 's' : ''}`}
+      data-tip={`${count} attached add-on${count > 1 ? 's' : ''}`}
       className="addon-btn inline-flex items-center gap-1 cursor-pointer"
       style={{
         padding: '4px 8px',
@@ -580,6 +739,7 @@ interface CardProps {
   sortBy: string;
   addons?: ModInfo[];
   expanded: boolean;
+  hasConflict?: boolean;
   highlightAddonIds?: Set<string>;
   onToggleExpand: () => void;
   onClick: () => void;
@@ -589,20 +749,26 @@ interface CardProps {
 }
 
 // ── Inline add-on rows (Cards + Gallery views) ───────────────────────────────
+// `overlay` renders the rows bare (no header or background chrome) for use
+// inside the AddonDrawer, which supplies its own header and translucent surface.
 function AddonRows({
   parentEnabled,
+  parentName,
   addons,
   highlightAddonIds,
   onAddonClick,
   onAddonContextMenu,
   large,
+  overlay,
 }: {
   parentEnabled: boolean;
+  parentName?: string;
   addons: ModInfo[];
   highlightAddonIds?: Set<string>;
   onAddonClick: (id: string) => void;
   onAddonContextMenu: (e: React.MouseEvent, addon: ModInfo) => void;
   large?: boolean;
+  overlay?: boolean;
 }) {
   const toggleEnabled = useToggleModEnabled();
   const thumbW = large ? 72 : 56;
@@ -610,15 +776,17 @@ function AddonRows({
   const rowPad = large ? '11px 16px 11px 20px' : '8px 12px 8px 16px';
   const titleSize = large ? 14 : 12.5;
   return (
-    <div style={{ background: c.bg, borderTop: `1px solid ${c.line}`, position: 'relative' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tint(c.warn, 55) }} />
-      <div className="flex items-center gap-2" style={{ padding: large ? '11px 16px 7px 20px' : '8px 12px 6px 16px' }}>
-        <PlusIcon stroke={c.warn} />
-        <span style={{ color: c.warn, fontFamily: c.mono, fontSize: large ? 11 : 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
-          {addons.length} Add-on{addons.length > 1 ? 's' : ''}
-        </span>
-        <span style={{ flex: 1, height: 1, background: c.line, marginTop: 2 }} />
-      </div>
+    <div style={{ background: overlay ? 'transparent' : c.bg, borderTop: overlay ? 'none' : `1px solid ${c.line}`, position: 'relative' }}>
+      {!overlay && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tint(c.warn, 55) }} />}
+      {!overlay && (
+        <div className="flex items-center gap-2" style={{ padding: large ? '11px 16px 7px 20px' : '8px 12px 6px 16px' }}>
+          <PlusIcon stroke={c.warn} />
+          <span style={{ color: c.warn, fontFamily: c.mono, fontSize: large ? 11 : 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+            {addons.length} Add-on{addons.length > 1 ? 's' : ''}
+          </span>
+          <span style={{ flex: 1, height: 1, background: c.line, marginTop: 2 }} />
+        </div>
+      )}
       <div className="flex flex-col">
         {addons.map((addon, ai) => {
           const hl = highlightAddonIds?.has(addon.id);
@@ -643,7 +811,7 @@ function AddonRows({
               <span style={{ width: thumbW, height: thumbH, borderRadius: 5, border: `1px solid ${c.line2}`, display: 'grid', placeItems: 'center', color: c.ink3, flex: '0 0 auto' }}>+</span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: titleSize, fontWeight: 600 }}>{addon.metadata.title || addon.name}</div>
+              <div className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: titleSize, fontWeight: 600 }}>{addonDisplayName(addon.metadata.title || addon.name, parentName)}</div>
               <div className="flex items-center gap-1.5" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11, marginTop: 2 }}>
                 <MiniCatPill category={addon.category} />
                 <span>{formatFileSize(addon.fileSize)}</span>
@@ -652,7 +820,7 @@ function AddonRows({
             <button
               onClick={(e) => { e.stopPropagation(); if (parentEnabled) toggleEnabled.mutate(addon.id); }}
               disabled={!parentEnabled}
-              title={!parentEnabled ? 'Enable parent mod first' : ''}
+              data-tip={!parentEnabled ? 'Enable parent mod first' : undefined}
               className={`toggle-pill ${addon.enabled && parentEnabled ? 'is-on' : 'is-off'}`}
               style={{
                 padding: '3px 9px',
@@ -677,6 +845,46 @@ function AddonRows({
   );
 }
 
+// ── Add-on drawer ─────────────────────────────────────────────────────────────
+// Slides up OVER the card's artwork instead of growing the card, so every card
+// keeps the same height and grid rows stay aligned no matter who has add-ons.
+function AddonDrawer({ open, count, onClose, children }: { open: boolean; count: number; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      className="absolute inset-0 z-20 flex flex-col"
+      onClick={(e) => e.stopPropagation()}
+      aria-hidden={!open}
+      style={{
+        transform: open ? 'translateY(0)' : 'translateY(103%)',
+        transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+        pointerEvents: open ? 'auto' : 'none',
+        background: 'color-mix(in oklch, var(--rivals-bg) 90%, transparent)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: `inset 0 1px 0 ${tint(c.warn, 30)}`,
+      }}
+    >
+      <div className="flex items-center gap-2" style={{ padding: '9px 10px 8px 16px', borderBottom: `1px solid ${c.line}`, flex: '0 0 auto' }}>
+        <PlusIcon stroke={c.warn} />
+        <span style={{ color: c.warn, fontFamily: c.mono, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+          {count} Add-on{count > 1 ? 's' : ''}
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="fav-btn grid place-items-center cursor-pointer"
+          data-tip="Close add-ons"
+          aria-label="Close add-ons"
+          style={{ marginLeft: 'auto', width: 26, height: 26, borderRadius: 6, color: c.ink3, background: 'transparent', border: 'none', fontSize: 16, lineHeight: 1 }}
+        >
+          ×
+        </button>
+      </div>
+      <div className="mod-list-scroll" style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ── CARDS VIEW ───────────────────────────────────────────────────────────────
 const ModCard = memo(function ModCard({
   mod,
@@ -684,6 +892,7 @@ const ModCard = memo(function ModCard({
   sortBy,
   addons,
   expanded,
+  hasConflict,
   highlightAddonIds,
   onToggleExpand,
   onClick,
@@ -695,6 +904,8 @@ const ModCard = memo(function ModCard({
   const toggleFavorite = useToggleFavorite();
   const costume = getCostumeForMod(mod, allCostumes);
   const thumb = getThumbnailSrc(mod);
+  const glow = useDominantColor(thumb);
+  const tiltRef = useCardTilt();
   const { main, variant } = parseTitleParts(mod.metadata.title || mod.name);
   const dateStr = sortBy === 'updated' ? new Date(mod.lastModified).toLocaleDateString() : new Date(mod.installDate).toLocaleDateString();
   const addonList = addons ?? [];
@@ -702,19 +913,25 @@ const ModCard = memo(function ModCard({
 
   return (
     <div
+      ref={tiltRef}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className="mod-card flex flex-col overflow-hidden cursor-pointer"
-      style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14, opacity: mod.enabled ? 1 : 0.55 }}
+      className="mod-card mod-card-tilt flex flex-col overflow-hidden cursor-pointer"
+      style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14, opacity: mod.enabled ? 1 : 0.55, ['--glow-color' as string]: glow ?? c.accent }}
     >
-      {/* Image */}
-      <div style={{ aspectRatio: '16/9', background: c.bg, overflow: 'hidden' }}>
+      {/* Image (also hosts the add-on drawer so the card never grows) */}
+      <div className="relative" style={{ aspectRatio: '16/9', background: c.bg, overflow: 'hidden' }}>
         {thumb ? (
           <img src={thumb} alt={mod.name} loading="lazy" className="mod-card-img w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full grid place-items-center" style={{ color: c.muted, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             no preview
           </div>
+        )}
+        {hasAddons && (
+          <AddonDrawer open={expanded} count={addonList.length} onClose={onToggleExpand}>
+            <AddonRows overlay parentEnabled={mod.enabled} parentName={mod.metadata.title || mod.name} addons={addonList} highlightAddonIds={highlightAddonIds} onAddonClick={onAddonClick} onAddonContextMenu={onAddonContextMenu} />
+          </AddonDrawer>
         )}
       </div>
 
@@ -723,11 +940,13 @@ const ModCard = memo(function ModCard({
         <div className="flex items-center gap-1.5">
           <CategoryPill category={mod.category} size="lg" />
           {mod.metadata.isNsfw && <NsfwPill size="lg" />}
+          {hasConflict && <ConflictPill size="lg" />}
           <button
             onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
             className="fav-btn grid place-items-center cursor-pointer"
             style={{ marginLeft: 'auto', width: 28, height: 28, borderRadius: 7, background: 'transparent', color: mod.isFavorite ? c.warn : c.ink3, fontSize: 17, lineHeight: 1 }}
-            title={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            data-tip={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             {mod.isFavorite ? '★' : '☆'}
           </button>
@@ -760,17 +979,6 @@ const ModCard = memo(function ModCard({
         </div>
       </div>
 
-      {/* Expanded add-ons — animated open/close via grid-rows */}
-      {hasAddons && (
-        <div
-          className="grid"
-          style={{ gridTemplateRows: expanded ? '1fr' : '0fr', transition: 'grid-template-rows 260ms cubic-bezier(0.4, 0, 0.2, 1)' }}
-        >
-          <div className="overflow-hidden">
-            <AddonRows parentEnabled={mod.enabled} addons={addonList} highlightAddonIds={highlightAddonIds} onAddonClick={onAddonClick} onAddonContextMenu={onAddonContextMenu} />
-          </div>
-        </div>
-      )}
     </div>
   );
 });
@@ -782,6 +990,7 @@ const GalleryCard = memo(function GalleryCard({
   sortBy,
   addons,
   expanded,
+  hasConflict,
   highlightAddonIds,
   onToggleExpand,
   onClick,
@@ -793,6 +1002,8 @@ const GalleryCard = memo(function GalleryCard({
   const toggleFavorite = useToggleFavorite();
   const costume = getCostumeForMod(mod, allCostumes);
   const thumb = getThumbnailSrc(mod);
+  const glow = useDominantColor(thumb);
+  const tiltRef = useCardTilt();
   const { main, variant } = parseTitleParts(mod.metadata.title || mod.name);
   const dateStr = sortBy === 'updated' ? new Date(mod.lastModified).toLocaleDateString() : new Date(mod.installDate).toLocaleDateString();
   const addonList = addons ?? [];
@@ -800,16 +1011,16 @@ const GalleryCard = memo(function GalleryCard({
 
   return (
     <div
+      ref={tiltRef}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className="mod-card flex flex-col overflow-hidden cursor-pointer relative"
-      style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14 }}
+      className="mod-card mod-card-tilt gallery-hero flex flex-col overflow-hidden cursor-pointer relative"
+      style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14, ['--glow-color' as string]: glow ?? c.accent }}
     >
-      {/* Top accent stripe (enabled indicator) */}
-      <div style={{ height: 3, background: mod.enabled ? c.accent : c.line }} />
-
-      {/* Image header */}
-      <div className="relative" style={{ aspectRatio: '16/9', background: c.bg, overflow: 'hidden' }}>
+      {/* Full-bleed artwork with overlaid title + meta. The art box owns the
+          top rounding + clip so the hover zoom never pokes square corners
+          through during the transform (a GPU-layer clipping quirk). */}
+      <div className="gallery-hero-art relative" style={{ aspectRatio: '16/10', background: c.bg, overflow: 'hidden', borderRadius: '13px 13px 0 0' }}>
         {thumb ? (
           <img src={thumb} alt={mod.name} loading="lazy" className="mod-card-img w-full h-full object-cover" />
         ) : (
@@ -817,40 +1028,56 @@ const GalleryCard = memo(function GalleryCard({
             no preview
           </div>
         )}
+
+        {/* Scrim so overlaid text stays readable over any art */}
+        <div className="gallery-hero-scrim" aria-hidden />
+
+        {/* Favorite only on the art (its glass background keeps it readable);
+            category/NSFW/version pills live in the body where they're always
+            legible against the solid panel, not over busy artwork. */}
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
+          className="fav-btn absolute z-10 grid place-items-center cursor-pointer"
+          style={{ top: 12, right: 14, width: 30, height: 30, borderRadius: 8, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', color: mod.isFavorite ? c.warn : '#fff', fontSize: 18, lineHeight: 1 }}
+          data-tip={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {mod.isFavorite ? '★' : '☆'}
+        </button>
+
+        {/* Title + author overlaid at the bottom of the art */}
+        <div className="absolute inset-x-0 bottom-0 z-10" style={{ padding: '0 18px 16px' }}>
+          <div className="rivals-condensed gallery-hero-title" style={{ fontSize: 40, fontWeight: 700, letterSpacing: '0.01em', lineHeight: 0.98, textTransform: 'uppercase' }}>
+            {main}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 6 }}>
+            <Subtitle variant={variant} subtitle={mod.metadata.subtitle} fontSize={13.5} />
+            {(variant || mod.metadata.subtitle) && <span style={{ color: 'rgba(255,255,255,0.4)' }}>·</span>}
+            <span className="gallery-hero-by" style={{ fontFamily: c.font, fontSize: 12.5 }}>
+              by <span style={{ fontWeight: 600 }}>{mod.metadata.author || 'Unknown'}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Add-on drawer over the art — the card never changes height */}
+        {hasAddons && (
+          <AddonDrawer open={expanded} count={addonList.length} onClose={onToggleExpand}>
+            <AddonRows overlay large parentEnabled={mod.enabled} parentName={mod.metadata.title || mod.name} addons={addonList} highlightAddonIds={highlightAddonIds} onAddonClick={onAddonClick} onAddonContextMenu={onAddonContextMenu} />
+          </AddonDrawer>
+        )}
       </div>
 
-      <div className="flex flex-col gap-3.5" style={{ padding: '18px 20px 20px' }}>
-        {/* Pill row */}
+      <div className="flex flex-col gap-3.5" style={{ padding: '14px 20px 18px' }}>
+        {/* Tag row (moved off the art for legibility) */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <CategoryPill category={mod.category} size="lg" />
           {mod.metadata.isNsfw && <NsfwPill size="lg" />}
+          {hasConflict && <ConflictPill size="lg" />}
           {mod.metadata.version && (
             <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               v{mod.metadata.version}
             </span>
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
-            className="fav-btn grid place-items-center cursor-pointer"
-            style={{ marginLeft: 'auto', width: 28, height: 28, borderRadius: 7, background: 'transparent', color: mod.isFavorite ? c.warn : c.ink3, fontSize: 18, lineHeight: 1 }}
-            title={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            {mod.isFavorite ? '★' : '☆'}
-          </button>
-        </div>
-
-        {/* Title + subtitle/author meta line */}
-        <div>
-          <div className="rivals-condensed" style={{ color: c.ink, fontSize: 38, fontWeight: 700, letterSpacing: '0.01em', lineHeight: 1, textTransform: 'uppercase' }}>
-            {main}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 7 }}>
-            <Subtitle variant={variant} subtitle={mod.metadata.subtitle} fontSize={14} />
-            {(variant || mod.metadata.subtitle) && <span style={{ color: c.muted }}>·</span>}
-            <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 13 }}>
-              by <span style={{ color: c.ink2, fontWeight: 600 }}>{mod.metadata.author || 'Unknown'}</span>
-            </span>
-          </div>
         </div>
 
         {/* Replacement */}
@@ -878,7 +1105,7 @@ const GalleryCard = memo(function GalleryCard({
           {hasAddons && (
             <button
               onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-              title={`${addonList.length} attached add-on${addonList.length > 1 ? 's' : ''}`}
+              data-tip={`${addonList.length} attached add-on${addonList.length > 1 ? 's' : ''}`}
               className="addon-btn inline-flex items-center gap-1.5 cursor-pointer"
               style={{ height: 29, padding: '0 10px', borderRadius: 8, background: expanded ? tint(c.warn, 14) : 'transparent', color: c.warn, border: `1px solid ${expanded ? tint(c.warn, 55) : c.line2}`, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.04em' }}
             >
@@ -895,17 +1122,6 @@ const GalleryCard = memo(function GalleryCard({
           <span style={{ color: c.ink3 }}>{dateStr}</span>
         </div>
 
-        {/* Expanded add-ons — full-bleed 16:9 rows, animated open/close */}
-        {hasAddons && (
-          <div
-            className="grid"
-            style={{ gridTemplateRows: expanded ? '1fr' : '0fr', transition: 'grid-template-rows 260ms cubic-bezier(0.4, 0, 0.2, 1)', margin: '0 -20px -20px' }}
-          >
-            <div className="overflow-hidden" style={{ borderTop: `1px solid ${c.line}` }}>
-              <AddonRows parentEnabled={mod.enabled} addons={addonList} highlightAddonIds={highlightAddonIds} onAddonClick={onAddonClick} onAddonContextMenu={onAddonContextMenu} large />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -919,8 +1135,7 @@ function ListView({
   parentMods,
   addonsByParent,
   allCostumes,
-  expandedAddons,
-  autoExpandIds,
+  isAddonsOpen,
   highlightAddonIds,
   onToggleExpand,
   onSelect,
@@ -929,8 +1144,7 @@ function ListView({
   parentMods: ModInfo[];
   addonsByParent: Map<string, ModInfo[]>;
   allCostumes: Record<string, Costume[]> | undefined;
-  expandedAddons: Set<string>;
-  autoExpandIds: Set<string>;
+  isAddonsOpen: (id: string) => boolean;
   highlightAddonIds: Set<string>;
   onToggleExpand: (id: string) => void;
   onSelect: (id: string) => void;
@@ -984,7 +1198,7 @@ function ListView({
                 idx={idx}
                 allCostumes={allCostumes}
                 addons={addonsByParent.get(mod.id)}
-                expanded={expandedAddons.has(mod.id) || autoExpandIds.has(mod.id)}
+                expanded={isAddonsOpen(mod.id)}
                 highlightAddonIds={highlightAddonIds}
                 onToggleExpand={() => onToggleExpand(mod.id)}
                 onSelect={() => onSelect(mod.id)}
@@ -1037,7 +1251,7 @@ const ListRow = memo(function ListRow({
         className="list-row grid cursor-pointer"
         style={{ gridTemplateColumns: COL_TPL, gap: 10, padding: '7px 22px', background: stripeBg, borderBottom: expanded ? 'none' : `1px solid ${c.line}`, color: c.ink2, fontFamily: c.mono, fontSize: 11.5, alignItems: 'center', opacity: mod.enabled ? 1 : 0.6 }}
       >
-        <span style={{ color: c.muted, cursor: 'grab', textAlign: 'center' }} title="Drag to reorder (visual)">⋮⋮</span>
+        <span style={{ color: c.muted, cursor: 'grab', textAlign: 'center' }} data-tip="Drag to reorder (visual)">⋮⋮</span>
         <div style={{ width: 60, height: 34, overflow: 'hidden', border: `1px solid ${c.line2}`, borderRadius: 3, background: c.bg }}>
           {thumb && <img src={thumb} alt="" loading="lazy" className="w-full h-full object-cover" />}
         </div>
@@ -1096,7 +1310,7 @@ const ListRow = memo(function ListRow({
                   {a.thumbnailPath && <img src={convertFileSrc(a.thumbnailPath)} alt="" loading="lazy" className="w-full h-full object-cover" />}
                 </div>
                 <span style={{ color: c.muted, fontSize: 10 }}>↳</span>
-                <span className="truncate" style={{ color: mod.enabled ? c.ink : c.muted, fontFamily: c.font, fontSize: 12, fontWeight: 500 }}>{a.metadata.title || a.name}</span>
+                <span className="truncate" style={{ color: mod.enabled ? c.ink : c.muted, fontFamily: c.font, fontSize: 12, fontWeight: 500 }}>{addonDisplayName(a.metadata.title || a.name, mod.metadata.title || mod.name)}</span>
                 <span><MiniCatPill category={a.category} /></span>
                 <span style={{ color: c.ink3, textAlign: 'right' }}>{formatFileSize(a.fileSize)}</span>
                 <button

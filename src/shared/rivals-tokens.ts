@@ -68,6 +68,35 @@ export function parseTitleParts(title: string): { main: string; variant: string 
   return { main: title, variant: null };
 }
 
+/**
+ * Display name for an add-on shown under its parent. Add-on titles follow the
+ * "<Parent> - <Variant>" convention, so inside the parent's add-on list the
+ * parent prefix is redundant — strip it to surface just the variant
+ * ("The White Queen - Fur Collar" → "Fur Collar").
+ *
+ * When the parent name is known, strip exactly that prefix; otherwise fall back
+ * to the segment after the last dash. Returns the original title if there's
+ * nothing meaningful left to show.
+ */
+export function addonDisplayName(addonTitle: string, parentName?: string): string {
+  const title = addonTitle.trim();
+
+  if (parentName) {
+    const parent = parentName.trim();
+    if (title.toLowerCase().startsWith(parent.toLowerCase()) && title.length > parent.length) {
+      // Drop the parent prefix plus a leading dash/space separator
+      const rest = title.slice(parent.length).replace(/^[\s–—-]+/, '').trim();
+      if (rest) return rest;
+    }
+  }
+
+  // Fallback: take the variant after the last dash separator
+  const dashMatch = title.match(/^.+\s+[-–—]\s+(.+)$/);
+  if (dashMatch && dashMatch[1]) return dashMatch[1].trim();
+
+  return title;
+}
+
 /** Format a byte count to a short human string. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

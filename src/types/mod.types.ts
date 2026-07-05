@@ -210,3 +210,18 @@ export interface UIState {
   selectedModId: string | null;
   filters: ModFilters;
 }
+
+// ===== Mod Conflicts =====
+// A clash where two or more enabled mods override the same game assets.
+// Parent/add-on pairs are excluded by the backend (they're meant to layer).
+export interface ConflictMod {
+  id: string;
+  title: string;
+  wins: boolean; // loads first, so it wins the shared assets
+}
+
+export interface ModConflict {
+  mods: ConflictMod[];
+  kinds: string[]; // e.g. ["Body Mesh", "Body Skin"]
+  assets: string[]; // raw asset stems for the detail view
+}

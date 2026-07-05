@@ -9,6 +9,7 @@ import { c, tint } from '../shared/rivals-tokens';
 import { APP_VERSION } from '../shared/constants';
 import { useUpdater } from '../hooks/useUpdater';
 import { Lock, Unlock, ArrowUp } from 'lucide-react';
+import { ConflictsButton } from './ConflictsButton';
 
 interface ToolbarProps {
   onArchiveSelect?: (filePaths: string[]) => void;
@@ -115,7 +116,8 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
         {availableUpdate && (
           <button
             onClick={() => setUpdateDialogOpen(true)}
-            title={`Update available${availableUpdate.version ? ` — v${availableUpdate.version}` : ''}`}
+            data-tip={`Update available${availableUpdate.version ? ` — v${availableUpdate.version}` : ''}`}
+        data-tip-side="bottom"
             className="update-pill flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
             style={{
               marginLeft: 4,
@@ -210,7 +212,7 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
               onClick={() => setViewMode(v.id)}
               className={`view-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded cursor-pointer ${active ? 'is-active' : ''}`}
               style={{ fontFamily: c.font, fontSize: 12 }}
-              title={`${v.label} view`}
+              data-tip={`${v.label} view`} data-tip-side="bottom"
             >
               <span className="view-btn-icon" style={{ fontSize: 11 }}>{v.icon}</span>
               {v.label}
@@ -218,6 +220,9 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           );
         })}
       </div>
+
+      {/* Conflict alert — only visible when conflicts exist */}
+      <ConflictsButton />
 
       {/* NSFW lock — icon only; red (unlocked) when NSFW is shown */}
       <button
@@ -229,7 +234,9 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           color: nsfwShown ? c.nsfw : c.ink2,
           border: `1px solid ${nsfwShown ? tint(c.nsfw, 40) : c.line}`,
         }}
-        title={nsfwShown ? 'NSFW visible — click to hide' : 'NSFW hidden — click to show'}
+        data-tip={nsfwShown ? 'NSFW visible — click to hide' : 'NSFW hidden — click to show'}
+        aria-label={nsfwShown ? 'Hide NSFW mods' : 'Show NSFW mods'}
+        data-tip-side="bottom"
       >
         <span className="icon-btn-glyph inline-flex">{nsfwShown ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}</span>
       </button>
@@ -292,7 +299,7 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
         onClick={() => setPreferencesOpen(true)}
         className="icon-btn gear flex items-center justify-center w-8 h-8 rounded-[7px] cursor-pointer"
         style={{ ['--btn-hue' as string]: c.accent, background: c.panel, color: c.ink2, border: `1px solid ${c.line}` }}
-        title="Settings"
+        data-tip="Settings" data-tip-side="bottom" aria-label="Settings"
       >
         <svg
           className="icon-btn-glyph w-4 h-4"

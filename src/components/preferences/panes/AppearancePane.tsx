@@ -1,12 +1,13 @@
 import React, { useCallback } from 'react'
 import { useTheme } from '@/hooks/use-theme'
 import { usePreferences, useSavePreferences } from '@/services/preferences'
-import { Moon, Sun, TreePine, Flame, Snowflake, Palette, Type, SquareStack } from 'lucide-react'
+import { Moon, Sun, TreePine, Flame, Snowflake, Palette, Type, SquareStack, Sparkles } from 'lucide-react'
 import type { BackgroundIntensity } from '@/types/preferences'
 import { c } from '@/shared/rivals-tokens'
-import { SettingsSection, ChoiceTile } from '../settings-ui'
+import { Switch } from '@/components/ui/switch'
+import { SettingsSection, SettingsCard, SettingRow, ChoiceTile } from '../settings-ui'
 
-type ThemeOption = {
+interface ThemeOption {
   id: 'dark-classic' | 'light-classic' | 'forest' | 'ruby' | 'ice'
   name: string
   icon: React.ReactElement
@@ -26,10 +27,22 @@ const fontOptions: { id: 'ubuntu' | 'quicksand'; name: string; fontFamily: strin
   { id: 'quicksand', name: 'Quicksand', fontFamily: 'Quicksand, sans-serif' },
 ]
 
-const intensityOptions: { id: BackgroundIntensity; name: string; previewColor: string }[] = [
-  { id: 'normal', name: 'Normal', previewColor: '#16140f' },
-  { id: 'dim', name: 'Dim', previewColor: '#0e0d09' },
-  { id: 'black', name: 'Black', previewColor: '#000000' },
+// Background swatches per theme — surfaces are tinted to match each theme's
+// accent (warm for Dark Classic, green for Forest, wine for Ruby, slate for
+// Ice), so the previews follow the selected theme.
+const darkClassicPreviews: Record<BackgroundIntensity, string> = { normal: '#16140f', dim: '#0e0d09', black: '#000000' }
+const intensityPreviews: Record<string, Record<BackgroundIntensity, string>> = {
+  'dark-classic': darkClassicPreviews,
+  'light-classic': { normal: '#efe9d7', dim: '#e3dcc6', black: '#d6cfb8' },
+  forest: { normal: '#0f1410', dim: '#090d0a', black: '#000000' },
+  ruby: { normal: '#160f10', dim: '#0e090a', black: '#000000' },
+  ice: { normal: '#0f1216', dim: '#090b0e', black: '#000000' },
+}
+
+const intensityOptions: { id: BackgroundIntensity; name: string }[] = [
+  { id: 'normal', name: 'Normal' },
+  { id: 'dim', name: 'Dim' },
+  { id: 'black', name: 'Black' },
 ]
 
 export const AppearancePane: React.FC = () => {
@@ -38,35 +51,55 @@ export const AppearancePane: React.FC = () => {
   const savePreferences = useSavePreferences()
   const [selectedFont, setSelectedFont] = React.useState<'ubuntu' | 'quicksand'>((preferences?.font as 'ubuntu' | 'quicksand') || 'quicksand')
   const [selectedIntensity, setSelectedIntensity] = React.useState<BackgroundIntensity>((preferences?.backgroundIntensity as BackgroundIntensity) || 'normal')
+  const [cardTilt, setCardTilt] = React.useState<boolean>(preferences?.cardTilt !== false)
+  const [cardGlow, setCardGlow] = React.useState<boolean>(preferences?.cardGlow !== false)
 
   const handleThemeChange = useCallback(
     async (value: ThemeOption['id']) => {
       setTheme(value)
-      savePreferences.mutate({ theme: value, font: selectedFont, backgroundIntensity: selectedIntensity })
+      savePreferences.mutate({ theme: value, font: selectedFont, backgroundIntensity: selectedIntensity, cardTilt, cardGlow })
     },
-    [setTheme, savePreferences, selectedFont, selectedIntensity]
+    [setTheme, savePreferences, selectedFont, selectedIntensity, cardTilt, cardGlow]
   )
 
   const handleFontChange = useCallback(
     async (value: 'ubuntu' | 'quicksand') => {
       setSelectedFont(value)
-      savePreferences.mutate({ theme, font: value, backgroundIntensity: selectedIntensity })
+      savePreferences.mutate({ theme, font: value, backgroundIntensity: selectedIntensity, cardTilt, cardGlow })
     },
-    [savePreferences, theme, selectedIntensity]
+    [savePreferences, theme, selectedIntensity, cardTilt, cardGlow]
   )
 
   const handleIntensityChange = useCallback(
     async (value: BackgroundIntensity) => {
       setSelectedIntensity(value)
-      savePreferences.mutate({ theme, font: selectedFont, backgroundIntensity: value })
+      savePreferences.mutate({ theme, font: selectedFont, backgroundIntensity: value, cardTilt, cardGlow })
     },
-    [savePreferences, theme, selectedFont]
+    [savePreferences, theme, selectedFont, cardTilt, cardGlow]
+  )
+
+  const handleCardTiltChange = useCallback(
+    (value: boolean) => {
+      setCardTilt(value)
+      savePreferences.mutate({ theme, font: selectedFont, backgroundIntensity: selectedIntensity, cardTilt: value, cardGlow })
+    },
+    [savePreferences, theme, selectedFont, selectedIntensity, cardGlow]
+  )
+
+  const handleCardGlowChange = useCallback(
+    (value: boolean) => {
+      setCardGlow(value)
+      savePreferences.mutate({ theme, font: selectedFont, backgroundIntensity: selectedIntensity, cardTilt, cardGlow: value })
+    },
+    [savePreferences, theme, selectedFont, selectedIntensity, cardTilt]
   )
 
   React.useEffect(() => {
     if (preferences?.font) setSelectedFont(preferences.font as 'ubuntu' | 'quicksand')
     if (preferences?.backgroundIntensity) setSelectedIntensity(preferences.backgroundIntensity as BackgroundIntensity)
-  }, [preferences?.font, preferences?.backgroundIntensity])
+    if (preferences?.cardTilt !== undefined) setCardTilt(preferences.cardTilt !== false)
+    if (preferences?.cardGlow !== undefined) setCardGlow(preferences.cardGlow !== false)
+  }, [preferences?.font, preferences?.backgroundIntensity, preferences?.cardTilt, preferences?.cardGlow])
 
   return (
     <>
@@ -103,13 +136,29 @@ export const AppearancePane: React.FC = () => {
           <div className="flex gap-2.5">
             {intensityOptions.map((option) => (
               <ChoiceTile key={option.id} active={selectedIntensity === option.id} disabled={savePreferences.isPending} onClick={() => handleIntensityChange(option.id)} className="flex-1">
-                <span style={{ width: 36, height: 36, borderRadius: 8, background: option.previewColor, border: `1px solid ${c.line2}` }} />
+                <span style={{ width: 36, height: 36, borderRadius: 8, background: (intensityPreviews[theme] ?? darkClassicPreviews)[option.id], border: `1px solid ${c.line2}` }} />
                 <span style={{ color: c.ink2, fontFamily: c.font, fontSize: 12, fontWeight: 500 }}>{option.name}</span>
               </ChoiceTile>
             ))}
           </div>
         </SettingsSection>
       </div>
+
+      {/* Card effects */}
+      <SettingsSection title="Card Effects" icon={<Sparkles className="w-4 h-4" />}>
+        <SettingsCard>
+          <SettingRow
+            label="3D Tilt"
+            description="Cards lean toward your cursor when you hover them"
+            control={<Switch checked={cardTilt} onCheckedChange={handleCardTiltChange} />}
+          />
+          <SettingRow
+            label="Cursor Glow"
+            description="A glow tinted by the artwork follows your cursor across the card"
+            control={<Switch checked={cardGlow} onCheckedChange={handleCardGlowChange} />}
+          />
+        </SettingsCard>
+      </SettingsSection>
     </>
   )
 }

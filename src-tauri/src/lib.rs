@@ -89,6 +89,10 @@ pub struct AppPreferences {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub background_intensity: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub card_tilt: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub card_glow: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nexus_api_key: Option<String>,
 }
 
@@ -98,6 +102,8 @@ impl Default for AppPreferences {
             theme: "dark-classic".to_string(),
             font: Some("quicksand".to_string()),
             background_intensity: Some("normal".to_string()),
+            card_tilt: Some(true),
+            card_glow: Some(true),
             nexus_api_key: None,
         }
     }
@@ -584,6 +590,12 @@ fn get_mod_service(app: &AppHandle) -> Result<ModService, String> {
 async fn get_all_mods(app: AppHandle) -> Result<Vec<ModInfo>, String> {
     let service = get_mod_service(&app)?;
     service.get_all_mods()
+}
+
+#[tauri::command]
+async fn detect_mod_conflicts(app: AppHandle) -> Result<Vec<ModConflict>, String> {
+    let service = get_mod_service(&app)?;
+    service.detect_mod_conflicts()
 }
 
 #[tauri::command]
@@ -1660,6 +1672,7 @@ pub fn run() {
             migrate_electron_data,
             // Mod management
             get_all_mods,
+            detect_mod_conflicts,
             install_mod,
             install_mod_to_folder,
             install_mod_to_folder_with_metadata,

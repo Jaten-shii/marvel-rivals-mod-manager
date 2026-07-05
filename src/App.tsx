@@ -23,6 +23,7 @@ import '@fontsource/barlow-condensed/800.css'
 import './App.css'
 import './background-intensity.css'
 import MainWindow from './components/layout/MainWindow'
+import { TooltipLayer } from './components/TooltipLayer'
 import { ThemeProvider } from './components/ThemeProvider'
 import ErrorBoundary from './components/ErrorBoundary'
 import { QueryProvider } from './providers/QueryProvider'
@@ -51,6 +52,7 @@ function App() {
       <QueryProvider>
         <ThemeProvider>
           <MainWindow />
+          <TooltipLayer />
         </ThemeProvider>
       </QueryProvider>
     </ErrorBoundary>

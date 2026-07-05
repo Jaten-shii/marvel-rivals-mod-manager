@@ -169,20 +169,20 @@
   --sidebar-ring: oklch(0.879 0.169 91.605); /* Yellow accent */
 }
 
-/* Forest Theme */
+/* Forest Theme — surfaces carry a deep green cast to match the accent */
 .forest {
-  --rivals-bg: #16140f;
-  --rivals-titlebar: #100e0a;
-  --rivals-panel: #1c1a15;
-  --rivals-panel-hi: #23211b;
-  --rivals-line: #2c2922;
-  --rivals-line2: #3a362d;
-  --rivals-ink: #efe9d7;
-  --rivals-ink2: #c7c0aa;
-  --rivals-ink3: #8a8473;
-  --rivals-muted: #5f5a4d;
+  --rivals-bg: #0f1410;
+  --rivals-titlebar: #0a0f0b;
+  --rivals-panel: #141a15;
+  --rivals-panel-hi: #1a211b;
+  --rivals-line: #222b24;
+  --rivals-line2: #2d3a2f;
+  --rivals-ink: #e2efdb;
+  --rivals-ink2: #b3c7aa;
+  --rivals-ink3: #798a73;
+  --rivals-muted: #4f5f4d;
   --rivals-accent: var(--primary);
-  --rivals-accent2: #c2693a;
+  --rivals-accent2: #4d9968;
   --rivals-on-accent: var(--primary-foreground);
   --rivals-ok: #9ec27a;
   --rivals-warn: #e6c069;
@@ -234,18 +234,19 @@
 
 /* Ruby Theme */
 .ruby {
-  --rivals-bg: #16140f;
-  --rivals-titlebar: #100e0a;
-  --rivals-panel: #1c1a15;
-  --rivals-panel-hi: #23211b;
-  --rivals-line: #2c2922;
-  --rivals-line2: #3a362d;
-  --rivals-ink: #efe9d7;
-  --rivals-ink2: #c7c0aa;
-  --rivals-ink3: #8a8473;
-  --rivals-muted: #5f5a4d;
+  /* surfaces carry a deep wine cast to match the accent */
+  --rivals-bg: #160f10;
+  --rivals-titlebar: #100a0b;
+  --rivals-panel: #1c1516;
+  --rivals-panel-hi: #231b1c;
+  --rivals-line: #2c2223;
+  --rivals-line2: #3a2d2f;
+  --rivals-ink: #efdad7;
+  --rivals-ink2: #c7adaa;
+  --rivals-ink3: #8a7673;
+  --rivals-muted: #5f504d;
   --rivals-accent: var(--primary);
-  --rivals-accent2: #c2693a;
+  --rivals-accent2: #c23a4a;
   --rivals-on-accent: var(--primary-foreground);
   --rivals-ok: #9ec27a;
   --rivals-warn: #e6c069;
@@ -297,18 +298,19 @@
 
 /* Ice Theme */
 .ice {
-  --rivals-bg: #16140f;
-  --rivals-titlebar: #100e0a;
-  --rivals-panel: #1c1a15;
-  --rivals-panel-hi: #23211b;
-  --rivals-line: #2c2922;
-  --rivals-line2: #3a362d;
-  --rivals-ink: #efe9d7;
-  --rivals-ink2: #c7c0aa;
-  --rivals-ink3: #8a8473;
-  --rivals-muted: #5f5a4d;
+  /* surfaces carry a cool slate-blue cast to match the accent */
+  --rivals-bg: #0f1216;
+  --rivals-titlebar: #0a0d10;
+  --rivals-panel: #151a20;
+  --rivals-panel-hi: #1b212a;
+  --rivals-line: #222a35;
+  --rivals-line2: #2d3947;
+  --rivals-ink: #d7e4ef;
+  --rivals-ink2: #aabcc7;
+  --rivals-ink3: #73808a;
+  --rivals-muted: #4d555f;
   --rivals-accent: var(--primary);
-  --rivals-accent2: #c2693a;
+  --rivals-accent2: #3a7fc2;
   --rivals-on-accent: var(--primary-foreground);
   --rivals-ok: #9ec27a;
   --rivals-warn: #e6c069;
@@ -570,7 +572,79 @@
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .mod-card:hover .mod-card-img {
-  transform: scale(1.04);
+  transform: scale(1.06);
+}
+
+/*
+ * Cursor-tracked tilt + dominant-color glow (Cards + Gallery). The JS hook
+ * writes --tilt-x/--tilt-y (lean toward cursor) and --glow-x/--glow-y (light
+ * position); --glow-color is the thumbnail's dominant color. Defaults keep the
+ * card flat until hovered, and the whole thing eases back on pointer leave.
+ */
+.mod-card-tilt {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --glow-x: 50%;
+  --glow-y: 0%;
+  position: relative;
+  /* Keep text crisp on the rotated plane: own GPU layer, no flattening blur */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  transform: perspective(1100px) translateZ(0);
+}
+.mod-card-tilt:hover {
+  transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-5px);
+  /* Glow tinted by the artwork's dominant color, pooled where the cursor is */
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    0 0 26px -4px color-mix(in oklch, var(--glow-color) 45%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--glow-color) 35%, transparent);
+  border-color: color-mix(in oklch, var(--glow-color) 55%, transparent) !important;
+}
+/* Specular sheen that follows the cursor across the card surface */
+.mod-card-tilt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  background: radial-gradient(
+    200px circle at var(--glow-x) var(--glow-y),
+    color-mix(in oklch, var(--glow-color) 15%, transparent),
+    transparent 55%
+  );
+  z-index: 2;
+}
+.mod-card-tilt:hover::after {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mod-card-tilt:hover {
+    transform: translateY(-4px) !important;
+  }
+}
+
+/*
+ * Appearance settings: "3D Tilt" and "Cursor Glow" toggle independently.
+ *  - .no-card-tilt  → drop the rotation, keep the flat lift (glow stays)
+ *  - .no-card-glow  → drop the dominant-color glow + sheen, fall back to a
+ *                     plain accent shadow (tilt stays)
+ */
+.no-card-tilt .mod-card-tilt {
+  transform: none;
+}
+.no-card-tilt .mod-card-tilt:hover {
+  transform: translateY(-4px);
+}
+/* Glow off: drop the soft halo + cursor sheen, but keep the dominant-color
+   border (it's a colored edge from the artwork, not part of the glow). */
+.no-card-glow .mod-card-tilt:hover {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+.no-card-glow .mod-card-tilt::after {
+  display: none;
 }
 
 /* List row hover: gentle accent wash + left accent edge. */
@@ -665,9 +739,39 @@
 .mod-card:hover .rivals-ring,
 .sidebar-char-row:hover .rivals-ring,
 .gallery-pill:hover .rivals-ring,
-.rivals-ring:hover {
+.rivals-ring:hover,
+.rivals-ring.is-active {
   border-color: var(--ring-glow);
   box-shadow: 0 0 14px 1px color-mix(in oklch, var(--ring-glow) 70%, transparent);
+}
+/* Selected character: the avatar pops slightly and keeps its glow. */
+.rivals-ring.is-active {
+  transform: scale(1.08);
+}
+
+/*
+ * Sidebar character rows: a single accent bar on the left that scales in/out
+ * smoothly (grows from center) when a character becomes active, instead of an
+ * instant box-shadow. Each row owns its bar; only the active one is shown.
+ */
+.sidebar-char-row {
+  position: relative;
+}
+.sidebar-char-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--rivals-accent);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sidebar-char-row.is-active::before {
+  transform: scaleY(1);
 }
 
 /* Gallery ribbon character pills: lift + accent border on hover. */
@@ -826,35 +930,77 @@
 .thumb-btn.down:hover:not(:disabled) .thumb-btn-icon { transform: translateY(2px) scale(1.1); }
 
 /*
- * Auto-highlighted add-on rows/chips (filter match): an animated gradient
- * "sheen" in the category color (--hl-color) sweeps across left→right, over a
- * faint category-tinted base. Stands out vs a static highlight.
+ * Auto-highlighted add-on rows/chips (filter match): a single shine sweep in
+ * the category color (--hl-color) when the highlight appears, settling into a
+ * steady tinted base with a soft breathing glow.
  */
 .addon-hl {
   position: relative;
-  box-shadow: inset 3px 0 0 var(--hl-color);
+  background: color-mix(in oklch, var(--hl-color) 13%, transparent) !important;
+  animation: addon-hl-breathe 2.2s ease-in-out infinite alternate;
+}
+/* Looping shine sweep: the band fades in as it enters and out as it exits,
+   resting invisible between passes — so the loop restart can't be seen. */
+.addon-hl::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background-image: linear-gradient(
     100deg,
-    color-mix(in oklch, var(--hl-color) 8%, transparent) 0%,
-    color-mix(in oklch, var(--hl-color) 30%, transparent) 35%,
-    color-mix(in oklch, var(--hl-color) 8%, transparent) 70%
-  ) !important;
+    transparent 25%,
+    color-mix(in oklch, var(--hl-color) 32%, transparent) 50%,
+    transparent 75%
+  );
   background-size: 220% 100%;
-  animation: addon-hl-sweep 2.6s linear infinite;
+  background-repeat: no-repeat;
+  animation: addon-hl-reveal 2.8s ease-in-out infinite;
 }
 .addon-hl-chip {
-  background-image: linear-gradient(
-    100deg,
-    color-mix(in oklch, var(--hl-color) 16%, transparent) 0%,
-    color-mix(in oklch, var(--hl-color) 38%, transparent) 35%,
-    color-mix(in oklch, var(--hl-color) 16%, transparent) 70%
-  ) !important;
-  background-size: 220% 100%;
-  animation: addon-hl-sweep 2.6s linear infinite;
+  background: color-mix(in oklch, var(--hl-color) 24%, transparent) !important;
+  animation: addon-hl-breathe 2.2s ease-in-out infinite alternate;
 }
-@keyframes addon-hl-sweep {
-  0% { background-position: 120% 0; }
-  100% { background-position: -120% 0; }
+/* alternate + ease-in-out cycles seamlessly — no restart pop */
+@keyframes addon-hl-breathe {
+  from {
+    box-shadow: inset 3px 0 0 var(--hl-color);
+  }
+  to {
+    box-shadow:
+      inset 3px 0 0 var(--hl-color),
+      inset 0 0 18px color-mix(in oklch, var(--hl-color) 14%, transparent);
+  }
+}
+@keyframes addon-hl-reveal {
+  0% {
+    background-position: 140% 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  34% {
+    opacity: 1;
+  }
+  44% {
+    background-position: -140% 0;
+    opacity: 0;
+  }
+  100% {
+    background-position: -140% 0;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .addon-hl,
+  .addon-hl-chip {
+    animation: none !important;
+    box-shadow: inset 3px 0 0 var(--hl-color) !important;
+  }
+  .addon-hl::after {
+    animation: none !important;
+    opacity: 0;
+  }
 }
 
 /* Subtitle preset pills (metadata dialog): border tracks text color, lift on hover. */
@@ -1084,14 +1230,20 @@
   transform: translateY(0);
 }
 
-/* Small enabled/disabled toggle pill (Cards footer): lift + brighten on hover. */
+/* Enabled/disabled stamp (Cards footer): condensed uppercase wordmark. State
+   reads through fill + lettering; hover tints toward the action it would
+   take (hollow stamp tips green = will enable, solid stamp tips red = will
+   disable). */
 .toggle-pill {
+  position: relative;
+  overflow: hidden;
   transition: filter 150ms ease, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease, background 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 .toggle-pill.is-on:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: color-mix(in oklch, var(--rivals-err) 14%, transparent) !important;
+  color: var(--rivals-err) !important;
+  border-color: color-mix(in oklch, var(--rivals-err) 45%, transparent) !important;
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px color-mix(in oklch, var(--rivals-ok) 32%, transparent);
 }
 .toggle-pill.is-off:hover:not(:disabled) {
   background: color-mix(in oklch, var(--rivals-ok) 12%, transparent) !important;
@@ -1101,6 +1253,141 @@
 }
 .toggle-pill:active:not(:disabled) {
   transform: translateY(0);
+}
+/* "Powering on": a green glow pulse + a shine sweeping across the wordmark
+   the moment a mod flips to enabled. */
+.toggle-pill.powering-on {
+  animation: power-on 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toggle-pill.powering-on::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    color-mix(in oklch, var(--rivals-ok) 45%, white 12%) 50%,
+    transparent 75%
+  );
+  transform: translateX(-110%);
+  animation: power-sweep 520ms ease-out;
+  pointer-events: none;
+}
+@keyframes power-on {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--rivals-ok) 55%, transparent);
+  }
+  40% {
+    box-shadow: 0 0 0 5px color-mix(in oklch, var(--rivals-ok) 22%, transparent);
+    transform: scale(1.06);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    transform: scale(1);
+  }
+}
+@keyframes power-sweep {
+  to {
+    transform: translateX(110%);
+  }
+}
+
+/* ── Sidebar category icons: micro-animations on row hover ────────────────
+   Skins mask tilts + eyes glint; Audio speaker thumps while its waves
+   ripple; UI panels fan apart; Gameplay pad rumbles + buttons flash. */
+.cat-ic,
+.cat-ic * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cat-row .cat-ic {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cat-row:hover .cat-ic {
+  transform: scale(1.12);
+}
+
+.cat-row:hover .cat-ic-skins .mask-body {
+  animation: cat-mask-tilt 650ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cat-row:hover .cat-ic-skins .mask-eye {
+  animation: cat-mask-glint 650ms ease;
+}
+@keyframes cat-mask-tilt {
+  0% { transform: rotate(0); }
+  30% { transform: rotate(-10deg); }
+  65% { transform: rotate(5deg); }
+  100% { transform: rotate(0); }
+}
+@keyframes cat-mask-glint {
+  0%, 100% { fill-opacity: 0; }
+  45% { fill-opacity: 0.9; }
+}
+
+.cat-row:hover .spk-body {
+  animation: cat-spk-thump 700ms ease infinite;
+}
+.spk-wave {
+  transition: opacity 200ms ease;
+}
+.cat-row:hover .spk-wave-1 {
+  animation: cat-wave 700ms ease infinite;
+}
+.cat-row:hover .spk-wave-2 {
+  animation: cat-wave 700ms ease infinite 140ms;
+}
+@keyframes cat-spk-thump {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.09); }
+}
+@keyframes cat-wave {
+  0% { opacity: 0.25; transform: translateX(-1px); }
+  35% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0.25; transform: translateX(0.6px); }
+}
+
+.cat-ic-ui .ui-back,
+.cat-ic-ui .ui-front {
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cat-row:hover .cat-ic-ui .ui-back {
+  transform: translate(1.4px, -1.4px);
+}
+.cat-row:hover .cat-ic-ui .ui-front {
+  transform: translate(-1px, 1px);
+}
+
+.cat-row:hover .cat-ic-pad .pad-body {
+  animation: cat-rumble 480ms ease;
+}
+.cat-row:hover .pad-btn-a {
+  animation: cat-btn-press 700ms ease infinite;
+}
+.cat-row:hover .pad-btn-b {
+  animation: cat-btn-press 700ms ease infinite 200ms;
+}
+@keyframes cat-rumble {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  15% { transform: translate(-0.8px, 0.4px) rotate(-3deg); }
+  35% { transform: translate(0.8px, -0.4px) rotate(3deg); }
+  55% { transform: translate(-0.6px, -0.3px) rotate(-2deg); }
+  75% { transform: translate(0.5px, 0.3px) rotate(1.5deg); }
+}
+@keyframes cat-btn-press {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  30% { transform: scale(1.55); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-row:hover .cat-ic,
+  .cat-row:hover .cat-ic * {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .toggle-pill.powering-on::after {
+    animation: none !important;
+  }
 }
 
 /* Add-on dropdown toggle (warn-hued): tint + lift + glow on hover. */
@@ -1336,5 +1623,219 @@
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+
+/*
+ * Library-at-a-glance: one segmented strip in the mod-list header. A single
+ * rounded container, divided into uniform segments (active ratio, disk size,
+ * top hero). Each segment stacks a value over a small uppercase label.
+ */
+.stat-strip {
+  border-radius: 10px;
+  background: var(--rivals-panel);
+  border: 1px solid var(--rivals-line);
+  overflow: hidden;
+}
+.stat-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--rivals-line);
+  transition: background 160ms ease;
+}
+.stat-seg:first-child {
+  border-left: none;
+}
+/* Gentle wash + value brighten on hover (all segments). */
+.stat-seg:hover {
+  background: color-mix(in oklch, var(--rivals-ink) 5%, transparent);
+}
+.stat-seg:hover .stat-seg-val {
+  color: var(--rivals-accent);
+}
+.stat-seg:hover .stat-seg-bar-fill {
+  filter: brightness(1.15);
+}
+.stat-seg-val {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rivals-ink);
+  line-height: 1;
+  transition: color 160ms ease;
+}
+.stat-seg-label {
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rivals-ink3);
+  line-height: 1;
+}
+/* Active-ratio mini bar above its value */
+.stat-seg-bar {
+  position: relative;
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--rivals-ink3) 18%, transparent);
+  overflow: hidden;
+  margin-bottom: 1px;
+}
+.stat-seg-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--rivals-ok);
+  transition: width 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Top-hero segment is a button → filters to that character */
+.stat-seg-char {
+  flex-direction: row;
+  gap: 7px;
+  transition: background 160ms ease;
+}
+.stat-seg-char .stat-seg-val,
+.stat-seg-char .stat-seg-label {
+  align-self: center;
+}
+.stat-seg-char:hover {
+  background: color-mix(in oklch, var(--rivals-accent) 10%, transparent);
+}
+
+/* ── Gallery hero treatment (art-forward cards) ─────────────────────────── */
+/* The art box clips its own scaling child on a contained layer, so the hover
+   zoom never flashes square corners through the rounded edge mid-animation. */
+.gallery-hero-art {
+  isolation: isolate;
+  transform: translateZ(0);
+}
+/* Artwork zooms a touch more in the gallery for a cinematic feel. */
+.gallery-hero:hover .mod-card-img {
+  transform: scale(1.08);
+}
+/* Bottom-weighted scrim so overlaid title/meta stays legible over any art. */
+.gallery-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 28%, rgba(0, 0, 0, 0) 55%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 30%);
+  transition: opacity 240ms ease;
+}
+/* Title overlaid on art: white with a soft shadow for readability. */
+.gallery-hero-title {
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.gallery-hero-by {
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+}
+.gallery-hero-by span {
+  color: #fff;
+}
+/* Subtle accent edge-glow on the whole tile when hovered. */
+.gallery-hero:hover .gallery-hero-scrim {
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.35) 30%, rgba(0, 0, 0, 0) 58%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 30%);
+}
+
+/* Soft top/bottom fades on the gallery scroll so cards melt into the chrome. */
+.gallery-scroll-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18px,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+}
+
+/* ── Custom tooltip (TooltipLayer, data-tip="…") ──────────────────────────
+   Replaces native title tooltips on app controls: warm-dark panel chip with
+   an arrow, springs in, accent-kissed border. */
+.rivals-tip {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+}
+.rivals-tip-box {
+  position: relative;
+  background: var(--rivals-panel-hi);
+  color: var(--rivals-ink);
+  border: 1px solid color-mix(in oklch, var(--rivals-accent) 26%, var(--rivals-line2));
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-family: var(--rivals-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+  max-width: 280px;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  animation: rivals-tip-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rivals-tip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--rivals-panel-hi);
+  left: 50%;
+  bottom: -4.5px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid color-mix(in oklch, var(--rivals-accent) 26%, var(--rivals-line2));
+  border-bottom: 1px solid color-mix(in oklch, var(--rivals-accent) 26%, var(--rivals-line2));
+}
+.rivals-tip-box.is-below .rivals-tip-arrow {
+  bottom: auto;
+  top: -4.5px;
+  transform: translateX(-50%) rotate(225deg);
+}
+@keyframes rivals-tip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.rivals-tip-box.is-below {
+  animation-name: rivals-tip-in-below;
+}
+@keyframes rivals-tip-in-below {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rivals-tip-box {
+    animation: none !important;
   }
 }

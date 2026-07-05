@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core'
-import type { ModInfo, ModMetadata, Costume, CostumeSyncResult, Character } from '@/types/mod.types'
+import type { ModInfo, ModMetadata, Costume, CostumeSyncResult, Character, ModConflict } from '@/types/mod.types'
 import { toast } from 'sonner'
 
 // Query keys factory
@@ -12,6 +12,7 @@ export const modKeys = {
   details: () => [...modKeys.all, 'detail'] as const,
   detail: (id: string) => [...modKeys.details(), id] as const,
   stats: () => [...modKeys.all, 'stats'] as const,
+  conflicts: () => [...modKeys.all, 'conflicts'] as const,
 }
 
 // Query keys
@@ -26,6 +27,22 @@ export function useGetMods() {
     queryFn: async () => {
       const mods = await invoke<ModInfo[]>('get_all_mods')
       return mods
+    },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
+}
+
+/**
+ * Hook to detect conflicts between enabled mods (mods overriding the same
+ * game assets). Excludes parent/add-on pairs, which are meant to layer.
+ */
+export function useModConflicts() {
+  return useQuery({
+    queryKey: modKeys.conflicts(),
+    queryFn: async () => {
+      return await invoke<ModConflict[]>('detect_mod_conflicts')
     },
     staleTime: 60000,
     refetchOnWindowFocus: false,
@@ -110,6 +127,7 @@ export function useSetModsEnabled() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: modKeys.conflicts() })
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -188,6 +206,7 @@ export function useToggleModEnabled() {
           mod.id === data.modId ? { ...mod, enabled: data.enabled } : mod
         )
       })
+      queryClient.invalidateQueries({ queryKey: modKeys.conflicts() })
       toast.success('Mod status updated')
     },
     onError: (error: Error) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { listen } from '@tauri-apps/api/event';
 import { useGetAppSettings } from '../hooks/useSettings';
@@ -40,7 +40,7 @@ export function ModManager() {
   const selectedModId = useUIStore((state) => state.selectedModId);
   const metadataDialogOpen = useUIStore((state) => state.metadataDialogOpen);
   const setMetadataDialogOpen = useUIStore((state) => state.setMetadataDialogOpen);
-  const { data: mods, isRefetching } = useGetMods();
+  const { data: mods, isRefetching, refetch: refetchMods } = useGetMods();
 
   // Archive installation workflow state
   const [showModSelectionDialog, setShowModSelectionDialog] = useState(false);
@@ -49,6 +49,12 @@ export function ModManager() {
   const [isInInstallationSequence, setIsInInstallationSequence] = useState(false);
   const [hasOpenedDialogForCurrentMod, setHasOpenedDialogForCurrentMod] = useState(false);
   const [expectedModFilePath, setExpectedModFilePath] = useState<string | null>(null);
+  // Retries for the find-installed-mod-by-path lookup below. On cold start
+  // (app launched by an nxm:// link) the install can finish while the very
+  // first mods scan is still in flight; invalidateQueries then dedupes into
+  // that scan (TanStack only cancel-restarts a fetch once the query has data),
+  // so the first list we see predates the install and the mod appears missing.
+  const modLookupAttemptsRef = useRef(0);
 
   // Archive queue for processing multiple archives sequentially
   const [archiveQueue, setArchiveQueue] = useState<string[]>([]);
@@ -289,6 +295,7 @@ export function ModManager() {
         console.log('[ModManager] Found mod by file path! ID:', installedMod.id, 'Name:', installedMod.name);
 
         // Clear the expected path
+        modLookupAttemptsRef.current = 0;
         setExpectedModFilePath(null);
 
         // Open the dialog with the correct ID from the fresh scan
@@ -300,14 +307,24 @@ export function ModManager() {
             ? `Installed mod ${currentModIndexInInstallation} of ${selectedModsToInstall.length}. Edit metadata and close dialog to continue.`
             : 'Mod installed! Edit metadata and close when done.'
         );
+      } else if (modLookupAttemptsRef.current < 3) {
+        // List predates the install (see modLookupAttemptsRef comment above).
+        // The files are on disk — force a fresh scan instead of giving up.
+        modLookupAttemptsRef.current += 1;
+        console.warn(
+          `[ModManager] Installed mod not in list yet, refetching (attempt ${modLookupAttemptsRef.current}/3):`,
+          expectedModFilePath
+        );
+        refetchMods();
       } else {
         console.error('[ModManager] Failed to find mod by file path after refetch:', expectedModFilePath);
         console.error('[ModManager] Available mod paths:', mods.map(m => m.filePath));
+        modLookupAttemptsRef.current = 0;
         setExpectedModFilePath(null);
         toast.error('Failed to locate installed mod. Please refresh and try again.');
       }
     }
-  }, [isRefetching, expectedModFilePath, mods, selectedModsToInstall.length, currentModIndexInInstallation]);
+  }, [isRefetching, expectedModFilePath, mods, selectedModsToInstall.length, currentModIndexInInstallation, refetchMods]);
 
   // Install mods and open metadata editor for each
   const installAndEditMod = async (modsToInstall: DetectedMod[]) => {
@@ -386,6 +403,7 @@ export function ModManager() {
         console.log('[ModManager] Set next index to:', index + 1);
 
         // Store the file path - the useEffect will find the mod after refetch and open the dialog
+        modLookupAttemptsRef.current = 0;
         setExpectedModFilePath(modInfo.filePath);
         console.log('[ModManager] Stored expected file path, waiting for refetch...');
       }

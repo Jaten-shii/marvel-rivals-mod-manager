@@ -486,3 +486,28 @@ pub struct SkipIntrosStatus {
     pub installed: bool,
     pub has_backup: bool,
 }
+
+// ===== Mod Conflicts =====
+// A single clash: two or more enabled mods overriding the same game assets.
+// Only mods from *different* families are reported (a parent mod and its own
+// add-on are expected to share assets and are not a conflict).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModConflict {
+    // Mods involved in this clash, in game load order (first = wins).
+    pub mods: Vec<ConflictMod>,
+    // Human-readable asset kinds that overlap (e.g. "Body Mesh", "Body Skin",
+    // "Hair", "Face", "Outfit"), de-duplicated and sorted.
+    pub kinds: Vec<String>,
+    // The raw shared asset names (file stems), for the detail view.
+    pub assets: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConflictMod {
+    pub id: String,
+    pub title: String,
+    // True if this mod loads first and therefore wins the shared assets.
+    pub wins: bool,
+}

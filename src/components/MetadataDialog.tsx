@@ -16,6 +16,7 @@ import { useDominantColor } from '../hooks/useDominantColor';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { readImage } from '@tauri-apps/plugin-clipboard-manager';
 import { ImageCropDialog } from './ImageCropDialog';
 import { toast } from 'sonner';
 import { detectCharacterFromPath } from '../utils/characterDetection';
@@ -284,17 +285,6 @@ export function MetadataDialog() {
     }
   }, [character, costumes, costume, costumeLoadedFromMod]);
 
-  // Pre-request clipboard permission when dialog opens
-  useEffect(() => {
-    if (metadataDialogOpen && navigator.clipboard && navigator.clipboard.read) {
-      // Silently request clipboard permission in the background
-      navigator.clipboard.read().catch(() => {
-        // Permission denied or not supported - fail silently
-        // The permission prompt will show when user clicks the paste button
-      });
-    }
-  }, [metadataDialogOpen]);
-
   // Add keyboard shortcut for paste (Ctrl+V)
   useEffect(() => {
     if (!metadataDialogOpen) return;
@@ -451,46 +441,35 @@ export function MetadataDialog() {
     }
   };
 
-  // Handle paste image from clipboard
+  // Handle paste image from clipboard. Reads through Tauri's native clipboard
+  // plugin (Rust side), which never triggers the WebView's browser permission
+  // prompt the way navigator.clipboard.read() does.
   const handlePasteFromClipboard = async () => {
     try {
-      // Check if clipboard API is supported
-      if (!navigator.clipboard || !navigator.clipboard.read) {
-        toast.error('Clipboard access not supported in your browser');
+      const image = await readImage();
+      const { width, height } = await image.size();
+      const rgba = await image.rgba();
+
+      // Encode the raw RGBA pixels as a PNG data URL for the crop dialog.
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast.error('Failed to process clipboard image');
         return;
       }
+      ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba), width, height), 0, 0);
+      const dataUrl = canvas.toDataURL('image/png');
 
-      // Read clipboard
-      const clipboardItems = await navigator.clipboard.read();
-
-      for (const item of clipboardItems) {
-        // Find image type
-        const imageType = item.types.find(type => type.startsWith('image/'));
-
-        if (imageType) {
-          const blob = await item.getType(imageType);
-
-          // Convert blob to data URL so Rust can download it
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-
-            // Show crop dialog with the data URL
-            setCropImageUrl(dataUrl);
-            setCropImageFile(null);
-            setShowCropDialog(true);
-
-          };
-          reader.readAsDataURL(blob);
-
-          return;
-        }
-      }
-
-      toast.error('No image found in clipboard');
+      // Show crop dialog with the data URL
+      setCropImageUrl(dataUrl);
+      setCropImageFile(null);
+      setShowCropDialog(true);
     } catch (error) {
+      // readImage rejects when the clipboard has no image on it
       console.error('Failed to paste from clipboard:', error);
-      toast.error('Failed to paste image. Make sure you have copied an image.');
+      toast.error('No image found in clipboard. Copy an image first.');
     }
   };
 

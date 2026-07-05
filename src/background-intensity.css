@@ -11,11 +11,6 @@ html.ice.bg-dim {
   --popover: oklch(0.16 0.01 260) !important;
   --secondary: oklch(0.12 0.008 242) !important;
   --muted: oklch(0.18 0.02 260) !important;
-  /* Warm-Dark Editorial surfaces — dim variant */
-  --rivals-bg: #0e0d09 !important;
-  --rivals-titlebar: #0a0906 !important;
-  --rivals-panel: #15130f !important;
-  --rivals-panel-hi: #1b1914 !important;
 }
 
 html.dark-classic.bg-black,
@@ -28,11 +23,59 @@ html.ice.bg-black {
   --popover: oklch(0.08 0.005 260) !important;
   --secondary: oklch(0.08 0.005 242) !important;
   --muted: oklch(0.12 0.01 260) !important;
-  /* Warm-Dark Editorial surfaces — true-black variant */
+}
+
+/* Warm-Dark Editorial surfaces — dim variant, per theme so each keeps its
+   own surface hue (warm for Dark Classic, green for Forest, etc.) */
+html.dark-classic.bg-dim {
+  --rivals-bg: #0e0d09 !important;
+  --rivals-titlebar: #0a0906 !important;
+  --rivals-panel: #15130f !important;
+  --rivals-panel-hi: #1b1914 !important;
+}
+html.forest.bg-dim {
+  --rivals-bg: #090d0a !important;
+  --rivals-titlebar: #060a07 !important;
+  --rivals-panel: #0f1510 !important;
+  --rivals-panel-hi: #141b15 !important;
+}
+html.ruby.bg-dim {
+  --rivals-bg: #0e090a !important;
+  --rivals-titlebar: #0a0607 !important;
+  --rivals-panel: #150f10 !important;
+  --rivals-panel-hi: #1b1415 !important;
+}
+html.ice.bg-dim {
+  --rivals-bg: #090b0e !important;
+  --rivals-titlebar: #06080a !important;
+  --rivals-panel: #0f1215 !important;
+  --rivals-panel-hi: #14181b !important;
+}
+
+/* Warm-Dark Editorial surfaces — true-black variant, per theme */
+html.dark-classic.bg-black {
   --rivals-bg: #000000 !important;
   --rivals-titlebar: #000000 !important;
   --rivals-panel: #0c0b08 !important;
   --rivals-panel-hi: #141210 !important;
+}
+html.forest.bg-black {
+  --rivals-bg: #000000 !important;
+  --rivals-titlebar: #000000 !important;
+  --rivals-panel: #080c09 !important;
+  --rivals-panel-hi: #101410 !important;
+}
+html.ruby.bg-black {
+  --rivals-bg: #000000 !important;
+  --rivals-titlebar: #000000 !important;
+  --rivals-panel: #0c0809 !important;
+  --rivals-panel-hi: #141011 !important;
+}
+html.ice.bg-black {
+  --rivals-bg: #000000 !important;
+  --rivals-titlebar: #000000 !important;
+  --rivals-panel: #08090c !important;
+  --rivals-panel-hi: #101114 !important;
 }
 
 /* ============================================= */

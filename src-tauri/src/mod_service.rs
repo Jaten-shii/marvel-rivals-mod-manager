@@ -156,8 +156,14 @@ impl ModService {
             return Err("Invalid file type. Only .pak files are supported.".to_string());
         }
 
-        // Create folder in mods directory
-        let folder_path = self.mods_directory.join(folder_name);
+        // Create folder in mods directory. The folder name arrives from the
+        // frontend with '/' separators; join segment-by-segment so the path
+        // uses native separators — a mixed-separator path hashes to a
+        // different mod ID than the scanner computes for the same file.
+        let folder_path = folder_name
+            .split(['/', '\\'])
+            .filter(|part| !part.is_empty())
+            .fold(self.mods_directory.clone(), |path, part| path.join(part));
         self.ensure_directory_exists(&folder_path)?;
 
         // Get file name
@@ -235,8 +241,14 @@ impl ModService {
             return Err("Invalid file type. Only .pak files are supported.".to_string());
         }
 
-        // Create folder in mods directory
-        let folder_path = self.mods_directory.join(folder_name);
+        // Create folder in mods directory. The folder name arrives from the
+        // frontend with '/' separators; join segment-by-segment so the path
+        // uses native separators — a mixed-separator path hashes to a
+        // different mod ID than the scanner computes for the same file.
+        let folder_path = folder_name
+            .split(['/', '\\'])
+            .filter(|part| !part.is_empty())
+            .fold(self.mods_directory.clone(), |path, part| path.join(part));
         self.ensure_directory_exists(&folder_path)?;
 
         // Get file name
@@ -1463,11 +1475,13 @@ impl ModService {
         }
     }
 
-    /// Ensure add-on paks load AFTER their parent mod. The game mounts paks in
-    /// alphabetical order of their full path and the last mounted pak wins
-    /// asset conflicts, so an add-on sorting before its parent is silently
-    /// overridden in game. Fix: prefix the add-on's folder with "zz-" so it
-    /// mounts after the parent. Returns the number of add-ons adjusted.
+    /// Ensure add-on paks load BEFORE their parent mod. Marvel Rivals mounts
+    /// paks in alphabetical order of their full path, and for these body
+    /// retexture conflicts the FIRST mounted pak wins — an add-on sorting after
+    /// its parent is silently overridden in game. Fix: prefix the add-on's
+    /// folder with "aa-" so it mounts before the parent. Any legacy "zz-"
+    /// prefix (which forced the broken load-last behaviour) is stripped first.
+    /// Returns the number of add-ons adjusted.
     pub fn enforce_addon_load_order(&self) -> Result<usize, String> {
         let all_mods = self.get_all_mods()?;
 
@@ -1496,13 +1510,6 @@ impl ModService {
                 continue;
             }
 
-            // The game compares full paths case-insensitively
-            let addon_key = addon_path.to_string_lossy().to_lowercase();
-            let parent_key = parent_path.to_string_lossy().to_lowercase();
-            if addon_key > parent_key {
-                continue; // already loads after the parent
-            }
-
             let Some(addon_dir) = addon_path.parent() else {
                 continue;
             };
@@ -1528,14 +1535,30 @@ impl ModService {
             let Some(folder_name) = addon_dir.file_name().and_then(|n| n.to_str()) else {
                 continue;
             };
-            if folder_name.starts_with("zz-") {
-                continue; // already prefixed; don't stack zz-zz-
-            }
             let Some(folder_parent) = addon_dir.parent() else {
                 continue;
             };
 
-            let target = folder_parent.join(format!("zz-{folder_name}"));
+            // Compute the base folder name without any of our ordering prefixes,
+            // so we can both upgrade legacy "zz-" folders and add "aa-" cleanly.
+            let base_name = folder_name
+                .strip_prefix("aa-")
+                .or_else(|| folder_name.strip_prefix("zz-"))
+                .unwrap_or(folder_name);
+
+            // The game compares full paths case-insensitively. The add-on already
+            // loads before its parent only if it sorts lower AND already carries
+            // our "aa-" prefix (so it won't drift back above the parent later).
+            let addon_key = addon_path.to_string_lossy().to_lowercase();
+            let parent_key = parent_path.to_string_lossy().to_lowercase();
+            if folder_name.starts_with("aa-") && addon_key < parent_key {
+                continue; // already loads before the parent
+            }
+
+            let target = folder_parent.join(format!("aa-{base_name}"));
+            if target == addon_dir {
+                continue; // nothing to do
+            }
             if target.exists() {
                 log::warn!("[load-order] Target already exists, skipping: {:?}", target);
                 continue;
@@ -1547,7 +1570,7 @@ impl ModService {
                 continue;
             }
             log::info!(
-                "[load-order] '{}' now loads after its parent ({:?})",
+                "[load-order] '{}' now loads before its parent ({:?})",
                 mod_info.metadata.title,
                 target.file_name().unwrap_or_default()
             );
@@ -1779,10 +1802,11 @@ impl ModService {
                 metadata.title.clone()
             };
             let sanitized_folder = sanitize_folder_name(&folder_name);
-            // Add-ons get a "zz-" prefix so they mount after their parent pak
-            // (the last mounted pak wins asset conflicts in game)
+            // Add-ons get an "aa-" prefix so they mount BEFORE their parent pak.
+            // For these body retexture conflicts the first mounted pak wins, so
+            // the add-on must load ahead of the parent it overrides.
             let sanitized_folder = if metadata.parent_mod_id.is_some() {
-                format!("zz-{sanitized_folder}")
+                format!("aa-{sanitized_folder}")
             } else {
                 sanitized_folder
             };
@@ -2256,7 +2280,13 @@ impl ModService {
         // Normalize the path by removing .disabled extension
         // This ensures enabled and disabled mods have the same ID
         if let Some(path_str) = file_path.to_str() {
-            let normalized_path = path_str.replace(".disabled", "");
+            let mut normalized_path = path_str.replace(".disabled", "");
+            // Windows paths can arrive with mixed separators (frontend folder
+            // names use '/'); normalize so the same file always hashes to the
+            // same ID no matter which side built the path
+            if cfg!(windows) {
+                normalized_path = normalized_path.replace('/', "\\");
+            }
             hasher.update(normalized_path.as_bytes());
         } else {
             // Fallback to file name if path is invalid
@@ -2282,9 +2312,10 @@ impl ModService {
             .and_then(|s| s.to_str())
             .unwrap_or("Untitled Mod");
 
-        // Clean up common suffixes and prefixes
+        // Clean up common suffixes and prefixes. Only strip a trailing _P —
+        // a blanket replace mangles names like "D_Proficiency" → "Droficiency"
+        let stem = stem.strip_suffix("_P").unwrap_or(stem);
         let cleaned_stem = stem
-            .replace("_P", "") // Remove _P suffix
             .replace("_pak", "") // Remove _pak suffix
             .replace("&", " "); // Replace ampersand with space
 
@@ -2755,6 +2786,175 @@ impl ModService {
         }
         Ok(())
     }
+
+    /// Detect conflicts between enabled mods: two or more mods overriding the
+    /// same game asset. A parent mod and its own add-on are expected to share
+    /// assets (that's how add-ons layer), so those pairs are NOT reported; only
+    /// clashes between unrelated mods are returned.
+    pub fn detect_mod_conflicts(&self) -> Result<Vec<ModConflict>, String> {
+        let all_mods = self.get_all_mods()?;
+        let enabled: Vec<&ModInfo> = all_mods.iter().filter(|m| m.enabled).collect();
+
+        // For each enabled mod, read the asset paths its .utoc overrides along
+        // with a content hash per asset (from the TOC's chunk metas), so that
+        // byte-identical overlaps can be ignored.
+        // Keyed by mod id -> map of asset path -> content hash.
+        let mut mod_assets: HashMap<String, HashMap<String, String>> = HashMap::new();
+        let mut load_key: HashMap<String, String> = HashMap::new();
+        let mut title_by_id: HashMap<String, String> = HashMap::new();
+
+        for m in &enabled {
+            title_by_id.insert(m.id.clone(), m.metadata.title.clone());
+            // The game mounts by lowercased full path; first wins.
+            load_key.insert(m.id.clone(), m.file_path.to_string_lossy().to_lowercase());
+
+            let utoc = m
+                .associated_files
+                .iter()
+                .find(|p| p.extension().and_then(|e| e.to_str()) == Some("utoc"));
+            let Some(utoc) = utoc else {
+                continue; // loose .pak with no utoc — nothing to compare
+            };
+            match read_utoc_assets(utoc) {
+                Ok(assets) => {
+                    mod_assets.insert(m.id.clone(), assets);
+                }
+                Err(e) => {
+                    log::warn!("[conflicts] Could not read {:?}: {}", utoc, e);
+                }
+            }
+        }
+
+        // A mod is "related" to another (and so not a conflict) when one is the
+        // other's parent, or they share the same parent (sibling add-ons).
+        let parent_of: HashMap<String, Option<String>> = enabled
+            .iter()
+            .map(|m| (m.id.clone(), m.metadata.parent_mod_id.clone()))
+            .collect();
+        let related = |a: &str, b: &str| -> bool {
+            let pa = parent_of.get(a).cloned().flatten();
+            let pb = parent_of.get(b).cloned().flatten();
+            pa.as_deref() == Some(b)
+                || pb.as_deref() == Some(a)
+                || (pa.is_some() && pa == pb)
+        };
+
+        // asset path -> mod ids that override it
+        let mut owners: HashMap<String, Vec<String>> = HashMap::new();
+        for (id, assets) in &mod_assets {
+            for a in assets.keys() {
+                owners.entry(a.clone()).or_default().push(id.clone());
+            }
+        }
+
+        // Group clashes by the set of mods involved.
+        // key = sorted mod-id list -> set of shared asset paths
+        let mut grouped: HashMap<Vec<String>, HashSet<String>> = HashMap::new();
+        for (asset, ids) in &owners {
+            if ids.len() < 2 {
+                continue;
+            }
+            // Keep only ids that are unrelated to at least one other id here.
+            let mut unrelated_ids: Vec<String> = Vec::new();
+            for id in ids {
+                let conflicts_with_someone = ids
+                    .iter()
+                    .any(|other| other != id && !related(id, other));
+                if conflicts_with_someone {
+                    unrelated_ids.push(id.clone());
+                }
+            }
+            if unrelated_ids.len() < 2 {
+                continue; // every owner is a relative of the others — expected layering
+            }
+            unrelated_ids.sort();
+            unrelated_ids.dedup();
+
+            // If every unrelated owner ships byte-identical content for this
+            // asset (same chunk hashes), it doesn't matter who wins — authors
+            // often bundle the same untouched base-game file. Skip it. A
+            // missing hash is treated as different (flag rather than hide).
+            let mut hashes: Vec<Option<&String>> = Vec::new();
+            for id in &unrelated_ids {
+                hashes.push(mod_assets.get(id).and_then(|a| a.get(asset)));
+            }
+            let all_known = hashes.iter().all(|h| h.is_some());
+            if all_known {
+                let first = hashes[0];
+                if hashes.iter().all(|h| *h == first) {
+                    continue; // identical content everywhere — harmless overlap
+                }
+            }
+
+            grouped
+                .entry(unrelated_ids)
+                .or_default()
+                .insert(asset.clone());
+        }
+
+        // Build the result list.
+        let mut conflicts: Vec<ModConflict> = Vec::new();
+        for (ids, assets) in grouped {
+            // The winner is the mod whose load-order key sorts first.
+            let winner = ids
+                .iter()
+                .min_by(|a, b| {
+                    load_key
+                        .get(*a)
+                        .map(String::as_str)
+                        .unwrap_or("")
+                        .cmp(load_key.get(*b).map(String::as_str).unwrap_or(""))
+                })
+                .cloned();
+
+            let mods: Vec<ConflictMod> = {
+                let mut v: Vec<ConflictMod> = ids
+                    .iter()
+                    .map(|id| ConflictMod {
+                        id: id.clone(),
+                        title: title_by_id
+                            .get(id)
+                            .cloned()
+                            .unwrap_or_else(|| id.clone()),
+                        wins: Some(id) == winner.as_ref(),
+                    })
+                    .collect();
+                // winner first
+                v.sort_by(|a, b| b.wins.cmp(&a.wins).then(a.title.cmp(&b.title)));
+                v
+            };
+
+            let mut asset_stems: Vec<String> = assets
+                .iter()
+                .map(|a| {
+                    Path::new(a)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or(a)
+                        .to_string()
+                })
+                .collect();
+            asset_stems.sort();
+            asset_stems.dedup();
+
+            let mut kinds: Vec<String> = asset_stems
+                .iter()
+                .map(|a| classify_asset(a))
+                .collect();
+            kinds.sort();
+            kinds.dedup();
+
+            conflicts.push(ModConflict {
+                mods,
+                kinds,
+                assets: asset_stems,
+            });
+        }
+
+        // Most-overlapping conflicts first.
+        conflicts.sort_by(|a, b| b.assets.len().cmp(&a.assets.len()));
+        Ok(conflicts)
+    }
 }
 
 /// Sanitize a string to be used as a folder name
@@ -2853,4 +3053,242 @@ fn path_segment_variants(path: &Path) -> Vec<PathBuf> {
     }
 
     variants
+}
+
+// ===== UE5 IoStore (.utoc) asset reader =====
+//
+// We only need the list of game asset paths a mod overrides — that lives in the
+// uncompressed "directory index" of the .utoc, so no Oodle/decompression is
+// required. The directory index begins with a mount-point FString ("../../../"
+// for these mods); we locate it directly rather than summing the variable TOC
+// sections (some paks include a perfect-hash block that shifts the offset).
+
+const NONE_ENTRY: u32 = 0xFFFF_FFFF;
+
+fn read_u32(buf: &[u8], off: usize) -> Option<u32> {
+    buf.get(off..off + 4)
+        .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+}
+
+fn read_i32(buf: &[u8], off: usize) -> Option<i32> {
+    buf.get(off..off + 4)
+        .map(|b| i32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+}
+
+/// Read an Unreal FString at `off`. Returns (string, new_offset).
+/// Positive length => UTF-8 (incl. trailing NUL); negative => UTF-16LE.
+fn read_fstring(buf: &[u8], off: usize) -> Option<(String, usize)> {
+    let n = read_i32(buf, off)?;
+    let mut off = off + 4;
+    if n == 0 {
+        return Some((String::new(), off));
+    }
+    if n < 0 {
+        let count = (-n) as usize;
+        let bytes = buf.get(off..off + count * 2)?;
+        off += count * 2;
+        let u16s: Vec<u16> = bytes
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        let s = String::from_utf16_lossy(&u16s)
+            .trim_end_matches('\u{0}')
+            .to_string();
+        Some((s, off))
+    } else {
+        let count = n as usize;
+        let bytes = buf.get(off..off + count)?;
+        off += count;
+        let s = String::from_utf8_lossy(bytes)
+            .trim_end_matches('\u{0}')
+            .to_string();
+        Some((s, off))
+    }
+}
+
+/// Parse the FIoDirectoryIndexResource starting at `start`, returning every
+/// file it lists as (full path, chunk index). The chunk index (the entry's
+/// user_data) points into the TOC's chunk tables, letting callers look up the
+/// per-chunk content hash.
+fn parse_directory_index(buf: &[u8], start: usize) -> Option<Vec<(String, u32)>> {
+    let (_mount, mut off) = read_fstring(buf, start)?;
+
+    let ndir = read_u32(buf, off)? as usize;
+    off += 4;
+    // dir entries: name, first_child, next_sibling, first_file (4 x u32)
+    let mut dirs: Vec<[u32; 4]> = Vec::with_capacity(ndir);
+    for _ in 0..ndir {
+        let e = [
+            read_u32(buf, off)?,
+            read_u32(buf, off + 4)?,
+            read_u32(buf, off + 8)?,
+            read_u32(buf, off + 12)?,
+        ];
+        off += 16;
+        dirs.push(e);
+    }
+
+    let nfile = read_u32(buf, off)? as usize;
+    off += 4;
+    // file entries: name, next_file, user_data (3 x u32)
+    let mut files: Vec<[u32; 3]> = Vec::with_capacity(nfile);
+    for _ in 0..nfile {
+        let e = [
+            read_u32(buf, off)?,
+            read_u32(buf, off + 4)?,
+            read_u32(buf, off + 8)?,
+        ];
+        off += 12;
+        files.push(e);
+    }
+
+    let nstr = read_u32(buf, off)? as usize;
+    off += 4;
+    let mut strings: Vec<String> = Vec::with_capacity(nstr);
+    for _ in 0..nstr {
+        let (s, n) = read_fstring(buf, off)?;
+        off = n;
+        strings.push(s);
+    }
+
+    let name = |i: u32| -> &str {
+        if i != NONE_ENTRY && (i as usize) < strings.len() {
+            &strings[i as usize]
+        } else {
+            ""
+        }
+    };
+
+    let mut out: Vec<(String, u32)> = Vec::new();
+    if dirs.is_empty() {
+        return Some(out);
+    }
+
+    // Iterative depth-first walk to avoid recursion limits / cycles.
+    // stack holds (dir_index, parent_path).
+    let mut stack: Vec<(u32, String)> = vec![(0, String::new())];
+    let mut guard = 0usize;
+    while let Some((di, prefix)) = stack.pop() {
+        guard += 1;
+        if di == NONE_ENTRY || di as usize >= dirs.len() || guard > 1_000_000 {
+            continue;
+        }
+        let d = dirs[di as usize];
+        let nm = name(d[0]);
+        let path = if nm.is_empty() {
+            prefix.clone()
+        } else {
+            format!("{}/{}", prefix.trim_end_matches('/'), nm)
+        };
+
+        // files in this directory: (name, next_file, user_data=chunk index)
+        let mut fi = d[3];
+        while fi != NONE_ENTRY && (fi as usize) < files.len() {
+            let fe = files[fi as usize];
+            let fname = name(fe[0]);
+            if !fname.is_empty() {
+                out.push((format!("{}/{}", path.trim_end_matches('/'), fname), fe[2]));
+            }
+            fi = fe[1];
+        }
+
+        // child directories (push siblings + this child)
+        let mut c = d[1];
+        while c != NONE_ENTRY && (c as usize) < dirs.len() {
+            stack.push((c, path.clone()));
+            c = dirs[c as usize][2];
+        }
+    }
+
+    Some(out)
+}
+
+/// Read the assets a mod's `.utoc` overrides, as a map of the `.uasset` path
+/// to a content hash. The hash combines the TOC chunk hashes of the asset AND
+/// its sibling payload files (`.ubulk`/`.uexp` share the same stem), so two
+/// mods shipping byte-identical copies of an asset produce the same value.
+fn read_utoc_assets(path: &Path) -> Result<HashMap<String, String>, String> {
+    let buf = fs::read(path).map_err(|e| format!("read utoc: {}", e))?;
+    if buf.len() < 0x90 || &buf[0..16] != b"-==--==--==--==-" {
+        return Err("not a TOC file".into());
+    }
+    // header: magic[16] version u8 reserved u8 reserved u16, then u32 fields:
+    // header_size, entry_count, block_count, block_size, method_count,
+    // method_len, compression_block_size, dir_index_size, ...
+    let dir_index_size = read_u32(&buf, 16 + 4 + 4 * 7)
+        .ok_or("truncated header")? as usize;
+
+    // Find the mount point string "../../../" and back up 4 bytes to its
+    // length prefix. We locate the directory index this way rather than
+    // summing section sizes (some paks include a perfect-hash block that
+    // shifts the offset).
+    let needle = b"../../../";
+    let mloc = buf
+        .windows(needle.len())
+        .position(|w| w == needle)
+        .ok_or("directory index not found")?;
+    if mloc < 4 {
+        return Err("malformed directory index".into());
+    }
+    let start = mloc - 4;
+
+    let files = parse_directory_index(&buf, start)
+        .ok_or_else(|| String::from("failed to parse directory index"))?;
+
+    // Chunk metas follow the directory index: one FIoStoreTocEntryMeta per
+    // chunk = 32-byte content hash + 1 flag byte (33 bytes each).
+    let metas_start = start + dir_index_size;
+    let chunk_hash_hex = |idx: u32| -> Option<String> {
+        let s = metas_start + (idx as usize) * 33;
+        buf.get(s..s + 32)
+            .map(|h| h.iter().map(|b| format!("{b:02x}")).collect())
+    };
+
+    // Group files by stem so payload siblings feed into the asset's hash.
+    let mut stem_parts: HashMap<String, Vec<(String, String)>> = HashMap::new();
+    for (fpath, chunk_idx) in &files {
+        let (stem, ext) = match fpath.rsplit_once('.') {
+            Some((s, e)) => (s.to_string(), e.to_string()),
+            None => (fpath.clone(), String::new()),
+        };
+        let h = chunk_hash_hex(*chunk_idx).unwrap_or_default();
+        stem_parts.entry(stem).or_default().push((ext, h));
+    }
+
+    let mut out: HashMap<String, String> = HashMap::new();
+    for (stem, mut parts) in stem_parts {
+        if !parts.iter().any(|(e, _)| e == "uasset") {
+            continue;
+        }
+        parts.sort();
+        let combined: String = parts
+            .iter()
+            .map(|(e, h)| format!("{e}:{h}"))
+            .collect::<Vec<_>>()
+            .join("|");
+        out.insert(format!("{stem}.uasset"), combined);
+    }
+    Ok(out)
+}
+
+/// Map an asset file stem to a human-readable conflict "kind" for the UI.
+fn classify_asset(stem: &str) -> String {
+    let s = stem.to_lowercase();
+    if s.starts_with("sk_") || s.contains("_skeleton") || s.contains("_lobby") {
+        "Body Mesh".to_string()
+    } else if s.contains("_body_") || s.ends_with("_body") || s.contains("body_0") {
+        "Body Skin".to_string()
+    } else if s.contains("_hair") {
+        "Hair".to_string()
+    } else if s.contains("_head") || s.contains("_face") || s.contains("_eyes") {
+        "Face".to_string()
+    } else if s.contains("_equip") || s.contains("_custom") || s.contains("_cloth") {
+        "Outfit".to_string()
+    } else if s.contains("_weapon") || s.contains("_rifle") || s.contains("_sword") {
+        "Weapon".to_string()
+    } else if s.starts_with("mi_") || s.starts_with("m_") {
+        "Material".to_string()
+    } else {
+        "Other".to_string()
+    }
 }
