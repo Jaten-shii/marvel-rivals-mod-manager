@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { listen } from '@tauri-apps/api/event';
 import { useGetAppSettings } from '../hooks/useSettings';
 import { useFileWatcher } from '../hooks/useFileWatcher';
@@ -20,6 +20,16 @@ import { useInstallFromArchive } from '../hooks/useInstallFromArchive';
 import { toast } from 'sonner';
 import { invoke } from '@tauri-apps/api/core';
 import { detectCharacterFromMultipleSources } from '../utils/characterDetection';
+import { c, tint } from '../shared/rivals-tokens';
+import type { ModCategory, ModInfo } from '../types/mod.types';
+
+// Add-on-looking file names: only the explicit markers "addon"/"add-on"/
+// "optional". Deliberately NOT "alt" — in this modding scene "Alt2"-style
+// names are BASE variants of a skin, and matching them made a base-plus-addon
+// archive tie in the sort (both "addon-ish") and keep the broken order.
+function looksLikeAddon(name: string): boolean {
+  return /add[-_ ]?on/i.test(name) || /optional/i.test(name);
+}
 
 // Global lock to prevent duplicate processing across HMR instances
 declare global {
@@ -41,6 +51,9 @@ export function ModManager() {
   const metadataDialogOpen = useUIStore((state) => state.metadataDialogOpen);
   const setMetadataDialogOpen = useUIStore((state) => state.setMetadataDialogOpen);
   const { data: mods, isRefetching, refetch: refetchMods } = useGetMods();
+  // Saving a mod's metadata can rename folders and shift path-based ids;
+  // never open the next dialog until every in-flight mutation has settled.
+  const pendingMutations = useIsMutating();
 
   // Archive installation workflow state
   const [showModSelectionDialog, setShowModSelectionDialog] = useState(false);
@@ -49,6 +62,9 @@ export function ModManager() {
   const [isInInstallationSequence, setIsInInstallationSequence] = useState(false);
   const [hasOpenedDialogForCurrentMod, setHasOpenedDialogForCurrentMod] = useState(false);
   const [expectedModFilePath, setExpectedModFilePath] = useState<string | null>(null);
+  // First non-add-on mod installed in the current batch — suggested as parent
+  // when an add-on from the same batch opens its metadata dialog.
+  const sequenceParentIdRef = useRef<string | null>(null);
   // Retries for the find-installed-mod-by-path lookup below. On cold start
   // (app launched by an nxm:// link) the install can finish while the very
   // first mods scan is still in flight; invalidateQueries then dedupes into
@@ -273,7 +289,7 @@ export function ModManager() {
   // Watch for refetch completion to find mod by file path and open dialog
   useEffect(() => {
     // Only proceed if we're expecting a mod and refetch just completed
-    if (!isRefetching && expectedModFilePath && mods) {
+    if (!isRefetching && pendingMutations === 0 && expectedModFilePath && mods) {
       console.log('[ModManager] Refetch completed, looking for mod with file path:', expectedModFilePath);
 
       // Normalize path for comparison (handle mixed slashes)
@@ -298,9 +314,22 @@ export function ModManager() {
         modLookupAttemptsRef.current = 0;
         setExpectedModFilePath(null);
 
+        // Track the batch's base mod / suggest it as the add-on's parent.
+        // Only mods without an existing parent get the suggestion.
+        const isAddonLike = looksLikeAddon(installedMod.originalFileName || installedMod.name);
+        let suggestedParent: string | null = null;
+        if (isAddonLike) {
+          if (sequenceParentIdRef.current && sequenceParentIdRef.current !== installedMod.id && !installedMod.metadata.parentModId) {
+            suggestedParent = sequenceParentIdRef.current;
+            console.log('[ModManager] Suggesting parent for add-on:', suggestedParent);
+          }
+        } else if (!sequenceParentIdRef.current) {
+          sequenceParentIdRef.current = installedMod.id;
+        }
+
         // Open the dialog with the correct ID from the fresh scan
         setHasOpenedDialogForCurrentMod(true);
-        setMetadataDialogOpen(true, installedMod.id);
+        setMetadataDialogOpen(true, installedMod.id, suggestedParent);
 
         toast.success(
           selectedModsToInstall.length > 1
@@ -324,17 +353,27 @@ export function ModManager() {
         toast.error('Failed to locate installed mod. Please refresh and try again.');
       }
     }
-  }, [isRefetching, expectedModFilePath, mods, selectedModsToInstall.length, currentModIndexInInstallation, refetchMods]);
+  }, [isRefetching, pendingMutations, expectedModFilePath, mods, selectedModsToInstall.length, currentModIndexInInstallation, refetchMods]);
 
   // Install mods and open metadata editor for each
   const installAndEditMod = async (modsToInstall: DetectedMod[]) => {
-    setSelectedModsToInstall(modsToInstall);
+    // Base mods first, add-on-looking paks last, so a parent exists (and can
+    // be pre-selected) by the time an add-on's metadata dialog opens.
+    // Archives often sort "…_Alt_addon.pak" before the base pak otherwise.
+    const ordered = [...modsToInstall].sort((a, b) => {
+      const aAddon = looksLikeAddon(a.pakFile.split(/[\\/]/).pop() ?? '');
+      const bAddon = looksLikeAddon(b.pakFile.split(/[\\/]/).pop() ?? '');
+      return Number(aAddon) - Number(bAddon);
+    });
+
+    sequenceParentIdRef.current = null;
+    setSelectedModsToInstall(ordered);
     setCurrentModIndexInInstallation(0);
     setIsInInstallationSequence(true);
     setHasOpenedDialogForCurrentMod(false); // Reset flag for new sequence
 
     // Start installing first mod
-    await installNextModInSequence(modsToInstall, 0);
+    await installNextModInSequence(ordered, 0);
   };
 
   // Sequential function to install mods one by one
@@ -557,6 +596,48 @@ export function ModManager() {
     installAndEditMod(selectedMods);
   };
 
+  // Combine many paks from one archive into a single mod (parent + add-ons).
+  // One backend call, one metadata dialog for the parent — not one per pak.
+  const handleGroupInstallConfirm = async (selectedMods: DetectedMod[], groupName: string, category: ModCategory) => {
+    setShowModSelectionDialog(false);
+    toast.info(`Installing ${selectedMods.length} paks as "${groupName}"…`);
+    try {
+      const parent = await invoke<ModInfo>('install_mod_group', {
+        pakFiles: selectedMods.map((m) => m.pakFile),
+        groupName,
+        category,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['mods', 'list'] });
+      toast.success(`Installed ${selectedMods.length} paks as one mod with ${selectedMods.length - 1} add-ons`);
+      // Open the parent's metadata dialog via the usual find-by-path flow
+      modLookupAttemptsRef.current = 0;
+      setExpectedModFilePath(parent.filePath);
+    } catch (error) {
+      console.error('[ModManager] Group install failed:', error);
+      toast.error(`Group install failed: ${error}`);
+    } finally {
+      setIsProcessingArchive(false);
+      resetArchiveInstallation();
+    }
+  };
+
+  // Bail out of a multi-mod install sequence. Mods already installed stay;
+  // everything still queued (including further archives) is dropped.
+  const cancelInstallSequence = () => {
+    setIsInInstallationSequence(false);
+    setSelectedModsToInstall([]);
+    setCurrentModIndexInInstallation(0);
+    setHasOpenedDialogForCurrentMod(false);
+    setArchiveQueue([]);
+    setIsProcessingArchive(false);
+    setExpectedModFilePath(null);
+    sequenceParentIdRef.current = null;
+    modLookupAttemptsRef.current = 0;
+    resetArchiveInstallation();
+    setMetadataDialogOpen(false);
+    toast.info('Installation cancelled — mods already installed were kept');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -635,7 +716,29 @@ export function ModManager() {
         onOpenChange={setShowModSelectionDialog}
         detectedMods={detectedMods}
         onConfirm={handleModSelectionConfirm}
+        onConfirmGroup={handleGroupInstallConfirm}
       />
+
+      {/* Batch install progress + cancel — floats above everything while a
+          multi-mod sequence is running so there's always a way out */}
+      {isInInstallationSequence && selectedModsToInstall.length > 1 && (
+        <div
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 rounded-xl"
+          style={{ padding: '10px 12px 10px 18px', background: c.panel, border: `1px solid ${c.line2}`, boxShadow: '0 14px 40px rgba(0,0,0,0.55)' }}
+        >
+          <span className="rivals-mono" style={{ color: c.ink2, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Installing {Math.min(Math.max(currentModIndexInInstallation, 1), selectedModsToInstall.length)} of {selectedModsToInstall.length}
+          </span>
+          <span style={{ width: 1.5, height: 16, background: c.line2, transform: 'skewX(-18deg)' }} />
+          <button
+            onClick={cancelInstallSequence}
+            className="rivals-condensed cursor-pointer"
+            style={{ padding: '5px 13px', borderRadius: 7, background: tint(c.err, 12), color: c.err, border: `1px solid ${tint(c.err, 40)}`, fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+          >
+            Cancel Remaining
+          </button>
+        </div>
+      )}
 
       {/* Mod Details Panel - slides in from right when mod is selected */}
       {selectedModId && <ModDetailsPanel />}

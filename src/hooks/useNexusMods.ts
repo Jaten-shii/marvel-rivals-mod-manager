@@ -3,6 +3,7 @@ import { onOpenUrl, getCurrent } from '@tauri-apps/plugin-deep-link';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
+import { APP_VERSION } from '@/shared/constants';
 
 // ── NXM URL Parsing ─────────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ async function nexusFetch(endpoint: string, apiKey: string) {
     headers: {
       'APIKEY': apiKey,
       'Application-Name': 'Marvel Rivals Mod Manager',
-      'Application-Version': '5.2.0',
+      'Application-Version': APP_VERSION,
     },
   });
 
@@ -100,6 +101,64 @@ export async function getDownloadUrl(apiKey: string, gameId: string, modId: numb
     `/games/${gameId}/mods/${modId}/files/${fileId}/download_link.json?key=${key}&expires=${expires}`,
     apiKey,
   );
+}
+
+// ── Discover feed (in-app browsing) ─────────────────────────────────────────
+
+export interface NexusModSummary {
+  mod_id: number;
+  name?: string;
+  summary?: string;
+  description?: string;
+  picture_url?: string | null;
+  version?: string;
+  author?: string;
+  uploaded_by?: string;
+  endorsement_count?: number;
+  mod_downloads?: number;
+  updated_timestamp?: number;
+  created_timestamp?: number;
+  contains_adult_content?: boolean;
+  status?: string;
+  available?: boolean;
+}
+
+export interface NexusFileEntry {
+  file_id: number;
+  name: string;
+  version?: string;
+  category_name?: string | null;
+  size_kb?: number;
+  uploaded_timestamp?: number;
+  description?: string;
+}
+
+/** The 10 newest mods, fully hydrated (fixed size, no pagination). */
+export async function getLatestAdded(apiKey: string, gameId: string): Promise<NexusModSummary[]> {
+  return nexusFetch(`/games/${gameId}/mods/latest_added.json`, apiKey);
+}
+
+/** Every mod updated (or newly added) in the period — ids + timestamps only. */
+export async function getUpdatedMods(
+  apiKey: string,
+  gameId: string,
+  period: '1d' | '1w' | '1m',
+): Promise<{ mod_id: number; latest_file_update: number; latest_mod_activity: number }[]> {
+  return nexusFetch(`/games/${gameId}/mods/updated.json?period=${period}`, apiKey);
+}
+
+export async function getModFiles(apiKey: string, gameId: string, modId: number): Promise<{ files: NexusFileEntry[] }> {
+  return nexusFetch(`/games/${gameId}/mods/${modId}/files.json`, apiKey);
+}
+
+/** Who owns this key — is_premium unlocks direct API download links. */
+export async function validateNexusUser(apiKey: string): Promise<{ name?: string; is_premium?: boolean }> {
+  return nexusFetch('/users/validate.json', apiKey);
+}
+
+/** Premium-only variant: download link without the nxm key/expires pair. */
+export async function getPremiumDownloadLink(apiKey: string, gameId: string, modId: number, fileId: number) {
+  return nexusFetch(`/games/${gameId}/mods/${modId}/files/${fileId}/download_link.json`, apiKey);
 }
 
 // ── NXM Deep Link Hook ─────────────────────────────────────────────────────

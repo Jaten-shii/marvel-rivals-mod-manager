@@ -53,6 +53,7 @@ const CHARACTER_PATTERNS: Record<string, string[]> = {
   'Black Cat': ['black-cat', 'blackcat', 'felicia', 'hardy'],
   'Devil Dinosaur': ['devil-dinosaur', 'devildinosaur', 'devil-dino', 'devildino', 'dino', 'moon-girl', 'moongirl', 'lunella'],
   'Cyclops': ['cyclops', 'scott', 'summers'],
+  'Jubilee': ['jubilee', 'jubilation', 'jubilation-lee', 'jubilationlee'],
 };
 
 /**

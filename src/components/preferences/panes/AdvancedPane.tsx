@@ -75,17 +75,32 @@ export const AdvancedPane: React.FC = () => {
       <SettingsSection title="API Key" icon={<Key className="w-4 h-4" />}>
         <SettingsCard pad={16} className="space-y-3">
           <p style={{ color: c.ink3, fontFamily: c.font, fontSize: 12.5 }}>
-            Required for &ldquo;Download with Manager&rdquo; from Nexus Mods. Get your key from{' '}
-            <a
-              href="https://www.nexusmods.com/users/myaccount?tab=api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:underline"
-              style={{ color: c.accent }}
-            >
-              nexusmods.com <ExternalLink className="w-3 h-3" />
-            </a>
+            Required for &ldquo;Download with Manager&rdquo; from Nexus Mods. Every Nexus account gets a free
+            personal key — here&rsquo;s where it hides:
           </p>
+          <div className="space-y-2">
+            {[
+              <>Sign in on nexusmods.com, then open <span style={{ color: c.ink2, fontWeight: 600 }}>Site preferences → API Keys</span> (or use the button below)</>,
+              <>Scroll to the very bottom of that page, to the <span style={{ color: c.ink2, fontWeight: 600 }}>Personal API Key</span> section</>,
+              <>Click <span style={{ color: c.ink2, fontWeight: 600 }}>Request API Key</span>, then copy the key it generates</>,
+              <>Paste it below and hit Save</>,
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-2.5" style={{ color: c.ink2, fontFamily: c.font, fontSize: 12.5 }}>
+                <span className="rivals-mono flex-shrink-0" style={{ color: c.accent, fontSize: 11, marginTop: 1 }}>{String(i + 1).padStart(2, '0')}</span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+          <a
+            href="https://www.nexusmods.com/settings/api-keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="settings-btn inline-flex items-center gap-2 cursor-pointer"
+            style={{ padding: '7px 13px', borderRadius: 7, background: tint(c.accent, 12), color: c.accent, border: `1px solid ${tint(c.accent, 40)}`, fontFamily: c.font, fontSize: 12.5, fontWeight: 600, width: 'fit-content' }}
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open your Nexus API keys page
+          </a>
           <NexusApiKeyInput />
         </SettingsCard>
       </SettingsSection>

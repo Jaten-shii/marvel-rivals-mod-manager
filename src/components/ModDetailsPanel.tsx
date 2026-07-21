@@ -1,15 +1,15 @@
 import { useUIStore } from '../stores';
 import { useGetMods, useDeleteMod, useToggleModEnabled, useToggleFavorite, useGetAllCostumes } from '../hooks/useMods';
-import type { Costume } from '../types/mod.types';
+import type { Costume, ModInfo } from '../types/mod.types';
 import { ScrollArea } from './ui/scroll-area';
-import { X, Edit, Trash2, FolderOpen, Power, PowerOff, Star, Copy, Check, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { X, Edit, Trash2, FolderOpen, Star, Copy, Check, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { dirname } from '@tauri-apps/api/path';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { c, tint, categoryColor, getCharacterIconPath, getCostumeIconSrc } from '../shared/rivals-tokens';
+import { c, tint, categoryColor, getCharacterIconPath, getCostumeIconSrc, addonDisplayName } from '../shared/rivals-tokens';
 import { CategoryIcon, WarnIcon } from '../shared/rivals-design';
 import { useDominantColor } from '../hooks/useDominantColor';
 
@@ -32,7 +32,7 @@ function RingAvatar({ src, alt, size }: { src: string; alt: string; size: number
 
 // Helper function to get costume for a mod
 function getCostumeForMod(
-  mod: any,
+  mod: ModInfo,
   allCostumes: Record<string, Costume[]> | undefined
 ): Costume | null {
   if (!mod.character || !mod.metadata.costume || !allCostumes) return null;
@@ -86,10 +86,15 @@ export function ModDetailsPanel() {
   const [showIdSection, setShowIdSection] = useState(false);
 
   const mod = mods?.find((m) => m.id === selectedModId);
+  const heroGlow = useDominantColor(mod?.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null);
 
   if (!mod) return null;
 
   const costume = getCostumeForMod(mod, allCostumes);
+
+  // Family: add-ons attached to this mod, or the parent if this IS an add-on
+  const addons = (mods ?? []).filter((m) => m.metadata.parentModId === mod.id);
+  const parentMod = mod.metadata.parentModId ? (mods ?? []).find((m) => m.id === mod.metadata.parentModId) ?? null : null;
 
   const handleClose = () => setSelectedModId(null);
 
@@ -154,31 +159,36 @@ export function ModDetailsPanel() {
   const thumbnailSrc = mod.thumbnailPath ? convertFileSrc(mod.thumbnailPath) : null;
   const catColor = categoryColor(mod.category);
 
-  const HeroTitle = () => (
+  // Category/NSFW kickers + author — shown on dark glass over art, or inline
+  // above the title when there's no artwork to fight with.
+  const tagCluster = (
+    <>
+      <span className="kicker-tag rivals-condensed" style={{ color: catColor }}>
+        <CategoryIcon category={mod.category} stroke={catColor} size={11} />
+        {mod.category}
+      </span>
+      {mod.metadata.isNsfw && (
+        <span className="kicker-tag rivals-condensed" style={{ color: 'var(--rivals-nsfw-bright)' }}>
+          <WarnIcon stroke="var(--rivals-nsfw-bright)" size={11} />
+          NSFW
+        </span>
+      )}
+      {mod.metadata.author && (
+        <span className="rivals-mono" style={{ color: c.ink3, fontSize: 10.5, letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+          By {mod.metadata.author}
+        </span>
+      )}
+    </>
+  );
+
+  const heroTitle = (
     <>
       <h2 className="rivals-condensed" style={{ color: c.ink, fontSize: 44, fontWeight: 800, lineHeight: 1, letterSpacing: '0.005em', textTransform: 'uppercase', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
         {mod.metadata.title || mod.name}
       </h2>
       {mod.metadata.subtitle && (
-        <p className="mt-1.5" style={{ color: c.ink2, fontFamily: c.font, fontSize: 13.5, fontStyle: 'italic' }}>{mod.metadata.subtitle}</p>
+        <p className="rivals-display mt-1.5" style={{ color: c.ink2, fontSize: 15, fontStyle: 'italic', fontWeight: 500 }}>{mod.metadata.subtitle}</p>
       )}
-      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-        <span className="inline-flex items-center gap-1" style={{ padding: '2px 8px', borderRadius: 999, background: tint(catColor, 16), color: catColor, border: `1px solid ${tint(catColor, 40)}`, fontFamily: c.font, fontSize: 11, fontWeight: 600 }}>
-          <CategoryIcon category={mod.category} stroke={catColor} size={10} />
-          {mod.category}
-        </span>
-        {mod.metadata.isNsfw && (
-          <span className="inline-flex items-center gap-1" style={{ padding: '2px 8px', borderRadius: 999, background: tint(c.nsfw, 18), color: 'var(--rivals-nsfw-bright)', border: `1px solid ${tint(c.nsfw, 45)}`, fontFamily: c.font, fontSize: 11, fontWeight: 600 }}>
-            <WarnIcon stroke="var(--rivals-nsfw-bright)" size={10} />
-            NSFW
-          </span>
-        )}
-        {mod.metadata.author && (
-          <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 12.5 }}>
-            <span style={{ color: c.muted }}>·</span> by <span style={{ color: c.ink2, fontWeight: 500 }}>{mod.metadata.author}</span>
-          </span>
-        )}
-      </div>
     </>
   );
 
@@ -194,7 +204,7 @@ export function ModDetailsPanel() {
       {/* Panel */}
       <div
         className="fixed inset-y-0 right-0 w-[700px] z-50 flex flex-col animate-in slide-in-from-right duration-200"
-        style={{ background: c.bg, borderLeft: `1px solid ${c.line2}`, boxShadow: '-8px 0 30px rgba(0,0,0,0.5)' }}
+        style={{ background: c.bg, borderLeft: `1px solid ${c.line2}`, boxShadow: '-8px 0 30px rgba(0,0,0,0.5)', ['--glow-color' as string]: heroGlow ?? c.accent }}
       >
         {/* Hero area — thumbnail with close button overlaid */}
         <div className="relative flex-shrink-0">
@@ -203,13 +213,20 @@ export function ModDetailsPanel() {
               <img src={thumbnailSrc} alt={mod.name} className="w-full h-full object-cover" />
               {/* Gradient fade at bottom into the panel bg */}
               <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${c.bg}, ${tint(c.bg, 20)} 40%, transparent)` }} />
-              <div className="absolute bottom-0 left-0 right-0 p-6 pb-5">
-                <HeroTitle />
+              <div className="absolute bottom-0 left-0 right-0 p-6 pb-5" style={{ paddingRight: 210 }}>
+                {heroTitle}
+              </div>
+              {/* Tags + author on dark glass, bottom-right — always legible */}
+              <div className="art-tag-plate is-right">
+                {tagCluster}
               </div>
             </div>
           ) : (
             <div className="p-6 pt-14 pb-5">
-              <HeroTitle />
+              <div className="flex items-center flex-wrap" style={{ gap: 14, marginBottom: 8 }}>
+                {tagCluster}
+              </div>
+              {heroTitle}
             </div>
           )}
 
@@ -225,24 +242,17 @@ export function ModDetailsPanel() {
           </button>
         </div>
 
+        {/* Artwork-tinted seam between hero and actions */}
+        <div aria-hidden className="card-glow-seam" />
+
         {/* Action bar — primary actions, directly under the hero */}
         <div className="flex items-center gap-2 px-6 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${c.line}`, background: c.panel }}>
-          {/* Big Enable toggle */}
+          {/* Power rail — same language as the cards, sized as the primary action */}
           <button
             onClick={handleToggleEnabled}
-            className="detail-btn rivals-condensed flex-1 h-11 px-4 rounded-lg gap-2 flex items-center justify-center cursor-pointer"
-            style={{
-              ['--btn-hue' as string]: mod.enabled ? c.ok : c.accent,
-              background: mod.enabled ? c.accent : 'transparent',
-              color: mod.enabled ? c.onAccent : c.ink,
-              border: `1px solid ${mod.enabled ? c.accent : c.line2}`,
-              fontSize: 15,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
+            className={`power-rail rivals-condensed flex-1 cursor-pointer ${mod.enabled ? 'is-on' : 'is-off'}`}
           >
-            {mod.enabled ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+            <span className="power-dot" />
             {mod.enabled ? 'Enabled' : 'Disabled'}
           </button>
 
@@ -315,29 +325,49 @@ export function ModDetailsPanel() {
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-6 py-5 space-y-6">
 
-            {/* Character + Costume row */}
+            {/* Credits line: hero portrait(s) + NAME ⫽ costume, panel-scaled */}
             {mod.character && (
-              <div className="flex items-center gap-5" style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 90ms both' }}>
-                <div className="flex items-center gap-3">
-                  <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={56} />
-                  <div>
-                    <p className="rivals-mono" style={{ color: c.ink3, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Character</p>
-                    <p style={{ color: c.ink, fontFamily: c.font, fontSize: 15, fontWeight: 600 }}>{mod.character}</p>
-                  </div>
-                </div>
-
-                {costume && (
-                  <>
-                    <div className="w-px h-10" style={{ background: c.line }} />
-                    <div className="flex items-center gap-3">
-                      <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={48} />
-                      <div>
-                        <p className="rivals-mono" style={{ color: c.ink3, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>Costume</p>
-                        <p style={{ color: c.ink, fontFamily: c.font, fontSize: 14, fontWeight: 500 }}>{costume.name}</p>
-                      </div>
-                    </div>
-                  </>
+              <div className="card-credits" style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 90ms both' }}>
+                <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={52} />
+                {costume && costume.name !== 'Default' && (
+                  <span style={{ marginLeft: -20, flexShrink: 0, display: 'inline-flex' }}>
+                    <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={52} />
+                  </span>
                 )}
+                <span className="rivals-condensed truncate" style={{ color: c.ink, fontSize: 21, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0 }}>
+                  {mod.character}
+                </span>
+                <span className="card-credits-slash" style={{ height: 22 }} />
+                <span className="rivals-display truncate" style={{ color: c.ink3, fontSize: 16, fontStyle: 'italic' }}>
+                  {costume?.name ?? 'Default'}
+                </span>
+              </div>
+            )}
+
+            {/* Part of: this mod is an add-on — link back to its parent */}
+            {parentMod && (
+              <div style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 130ms both' }}>
+                <h4 className="rivals-mono mb-2.5" style={{ color: c.ink3, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Part Of</h4>
+                <button
+                  onClick={() => setSelectedModId(parentMod.id)}
+                  className="w-full flex items-center gap-3 rounded-lg cursor-pointer transition-colors"
+                  style={{ padding: '8px 10px', background: c.panel, border: `1px solid ${c.line}`, textAlign: 'left' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = tint(c.accent, 40); }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = c.line; }}
+                >
+                  {parentMod.thumbnailPath ? (
+                    <img src={convertFileSrc(parentMod.thumbnailPath)} alt="" loading="lazy" style={{ width: 64, height: 36, borderRadius: 5, objectFit: 'cover', border: `1px solid ${c.line2}`, flexShrink: 0 }} />
+                  ) : (
+                    <span style={{ width: 64, height: 36, borderRadius: 5, border: `1px solid ${c.line2}`, display: 'grid', placeItems: 'center', color: c.ink3, flexShrink: 0 }}>—</span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: 13.5, fontWeight: 600 }}>{parentMod.metadata.title || parentMod.name}</div>
+                    <div className="rivals-mono" style={{ color: c.ink3, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>
+                      Open base mod
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: c.ink3, transform: 'rotate(-90deg)' }} />
+                </button>
               </div>
             )}
 
@@ -352,17 +382,21 @@ export function ModDetailsPanel() {
               </div>
             )}
 
-            {/* Stat chips */}
-            <div className="grid grid-cols-2 gap-2.5" style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 250ms both' }}>
+            {/* Spec sheet — hairline rows instead of boxed tiles */}
+            <div style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 250ms both' }}>
               {[
                 { label: 'Version', value: mod.metadata.version ? `v${mod.metadata.version}` : '—' },
                 { label: 'Size', value: formatFileSize(mod.fileSize) },
                 { label: 'Installed', value: new Date(mod.installDate).toLocaleDateString() },
                 { label: 'Updated', value: new Date(mod.metadata.updatedAt).toLocaleDateString() },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-lg px-3.5 py-2.5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
-                  <div className="rivals-mono" style={{ color: c.ink3, fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{stat.label}</div>
-                  <div className="rivals-mono mt-0.5" style={{ color: c.ink, fontSize: 14, fontWeight: 600 }}>{stat.value}</div>
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className="flex items-baseline justify-between"
+                  style={{ padding: '9px 2px', borderTop: i === 0 ? 'none' : `1px solid ${c.line}` }}
+                >
+                  <span className="rivals-mono" style={{ color: c.ink3, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{stat.label}</span>
+                  <span className="rivals-mono" style={{ color: c.ink, fontSize: 13.5, fontWeight: 600 }}>{stat.value}</span>
                 </div>
               ))}
             </div>
@@ -477,6 +511,59 @@ export function ModDetailsPanel() {
                 </div>
               </div>
             </div>
+
+            {/* Add-ons attached to this mod — at the bottom, roomy rows */}
+            {addons.length > 0 && (
+              <div style={{ animation: 'metadata-fade-in 420ms cubic-bezier(0.22,1,0.36,1) 470ms both' }}>
+                <h4 className="rivals-mono mb-3" style={{ color: c.ink3, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Add-ons
+                  <span style={{ color: c.muted, marginLeft: 6 }}>{addons.length}</span>
+                </h4>
+                <div className="space-y-1.5">
+                  {addons.map((a) => {
+                    const on = a.enabled && mod.enabled;
+                    return (
+                      <div
+                        key={a.id}
+                        onClick={() => setSelectedModId(a.id)}
+                        className="flex items-center gap-3.5 rounded-lg cursor-pointer transition-colors"
+                        style={{ padding: '9px 10px' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = tint(c.warn, 8); }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {a.thumbnailPath ? (
+                          <img src={convertFileSrc(a.thumbnailPath)} alt="" loading="lazy" style={{ width: 72, height: 41, borderRadius: 6, objectFit: 'cover', border: `1px solid ${c.line2}`, flexShrink: 0, opacity: a.enabled ? 1 : 0.45, filter: a.enabled ? 'none' : 'grayscale(0.7)', transition: 'opacity 200ms ease, filter 200ms ease' }} />
+                        ) : (
+                          <span style={{ width: 72, height: 41, borderRadius: 6, border: `1px solid ${c.line2}`, display: 'grid', placeItems: 'center', color: c.ink3, flexShrink: 0, opacity: a.enabled ? 1 : 0.45 }}>+</span>
+                        )}
+                        <div className="min-w-0 flex-1" style={{ opacity: a.enabled ? 1 : 0.5, transition: 'opacity 200ms ease' }}>
+                          <div className="truncate" style={{ color: mod.enabled ? c.ink : c.ink3, fontFamily: c.font, fontSize: 14.5, fontWeight: 600 }}>
+                            {addonDisplayName(a.metadata.title || a.name, mod.metadata.title || mod.name)}
+                          </div>
+                          <div className="flex items-center gap-2.5" style={{ marginTop: 3 }}>
+                            <span className="kicker-tag rivals-condensed" style={{ color: categoryColor(a.category), fontSize: 10.5, gap: 4 }}>
+                              <CategoryIcon category={a.category} stroke={categoryColor(a.category)} size={10} />
+                              {a.category}
+                            </span>
+                            <span className="rivals-mono" style={{ color: c.ink3, fontSize: 11.5 }}>{formatFileSize(a.fileSize)}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (mod.enabled) toggleEnabled.mutate(a.id); }}
+                          disabled={!mod.enabled}
+                          data-tip={!mod.enabled ? 'Enable this mod first' : undefined}
+                          className="rivals-mono inline-flex items-center gap-1.5 flex-shrink-0"
+                          style={{ padding: '4px 5px', background: 'transparent', border: 'none', color: on ? c.ok : mod.enabled ? c.ink3 : c.muted, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, cursor: mod.enabled ? 'pointer' : 'not-allowed', opacity: mod.enabled ? 1 : 0.55 }}
+                        >
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: on ? c.ok : 'transparent', boxShadow: on ? `0 0 7px ${tint(c.ok, 90)}` : `inset 0 0 0 1.5px ${mod.enabled ? c.ink3 : c.muted}` }} />
+                          {a.enabled ? 'On' : 'Off'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

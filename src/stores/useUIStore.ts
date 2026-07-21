@@ -3,7 +3,10 @@ import { persist } from 'zustand/middleware';
 import type { ViewMode, ThemeMode, ModFilters } from '../types/mod.types';
 import type { Profile } from '../shared/profiles';
 
-export type SortOption = 'date' | 'category' | 'character' | 'name' | 'updated' | 'profile';
+export type SortOption = 'date' | 'category' | 'character' | 'name' | 'updated' | 'profile' | 'size';
+
+// Sidebar character list ordering
+export type CharSortMode = 'az' | 'role' | 'count';
 
 export interface UpdateInfo {
   version: string;
@@ -32,6 +35,12 @@ interface UIStore {
   sortBy: SortOption;
   setSortBy: (sort: SortOption) => void;
 
+  // Sidebar character list ordering (persisted)
+  charSortMode: CharSortMode;
+  charSortDesc: boolean;
+  setCharSortMode: (mode: CharSortMode) => void;
+  setCharSortDesc: (desc: boolean) => void;
+
   // NSFW Preference (persisted)
   nsfwEnabled: boolean;
   setNsfwEnabled: (enabled: boolean) => void;
@@ -50,7 +59,10 @@ interface UIStore {
   setPreferencesOpen: (open: boolean) => void;
   metadataDialogOpen: boolean;
   metadataDialogModId: string | null;
-  setMetadataDialogOpen: (open: boolean, modId?: string | null) => void;
+  // Parent suggestion for freshly installed add-ons (batch installs pass the
+  // base mod installed earlier in the same archive)
+  metadataDialogSuggestedParentId: string | null;
+  setMetadataDialogOpen: (open: boolean, modId?: string | null, suggestedParentId?: string | null) => void;
   changelogDialogOpen: boolean;
   setChangelogDialogOpen: (open: boolean) => void;
   updateDialogOpen: boolean;
@@ -99,6 +111,12 @@ export const useUIStore = create<UIStore>()(
       // Sorting
       sortBy: 'date',
       setSortBy: (sort) => set({ sortBy: sort }),
+
+      // Sidebar character list ordering
+      charSortMode: 'az',
+      charSortDesc: false,
+      setCharSortMode: (mode) => set({ charSortMode: mode }),
+      setCharSortDesc: (desc) => set({ charSortDesc: desc }),
 
       // NSFW Preference
       nsfwEnabled: false, // Hide NSFW by default
@@ -151,8 +169,9 @@ export const useUIStore = create<UIStore>()(
       setPreferencesOpen: (open) => set({ preferencesOpen: open }),
       metadataDialogOpen: false,
       metadataDialogModId: null,
-      setMetadataDialogOpen: (open, modId = null) =>
-        set({ metadataDialogOpen: open, metadataDialogModId: modId }),
+      metadataDialogSuggestedParentId: null,
+      setMetadataDialogOpen: (open, modId = null, suggestedParentId = null) =>
+        set({ metadataDialogOpen: open, metadataDialogModId: modId, metadataDialogSuggestedParentId: suggestedParentId }),
       changelogDialogOpen: false,
       setChangelogDialogOpen: (open) => set({ changelogDialogOpen: open }),
       updateDialogOpen: false,
@@ -200,6 +219,8 @@ export const useUIStore = create<UIStore>()(
         viewMode: state.viewMode,
         leftSidebarOpen: state.leftSidebarOpen,
         sortBy: state.sortBy,
+        charSortMode: state.charSortMode,
+        charSortDesc: state.charSortDesc,
         nsfwEnabled: state.nsfwEnabled,
         profiles: state.profiles,
         // Don't persist filters, selectedModId, rightSidebarOpen, dialogs, or activeProfileFilter

@@ -65,7 +65,7 @@ function RingAvatar({ src, alt, size }: { src: string; alt: string; size: number
 
 
 export function MetadataDialog() {
-  const { metadataDialogOpen, metadataDialogModId, setMetadataDialogOpen } = useUIStore();
+  const { metadataDialogOpen, metadataDialogModId, metadataDialogSuggestedParentId, setMetadataDialogOpen } = useUIStore();
   const { data: mods } = useGetMods();
   const updateMetadata = useUpdateModMetadata();
   const queryClient = useQueryClient();
@@ -195,6 +195,27 @@ export function MetadataDialog() {
   const [thumbnailTimestamp, setThumbnailTimestamp] = useState(Date.now());
 
 
+  // Self-heal when the dialog opens for an id that isn't in the list.
+  // Installs and saves rename folders, and ids are path-based, so a stale
+  // list can briefly miss the mod — without this the dialog sits as a dead
+  // "Loading…" shell that closes on any click. Refetch once; if the id is
+  // still gone after fresh data, close with an explanation.
+  const missingModRetryRef = useRef(false);
+  useEffect(() => {
+    if (!metadataDialogOpen) {
+      missingModRetryRef.current = false;
+      return;
+    }
+    if (mod || !mods) return;
+    if (!missingModRetryRef.current) {
+      missingModRetryRef.current = true;
+      queryClient.refetchQueries({ queryKey: ['mods', 'list'] });
+    } else {
+      toast.error('Could not load this mod — the library changed while opening. Right-click it and edit again.');
+      setMetadataDialogOpen(false);
+    }
+  }, [metadataDialogOpen, mod, mods, queryClient, setMetadataDialogOpen]);
+
   // Load mod data when dialog opens (only when dialog opens, not on every mod update)
   useEffect(() => {
     if (metadataDialogOpen && mod) {
@@ -209,7 +230,9 @@ export function MetadataDialog() {
       setCostume(mod.metadata.costume || '');
       setCostumeLoadedFromMod(!!mod.metadata.costume); // Track if costume came from mod
       setIsNsfw(mod.metadata.isNsfw);
-      setParentModId(mod.metadata.parentModId || null);
+      // Batch installs suggest the base mod installed earlier in the same
+      // archive as this add-on's parent; a stored parent always wins.
+      setParentModId(mod.metadata.parentModId || metadataDialogSuggestedParentId || null);
       setHasChanges(false);
 
       // Check for pending Nexus Mods data (from "Download with Manager")
@@ -363,22 +386,28 @@ export function MetadataDialog() {
       },
     });
 
-    // If the mod ID changed (due to folder rename), update any addons pointing to the old ID
+    // If the mod ID changed (due to folder rename), re-point any add-ons at
+    // the new ID. Direct invokes, not the toasting mutation — a 200-add-on
+    // pack would otherwise spam 200 success toasts and 200 refetch rounds.
     if (updatedMod && updatedMod.updatedMod.id !== mod.id && mods) {
       const newId = updatedMod.updatedMod.id;
       const addonsToMigrate = mods.filter(m => m.metadata.parentModId === mod.id);
-      for (const addon of addonsToMigrate) {
-        try {
-          await updateMetadata.mutateAsync({
-            modId: addon.id,
-            metadata: {
-              ...addon.metadata,
-              parentModId: newId,
-            },
-          });
-          console.log(`[MetadataDialog] Migrated addon "${addon.name}" to new parent ID: ${newId}`);
-        } catch (err) {
-          console.error(`[MetadataDialog] Failed to migrate addon "${addon.name}":`, err);
+      if (addonsToMigrate.length > 0) {
+        let migrated = 0;
+        for (const addon of addonsToMigrate) {
+          try {
+            await invoke('update_mod_metadata', {
+              modId: addon.id,
+              metadata: { ...addon.metadata, parentModId: newId },
+            });
+            migrated++;
+          } catch (err) {
+            console.error(`[MetadataDialog] Failed to migrate addon "${addon.name}":`, err);
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ['mods', 'list'] });
+        if (migrated > 0) {
+          toast.success(`Re-linked ${migrated} add-on${migrated === 1 ? '' : 's'} to the renamed mod`);
         }
       }
     }

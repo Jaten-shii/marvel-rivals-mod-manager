@@ -693,6 +693,58 @@ async fn delete_mod(app: AppHandle, mod_id: String) -> Result<(), String> {
     service.delete_mod(&mod_id)
 }
 
+/// Marker file the NSIS uninstaller checks before offering mod cleanup.
+/// No marker = the uninstaller never prompts and never touches mods.
+fn uninstall_cleanup_marker(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {e}"))?
+        .join("remove-mods-on-uninstall.txt"))
+}
+
+#[tauri::command]
+async fn get_uninstall_cleanup(app: AppHandle) -> Result<bool, String> {
+    Ok(uninstall_cleanup_marker(&app)?.exists())
+}
+
+#[tauri::command]
+async fn set_uninstall_cleanup(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let marker = uninstall_cleanup_marker(&app)?;
+    if enabled {
+        std::fs::write(&marker, "1").map_err(|e| format!("Failed to write marker: {e}"))?;
+    } else if marker.exists() {
+        std::fs::remove_file(&marker).map_err(|e| format!("Failed to remove marker: {e}"))?;
+    }
+    log::info!("Uninstall mod cleanup set to: {enabled}");
+    Ok(())
+}
+
+/// Delete many mods in one call — single scan, one folder sweep at the end.
+#[tauri::command]
+async fn delete_mods(app: AppHandle, mod_ids: Vec<String>) -> Result<usize, String> {
+    log::info!("Bulk deleting {} mod(s)", mod_ids.len());
+    let service = get_mod_service(&app)?;
+    service.delete_mods(&mod_ids)
+}
+
+/// Install several paks from one archive as a single mod (parent + add-ons).
+#[tauri::command]
+async fn install_mod_group(
+    app: AppHandle,
+    pak_files: Vec<String>,
+    group_name: String,
+    category: types::ModCategory,
+) -> Result<ModInfo, String> {
+    log::info!(
+        "Installing {} pak(s) as group \"{}\"",
+        pak_files.len(),
+        group_name
+    );
+    let service = get_mod_service(&app)?;
+    service.install_mod_group(&pak_files, &group_name, category)
+}
+
 #[tauri::command]
 async fn update_mod_metadata(
     app: AppHandle,
@@ -1720,6 +1772,12 @@ pub fn run() {
             get_skip_intros_status,
             install_skip_intros,
             uninstall_skip_intros,
+            // Bulk operations
+            delete_mods,
+            install_mod_group,
+            // Uninstaller behavior
+            get_uninstall_cleanup,
+            set_uninstall_cleanup,
             // Nexus Mods
             download_nexus_mod,
             install_mod_from_path

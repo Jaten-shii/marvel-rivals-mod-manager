@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Palette, ExternalLink, type LucideIcon } from 'lucide-react'
+import { Settings, Palette, ExternalLink, BarChart3, type LucideIcon } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useUIStore } from '@/store/ui-store'
@@ -7,20 +7,22 @@ import { c, tint } from '@/shared/rivals-tokens'
 import { GeneralPane } from './panes/GeneralPane'
 import { AppearancePane } from './panes/AppearancePane'
 import { AdvancedPane } from './panes/AdvancedPane'
+import { StatsPane } from './panes/StatsPane'
 
-type PreferencePane = 'general' | 'appearance' | 'advanced'
+type PreferencePane = 'general' | 'appearance' | 'advanced' | 'stats'
 
 const navigationItems: { id: PreferencePane; name: string; desc: string; icon: LucideIcon }[] = [
   { id: 'general', name: 'General', desc: 'Directories, mods, updates, intros', icon: Settings },
   { id: 'appearance', name: 'Appearance', desc: 'Theme, accent, fonts, background', icon: Palette },
   { id: 'advanced', name: 'Nexus Mods', desc: 'API key & download integration', icon: ExternalLink },
+  { id: 'stats', name: 'Stats', desc: 'Your library by the numbers', icon: BarChart3 },
 ]
 
 export function PreferencesDialog() {
   const [activePane, setActivePane] = useState<PreferencePane>('general')
   const { preferencesOpen, setPreferencesOpen } = useUIStore()
 
-  const active = navigationItems.find((i) => i.id === activePane)!
+  const active = navigationItems.find((i) => i.id === activePane) ?? { id: activePane, name: 'Settings', desc: '', icon: Settings }
 
   return (
     <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
@@ -89,6 +91,7 @@ export function PreferencesDialog() {
                 {activePane === 'general' && <GeneralPane />}
                 {activePane === 'appearance' && <AppearancePane />}
                 {activePane === 'advanced' && <AdvancedPane />}
+                {activePane === 'stats' && <StatsPane />}
               </div>
             </ScrollArea>
           </main>

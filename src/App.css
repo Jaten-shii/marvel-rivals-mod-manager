@@ -574,6 +574,12 @@
 .mod-card:hover .mod-card-img {
   transform: scale(1.06);
 }
+/* No art zoom while the add-on drawer covers it — the moving image peeks
+   around the drawer's translucent glass otherwise */
+.mod-card.addons-open:hover .mod-card-img,
+.gallery-hero.addons-open:hover .mod-card-img {
+  transform: none;
+}
 
 /*
  * Cursor-tracked tilt + dominant-color glow (Cards + Gallery). The JS hook
@@ -1836,6 +1842,398 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rivals-tip-box {
+    animation: none !important;
+  }
+}
+
+/* Multi-selected cards: accent ring that survives hover states */
+.mod-card.is-selected {
+  border-color: var(--rivals-accent) !important;
+  box-shadow:
+    0 0 0 1.5px var(--rivals-accent),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Discover feed cards — same hover personality as the library cards */
+.discover-card {
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 200ms ease, box-shadow 220ms ease;
+}
+.discover-card img {
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.discover-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklch, var(--rivals-accent) 55%, transparent) !important;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in oklch, var(--rivals-accent) 22%, transparent);
+}
+.discover-card:hover img {
+  transform: scale(1.05);
+}
+@media (prefers-reduced-motion: reduce) {
+  .discover-card,
+  .discover-card img {
+    transition: none !important;
+  }
+}
+
+/* Stats pane bars grow in from the left on mount */
+.stats-bar {
+  transform-origin: left center;
+  animation: stats-bar-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes stats-bar-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats-bar { animation: none !important; }
+}
+
+/* ── View Transitions (filter/sort/view switches) ─────────────────────────
+   Discrete layout switches run inside document.startViewTransition, so the
+   old and new arrangements crossfade instead of snapping. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* ── Cinematic mod card (Cards view redesign) ─────────────────────────────
+   The card is a poster lit by its own artwork: the thumbnail's dominant
+   color (--glow-color) backlights the body through a hairline seam. Tags
+   are angular notched kickers instead of pill bubbles, character/costume
+   read as a single credits line, and enable state is a power readout. */
+
+/* Angular kicker tag: skewed notch + letterspaced condensed caps, no bubble */
+.kicker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+.kicker-notch {
+  width: 8px;
+  height: 11px;
+  transform: skewX(-18deg);
+  border-radius: 1.5px;
+  flex: 0 0 auto;
+  box-shadow: 0 0 10px color-mix(in oklch, currentColor 45%, transparent);
+}
+
+/* Corner plate on the artwork: thin dark-glass strip flush with the art's
+   bottom-left corner, right edge slashed at the Rivals angle. Holds the
+   kicker tags without eating a row of card body or blocking the art. */
+.art-tag-plate {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 5px 15px 5px 11px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(7px);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+}
+/* Top-corner variant (gallery: the title owns the art's bottom edge) */
+.art-tag-plate.is-top {
+  bottom: auto;
+  top: 0;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+/* Bottom-right variant (details panel: the title owns the bottom-left) */
+.art-tag-plate.is-right {
+  left: auto;
+  right: 0;
+  padding: 5px 11px 5px 15px;
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* ── Gallery cast rail ────────────────────────────────────────────────────
+   Character filter as a row of portraits (character-select energy) instead
+   of name pills. Active hero gets the accent ring + lift; the rest sit
+   dimmed until hovered. Names live in tooltips; the page title shows the
+   current selection anyway. */
+.cast-chip {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.55;
+  filter: saturate(0.85);
+  transition: opacity 150ms ease, filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.cast-chip:hover {
+  opacity: 1;
+  filter: saturate(1);
+  transform: translateY(-2px);
+}
+.cast-chip.is-active {
+  opacity: 1;
+  filter: saturate(1);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 2px var(--rivals-accent),
+    0 4px 16px color-mix(in oklch, var(--rivals-accent) 45%, transparent);
+}
+.cast-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--rivals-panel-hi);
+  border: 1px solid var(--rivals-line2);
+  color: var(--rivals-ink3);
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+.cast-chip.is-active .cast-badge {
+  background: var(--rivals-accent);
+  border-color: var(--rivals-accent);
+  color: var(--rivals-on-accent);
+}
+
+/* Underlined condensed tab for the ribbon's filter row */
+.ribbon-tab {
+  padding: 5px 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--rivals-ink3);
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: color 150ms ease, box-shadow 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ribbon-tab:hover {
+  color: var(--rivals-ink);
+}
+.ribbon-tab.is-active {
+  color: var(--rivals-ink);
+  box-shadow: inset 0 -2px 0 var(--tab-accent, var(--rivals-accent));
+}
+
+/* Hairline seam + soft backlight under the art, tinted by the artwork */
+.card-glow-seam {
+  position: relative;
+  height: 0;
+  z-index: 1;
+}
+.card-glow-seam::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 2%,
+    color-mix(in oklch, var(--glow-color) 42%, transparent) 22%,
+    color-mix(in oklch, var(--glow-color) 62%, transparent) 50%,
+    color-mix(in oklch, var(--glow-color) 42%, transparent) 78%,
+    transparent 98%
+  );
+  opacity: 0.75;
+  transition: opacity 150ms ease;
+}
+.card-glow-seam::after {
+  content: '';
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 0;
+  height: 84px;
+  background: radial-gradient(
+    62% 100% at 50% 0%,
+    color-mix(in oklch, var(--glow-color) 13%, transparent),
+    transparent 72%
+  );
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 150ms ease;
+}
+.mod-card:hover .card-glow-seam::before {
+  opacity: 1;
+}
+.mod-card:hover .card-glow-seam::after {
+  opacity: 1;
+}
+
+/* Credits line: HERO NAME ⫽ Costume — borderless, type does the work */
+.card-credits {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.card-credits-slash {
+  flex: 0 0 auto;
+  width: 1.5px;
+  height: 15px;
+  transform: skewX(-18deg);
+  background: color-mix(in oklch, var(--rivals-ink3) 55%, transparent);
+  border-radius: 1px;
+}
+
+/* Power readout: glowing dot + condensed state word, no box */
+.power-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 2px 4px 6px;
+  background: transparent;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.power-toggle .power-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  transition: all 150ms ease;
+}
+.power-toggle.is-on {
+  color: var(--rivals-ok);
+}
+.power-toggle.is-on .power-dot {
+  background: var(--rivals-ok);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--rivals-ok) 75%, transparent);
+  animation: power-breathe 3.2s ease-in-out infinite;
+}
+.power-toggle.is-off {
+  color: var(--rivals-ink3);
+}
+.power-toggle.is-off .power-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--rivals-ink3);
+}
+/* Hover previews the action it would take */
+.power-toggle.is-on:hover {
+  color: var(--rivals-err);
+}
+.power-toggle.is-on:hover .power-dot {
+  background: var(--rivals-err);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--rivals-err) 70%, transparent);
+  animation: none;
+}
+.power-toggle.is-off:hover {
+  color: var(--rivals-ok);
+}
+.power-toggle.is-off:hover .power-dot {
+  box-shadow: inset 0 0 0 1.5px var(--rivals-ok);
+}
+.power-toggle.powering-on .power-dot {
+  animation: power-flash 520ms ease-out, power-breathe 3.2s ease-in-out 520ms infinite;
+}
+/* Panel-scale power rail (details panel main toggle) — same language as the
+   card readout, sized as the primary action */
+.power-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+.power-rail .power-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  transition: all 150ms ease;
+}
+.power-rail.is-on {
+  color: var(--rivals-ok);
+  background: color-mix(in oklch, var(--rivals-ok) 10%, transparent);
+  border: 1px solid color-mix(in oklch, var(--rivals-ok) 32%, transparent);
+}
+.power-rail.is-on .power-dot {
+  background: var(--rivals-ok);
+  box-shadow: 0 0 9px color-mix(in oklch, var(--rivals-ok) 80%, transparent);
+  animation: power-breathe 3.2s ease-in-out infinite;
+}
+.power-rail.is-off {
+  color: var(--rivals-ink2);
+  background: transparent;
+  border: 1px solid var(--rivals-line2);
+}
+.power-rail.is-off .power-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--rivals-ink3);
+}
+.power-rail.is-on:hover {
+  color: var(--rivals-err);
+  background: color-mix(in oklch, var(--rivals-err) 9%, transparent);
+  border-color: color-mix(in oklch, var(--rivals-err) 32%, transparent);
+}
+.power-rail.is-on:hover .power-dot {
+  background: var(--rivals-err);
+  box-shadow: 0 0 9px color-mix(in oklch, var(--rivals-err) 70%, transparent);
+  animation: none;
+}
+.power-rail.is-off:hover {
+  color: var(--rivals-ok);
+  border-color: color-mix(in oklch, var(--rivals-ok) 32%, transparent);
+}
+.power-rail.is-off:hover .power-dot {
+  box-shadow: inset 0 0 0 1.5px var(--rivals-ok);
+}
+
+@keyframes power-breathe {
+  0%, 100% { box-shadow: 0 0 7px color-mix(in oklch, var(--rivals-ok) 65%, transparent); }
+  50% { box-shadow: 0 0 12px color-mix(in oklch, var(--rivals-ok) 95%, transparent); }
+}
+@keyframes power-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--rivals-ok) 90%, transparent); }
+  60% { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 7px color-mix(in oklch, var(--rivals-ok) 65%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .power-toggle .power-dot {
     animation: none !important;
   }
 }

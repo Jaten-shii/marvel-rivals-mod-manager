@@ -8,8 +8,8 @@ import { openPath } from '@tauri-apps/plugin-opener'
 import { toast } from 'sonner'
 import { ProfileItem } from './ProfileItem'
 import { ProfileDialog } from './ProfileDialog'
-import { ALL_CHARACTERS } from '@/shared/constants'
-import { c, tint, categoryColor, formatFileSize, getCharacterIconPath } from '@/shared/rivals-tokens'
+import { ALL_CHARACTERS, CHARACTER_ROLES, ROLE_ORDER, ROLE_COLORS, type CharacterRole } from '@/shared/constants'
+import { c, tint, categoryColor, formatFileSize, getCharacterIconPath, withViewTransition } from '@/shared/rivals-tokens'
 import { RingAvatar, SidebarCategoryIcon } from '@/shared/rivals-design'
 
 // Tracked uppercase mono micro-heading.
@@ -60,6 +60,9 @@ export function Sidebar() {
   const removeProfileFromAllMods = useRemoveProfileFromAllMods()
 
   const [heroFilter, setHeroFilter] = useState('')
+  const charSortMode = useUIStore((state) => state.charSortMode)
+  const charSortDesc = useUIStore((state) => state.charSortDesc)
+  const [collapsedRoles, setCollapsedRoles] = useState<Set<CharacterRole>>(new Set())
   const [showBulkProgress, setShowBulkProgress] = useState(false)
   const [bulkProgressCurrent, setBulkProgressCurrent] = useState(0)
   const [bulkProgressTotal, setBulkProgressTotal] = useState(0)
@@ -110,10 +113,51 @@ export function Sidebar() {
 
   const visibleCharacters = useMemo(() => {
     const q = heroFilter.trim().toLowerCase()
-    return ALL_CHARACTERS.filter((ch) => ch !== 'All Characters')
+    const base = ALL_CHARACTERS.filter((ch) => ch !== 'All Characters')
       .filter((ch) => (characterCounts[ch] || 0) > 0)
       .filter((ch) => !q || ch.toLowerCase().includes(q))
-  }, [characterCounts, heroFilter])
+    // ALL_CHARACTERS is alphabetical; apply the chosen ordering on top
+    const sorted = [...base]
+    if (charSortMode === 'count') {
+      sorted.sort((a, b) => (characterCounts[a] || 0) - (characterCounts[b] || 0) || a.localeCompare(b))
+    }
+    if (charSortDesc) sorted.reverse()
+    return sorted
+  }, [characterCounts, heroFilter, charSortMode, charSortDesc])
+
+  // Role-mode grouping: roles in fixed order, members follow the active sort
+  const roleGroups = useMemo(() => {
+    if (charSortMode !== 'role') return []
+    const inList = new Set(visibleCharacters)
+    return ROLE_ORDER.map((role) => ({
+      role,
+      chars: CHARACTER_ROLES[role].filter((ch) => inList.has(ch)),
+      modCount: CHARACTER_ROLES[role].reduce((s, ch) => s + (characterCounts[ch] || 0), 0),
+    })).filter((g) => g.chars.length > 0)
+  }, [charSortMode, visibleCharacters, characterCounts])
+
+  const toggleRole = useCallback((role: CharacterRole) => {
+    setCollapsedRoles((prev) => {
+      const next = new Set(prev)
+      if (next.has(role)) next.delete(role)
+      else next.add(role)
+      return next
+    })
+  }, [])
+
+  const setCharSort = useCallback((mode: 'az' | 'role' | 'count') => {
+    const { charSortMode, setCharSortMode, setCharSortDesc } = useUIStore.getState()
+    if (charSortMode !== mode) {
+      setCharSortMode(mode)
+      // Sensible default direction per mode: count wants highest first
+      setCharSortDesc(mode === 'count')
+    }
+  }, [])
+
+  const flipCharSort = useCallback(() => {
+    const { charSortDesc, setCharSortDesc } = useUIStore.getState()
+    setCharSortDesc(!charSortDesc)
+  }, [])
 
   const CATEGORY_ROWS: ModCategory[] = ['Skins', 'Audio', 'UI', 'Gameplay']
   // Enabled/Disabled quick filters use the showEnabled/showDisabled flags.
@@ -123,14 +167,18 @@ export function Sidebar() {
 
   const selectCategory = useCallback((category: ModCategory) => {
     const { filters, setFilters } = useUIStore.getState()
-    if (filters.category === category && !filters.character) setFilters({ category: null })
-    else setFilters({ category, character: null, showFavorites: false })
+    withViewTransition(() => {
+      if (filters.category === category && !filters.character) setFilters({ category: null })
+      else setFilters({ category, character: null, showFavorites: false })
+    })
   }, [])
 
   const selectCharacterGlobal = useCallback((character: Character) => {
     const { filters, setFilters } = useUIStore.getState()
-    if (filters.character === character) setFilters({ character: null })
-    else setFilters({ character, category: null, showFavorites: false })
+    withViewTransition(() => {
+      if (filters.character === character) setFilters({ character: null })
+      else setFilters({ character, category: null, showFavorites: false })
+    })
   }, [])
 
   const handleOpenModDirectory = async () => {
@@ -214,6 +262,46 @@ export function Sidebar() {
     }
   }
 
+  // Shared row renderer for both the flat list and the role groups
+  const renderCharacterRow = (character: Character) => {
+    const active = filters.character === character
+    return (
+      <button
+        key={character}
+        onClick={() => selectCharacterGlobal(character)}
+        className={`sidebar-char-row w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-colors${active ? ' is-active' : ''}`}
+        style={{
+          background: active ? c.panelHi : 'transparent',
+          color: active ? c.ink : c.ink2,
+          fontFamily: c.font,
+          fontSize: 14,
+          fontWeight: active ? 600 : 400,
+        }}
+        onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
+        onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+      >
+        <RingAvatar src={getCharacterIconPath(character)} alt={character} size={26} active={active} />
+        <span className="flex-1 text-left truncate">{character}</span>
+        <span
+          className="rivals-mono"
+          style={{
+            minWidth: 22,
+            textAlign: 'center',
+            padding: '1px 7px',
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 600,
+            background: active ? c.accent : tint(c.ink3, 12),
+            color: active ? c.onAccent : c.ink3,
+            transition: 'background 200ms ease, color 200ms ease',
+          }}
+        >
+          {characterCounts[character]}
+        </span>
+      </button>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full" style={{ background: c.panel, borderRight: `1px solid ${c.line}` }}>
       <ScrollArea type="always" className="flex-1 min-h-0 sidebar-scroll">
@@ -223,22 +311,22 @@ export function Sidebar() {
             label="All Mods"
             count={totalMods}
             active={isAllActive}
-            onClick={() => setFilters({ category: null, character: null, showFavorites: false, showEnabled: true, showDisabled: true })}
+            onClick={() => withViewTransition(() => setFilters({ category: null, character: null, showFavorites: false, showEnabled: true, showDisabled: true }))}
           />
           <FilterRow
             label="Enabled"
             count={enabledCount}
             active={enabledOnly}
-            onClick={() => setFilters({ showFavorites: false, showEnabled: true, showDisabled: enabledOnly ? true : false })}
+            onClick={() => withViewTransition(() => setFilters({ showFavorites: false, showEnabled: true, showDisabled: enabledOnly ? true : false }))}
           />
           <FilterRow
             label="Disabled"
             count={disabledCount}
             active={disabledOnly}
-            onClick={() => setFilters({ showFavorites: false, showDisabled: true, showEnabled: disabledOnly ? true : false })}
+            onClick={() => withViewTransition(() => setFilters({ showFavorites: false, showDisabled: true, showEnabled: disabledOnly ? true : false }))}
           />
           {favoriteCount > 0 && (
-            <FilterRow label="Favorites" count={favoriteCount} active={filters.showFavorites} onClick={() => setFilters({ category: null, character: null, showFavorites: true })} />
+            <FilterRow label="Favorites" count={favoriteCount} active={filters.showFavorites} onClick={() => withViewTransition(() => setFilters({ category: null, character: null, showFavorites: true }))} />
           )}
         </div>
 
@@ -289,6 +377,47 @@ export function Sidebar() {
           Characters
         </SectionLabel>
         <div className="px-3 flex flex-col gap-px">
+          {/* Ordering: A–Z / by role / by mod count, plus direction flip */}
+          <div className="flex items-center gap-1 mb-1.5">
+            {([['az', 'A–Z'], ['role', 'Role'], ['count', 'Mods']] as const).map(([mode, label]) => {
+              const active = charSortMode === mode
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setCharSort(mode)}
+                  className="rivals-mono cursor-pointer"
+                  style={{
+                    flex: 1,
+                    padding: '4px 0',
+                    borderRadius: 5,
+                    border: 'none',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    background: active ? tint(c.accent, 14) : 'transparent',
+                    color: active ? c.accent : c.ink3,
+                    transition: 'background 150ms ease, color 150ms ease',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+            <button
+              onClick={flipCharSort}
+              data-tip={
+                charSortMode === 'count'
+                  ? (charSortDesc ? 'Most mods first — click to flip' : 'Fewest mods first — click to flip')
+                  : (charSortDesc ? 'Z to A — click to flip' : 'A to Z — click to flip')
+              }
+              aria-label="Reverse character order"
+              className="rivals-mono cursor-pointer"
+              style={{ width: 24, padding: '4px 0', borderRadius: 5, border: 'none', background: 'transparent', color: c.ink3, fontSize: 11, fontWeight: 700 }}
+            >
+              {charSortDesc ? '↓' : '↑'}
+            </button>
+          </div>
           <div className="relative mb-1">
             <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: c.muted, fontFamily: c.mono, fontSize: 11 }}>⌕</span>
             <input
@@ -299,44 +428,39 @@ export function Sidebar() {
               style={{ padding: '6px 8px 6px 26px', background: c.bg, color: c.ink2, border: `1px solid ${c.line}`, borderRadius: 5, fontFamily: c.font, fontSize: 13 }}
             />
           </div>
-          {visibleCharacters.map((character) => {
-            const active = filters.character === character
-            return (
-              <button
-                key={character}
-                onClick={() => selectCharacterGlobal(character)}
-                className={`sidebar-char-row w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-colors${active ? ' is-active' : ''}`}
-                style={{
-                  background: active ? c.panelHi : 'transparent',
-                  color: active ? c.ink : c.ink2,
-                  fontFamily: c.font,
-                  fontSize: 14,
-                  fontWeight: active ? 600 : 400,
-                }}
-                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tint(c.accent, 8) }}
-                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
-              >
-                <RingAvatar src={getCharacterIconPath(character)} alt={character} size={26} active={active} />
-                <span className="flex-1 text-left truncate">{character}</span>
-                <span
-                  className="rivals-mono"
-                  style={{
-                    minWidth: 22,
-                    textAlign: 'center',
-                    padding: '1px 7px',
-                    borderRadius: 999,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    background: active ? c.accent : tint(c.ink3, 12),
-                    color: active ? c.onAccent : c.ink3,
-                    transition: 'background 200ms ease, color 200ms ease',
-                  }}
-                >
-                  {characterCounts[character]}
-                </span>
-              </button>
-            )
-          })}
+          {charSortMode === 'role' ? (
+            roleGroups.map(({ role, chars, modCount }) => {
+              const collapsed = collapsedRoles.has(role)
+              const roleColor = ROLE_COLORS[role]
+              return (
+                <div key={role}>
+                  <button
+                    onClick={() => toggleRole(role)}
+                    className="w-full flex items-center gap-2 cursor-pointer"
+                    style={{ padding: '8px 6px 5px', background: 'transparent', border: 'none' }}
+                  >
+                    <span
+                      style={{ fontSize: 8, color: roleColor, transition: 'transform 150ms ease', transform: collapsed ? 'none' : 'rotate(90deg)', display: 'inline-block', lineHeight: 1 }}
+                    >
+                      ▸
+                    </span>
+                    <span className="rivals-condensed" style={{ color: roleColor, fontSize: 13.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1 }}>
+                      {role}s
+                    </span>
+                    <span style={{ flex: 1, height: 1, background: tint(roleColor, 22) }} />
+                    <span className="rivals-mono" style={{ color: c.ink3, fontSize: 10 }}>{modCount}</span>
+                  </button>
+                  <div className="grid" style={{ gridTemplateRows: collapsed ? '0fr' : '1fr', transition: 'grid-template-rows 260ms cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                    <div className="overflow-hidden flex flex-col gap-px">
+                      {chars.map((character) => renderCharacterRow(character))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            visibleCharacters.map((character) => renderCharacterRow(character))
+          )}
           {visibleCharacters.length === 0 && (
             <div style={{ color: c.muted, fontFamily: c.font, fontSize: 11.5, fontStyle: 'italic', padding: '6px 8px' }}>No characters match.</div>
           )}

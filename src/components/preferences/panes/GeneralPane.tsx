@@ -95,6 +95,8 @@ export const GeneralPane: React.FC = () => {
   const [autoOrganize, setAutoOrganize] = useState(true)
   const [autoDetectGameDir, setAutoDetectGameDir] = useState(true)
   const [autoCheckUpdates, setAutoCheckUpdates] = useState(true)
+  // Opt-in uninstaller mod cleanup — a marker file the NSIS uninstaller reads
+  const [uninstallCleanup, setUninstallCleanup] = useState(false)
 
   useEffect(() => {
     if (settings) {
@@ -104,6 +106,26 @@ export const GeneralPane: React.FC = () => {
       setAutoCheckUpdates(settings.autoCheckUpdates)
     }
   }, [settings])
+
+  useEffect(() => {
+    invoke<boolean>('get_uninstall_cleanup')
+      .then(setUninstallCleanup)
+      .catch(() => { /* marker unreadable — leave the toggle off */ })
+  }, [])
+
+  const handleUninstallCleanup = async (enabled: boolean) => {
+    try {
+      await invoke('set_uninstall_cleanup', { enabled })
+      setUninstallCleanup(enabled)
+      toast.success(
+        enabled
+          ? 'Uninstalling will now offer to delete your mods (No stays the default)'
+          : 'Uninstalling will never touch your mods'
+      )
+    } catch (error) {
+      toast.error(`Failed to update setting: ${error}`)
+    }
+  }
 
   const handleSave = async (gameDir: string, organize: boolean, autoDetect: boolean, autoUpdates: boolean) => {
     try {
@@ -225,6 +247,11 @@ export const GeneralPane: React.FC = () => {
               label="Auto-detect Game Directory"
               description="Find Marvel Rivals installation on startup"
               control={<Switch checked={autoDetectGameDir} onCheckedChange={(v) => { setAutoDetectGameDir(v); handleSave(gameDirectory, autoOrganize, v, autoCheckUpdates) }} />}
+            />
+            <SettingRow
+              label="Remove Mods On Uninstall"
+              description="Off: uninstalling the app never touches your mods"
+              control={<Switch checked={uninstallCleanup} onCheckedChange={handleUninstallCleanup} />}
             />
           </SettingsCard>
         </SettingsSection>

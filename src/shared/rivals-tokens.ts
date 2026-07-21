@@ -8,6 +8,7 @@
  */
 
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { flushSync } from 'react-dom';
 
 // Palette tokens — every value is a CSS var so the swappable accent flows through.
 export const c = {
@@ -118,6 +119,23 @@ export function getCharacterIconPath(character: string | null | undefined): stri
   if (!character) return '/assets/character-icons/default.png';
   const file = CHAR_ICON_OVERRIDES[character] || `${character}.png`;
   return `/assets/character-icons/${file}`;
+}
+
+/**
+ * Run a state update inside a native View Transition so the whole layout
+ * crossfade-morphs to its new arrangement (WebView2 supports this). Falls
+ * back to a plain update where unsupported. Use for DISCRETE switches
+ * (view mode, filters, sort) — never per-keystroke updates.
+ */
+export function withViewTransition(update: () => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (typeof doc.startViewTransition === 'function') {
+    doc.startViewTransition(() => {
+      flushSync(update);
+    });
+  } else {
+    update();
+  }
 }
 
 /**

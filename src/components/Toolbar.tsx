@@ -3,9 +3,9 @@ import { useUIStore as useUIStoreOld } from '@/store/ui-store';
 import { useUIStore, type SortOption } from '../stores';
 import type { ViewMode } from '../types/mod.types';
 import { open } from '@tauri-apps/plugin-dialog';
-import * as opener from '@tauri-apps/plugin-opener';
 import { toast } from 'sonner';
-import { c, tint } from '../shared/rivals-tokens';
+import { c, tint, withViewTransition } from '../shared/rivals-tokens';
+import { NexusDiscoverDialog } from './NexusDiscoverDialog';
 import { APP_VERSION } from '../shared/constants';
 import { useUpdater } from '../hooks/useUpdater';
 import { Lock, Unlock, ArrowUp } from 'lucide-react';
@@ -19,6 +19,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'character', label: 'Character' },
   { value: 'name', label: 'Name' },
   { value: 'updated', label: 'Recently Updated' },
+  { value: 'size', label: 'File Size' },
   { value: 'category', label: 'Category' },
   { value: 'profile', label: 'Profile' },
   { value: 'date', label: 'Date Installed' },
@@ -72,14 +73,9 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
     }
   };
 
-  const handleBrowseNexusMods = async () => {
-    try {
-      await opener.openUrl('https://www.nexusmods.com/marvelrivals');
-    } catch (error) {
-      console.error('Failed to open NexusMods:', error);
-      toast.error('Failed to open NexusMods');
-    }
-  };
+  // Browse Nexus opens the in-app Discover feed now (website stays one
+  // click away inside the dialog header)
+  const [discoverOpen, setDiscoverOpen] = useState(false);
 
   const nsfwShown = filters.showNsfw;
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Character';
@@ -161,8 +157,9 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
       </button>
 
       {/* Browse Nexus */}
+      <NexusDiscoverDialog open={discoverOpen} onOpenChange={setDiscoverOpen} />
       <button
-        onClick={handleBrowseNexusMods}
+        onClick={() => setDiscoverOpen(true)}
         className="btn-outline px-3.5 py-2 rounded-[7px] cursor-pointer"
         style={{
           background: 'transparent',
@@ -209,7 +206,7 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
           return (
             <button
               key={v.id}
-              onClick={() => setViewMode(v.id)}
+              onClick={() => withViewTransition(() => setViewMode(v.id))}
               className={`view-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded cursor-pointer ${active ? 'is-active' : ''}`}
               style={{ fontFamily: c.font, fontSize: 12 }}
               data-tip={`${v.label} view`} data-tip-side="bottom"
@@ -268,7 +265,7 @@ export function Toolbar({ onArchiveSelect }: ToolbarProps) {
                 <button
                   key={option.value}
                   onClick={() => {
-                    setSortBy(option.value);
+                    withViewTransition(() => setSortBy(option.value));
                     setShowSortMenu(false);
                   }}
                   className="menu-item w-full px-3.5 py-2 text-left cursor-pointer"

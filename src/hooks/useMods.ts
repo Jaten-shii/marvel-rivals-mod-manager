@@ -176,6 +176,32 @@ export function useDeleteMod() {
 }
 
 /**
+ * Hook to delete many mods in one backend call (single scan + one refetch,
+ * instead of one IPC round-trip and cache write per mod).
+ */
+export function useDeleteMods() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (modIds: string[]) => {
+      const isGameRunning = await checkGameRunning()
+      if (isGameRunning) {
+        throw new Error('Cannot delete mods while Marvel Rivals is running. Please close the game first.')
+      }
+      return await invoke<number>('delete_mods', { modIds })
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: MODS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: modKeys.conflicts() })
+      toast.success(`Deleted ${count} mod${count === 1 ? '' : 's'}`)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/**
  * Hook to toggle mod enabled/disabled state
  */
 export function useToggleModEnabled() {

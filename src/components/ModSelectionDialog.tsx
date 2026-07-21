@@ -9,6 +9,7 @@ import { Checkbox } from './ui/checkbox'
 import { ScrollArea } from './ui/scroll-area'
 import { Package, Search } from 'lucide-react'
 import { c, tint, formatFileSize } from '../shared/rivals-tokens'
+import type { ModCategory } from '../types/mod.types'
 
 export interface DetectedMod {
   pakFile: string
@@ -21,6 +22,21 @@ interface ModSelectionDialogProps {
   onOpenChange: (open: boolean) => void
   detectedMods: DetectedMod[]
   onConfirm: (selectedMods: DetectedMod[]) => void
+  onConfirmGroup: (selectedMods: DetectedMod[], groupName: string, category: ModCategory) => void
+}
+
+const GROUP_CATEGORIES: ModCategory[] = ['Skins', 'Audio', 'UI', 'Gameplay']
+
+// Default group name from the shared filename prefix (e.g. 205 files named
+// "MVP_Music_XY_P.pak" suggest "MVP Music"), cleaned of separators/suffixes.
+function suggestGroupName(names: string[], prefixLen: number): string {
+  const prefix = (names[0] ?? '').slice(0, prefixLen)
+  const cleaned = prefix
+    .replace(/\.pak$/i, '')
+    .replace(/[-_. ]+$/g, '')
+    .replace(/[_.]+/g, ' ')
+    .trim()
+  return cleaned.length >= 3 ? cleaned : 'Mod Pack'
 }
 
 // Extract filename from full path
@@ -106,6 +122,7 @@ export function ModSelectionDialog({
   onOpenChange,
   detectedMods,
   onConfirm,
+  onConfirmGroup,
 }: ModSelectionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,6 +139,7 @@ export function ModSelectionDialog({
         <ModSelectionBody
           detectedMods={detectedMods}
           onConfirm={onConfirm}
+          onConfirmGroup={onConfirmGroup}
           onOpenChange={onOpenChange}
         />
       </DialogContent>
@@ -132,10 +150,14 @@ export function ModSelectionDialog({
 function ModSelectionBody({
   detectedMods,
   onConfirm,
+  onConfirmGroup,
   onOpenChange,
 }: Omit<ModSelectionDialogProps, 'open'>) {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
   const [filter, setFilter] = useState('')
+  const [combine, setCombine] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [groupCategory, setGroupCategory] = useState<ModCategory>('Skins')
 
   const affixes = useMemo(
     () => commonAffixes(detectedMods.map(m => getFileName(m.pakFile))),
@@ -196,8 +218,19 @@ function ModSelectionBody({
     const selectedMods = detectedMods.filter((_, index) =>
       selectedIndices.has(index)
     )
-    onConfirm(selectedMods)
+    if (combine && selectedMods.length > 1) {
+      onConfirmGroup(selectedMods, groupName.trim() || 'Mod Pack', groupCategory)
+    } else {
+      onConfirm(selectedMods)
+    }
     onOpenChange(false)
+  }
+
+  const enableCombine = (on: boolean) => {
+    setCombine(on)
+    if (on && !groupName) {
+      setGroupName(suggestGroupName(detectedMods.map(m => getFileName(m.pakFile)), affixes.prefix))
+    }
   }
 
   const ghostBtn: CSSProperties = {
@@ -445,6 +478,58 @@ function ModSelectionBody({
         </div>
       </ScrollArea>
 
+      {/* Combine-into-one option (needs 2+ selected to make sense) */}
+      {selectedIndices.size > 1 && (
+        <div
+          className="flex items-center gap-3 flex-wrap"
+          style={{ padding: '13px 28px', borderTop: `1px solid ${c.line}`, background: c.panel }}
+        >
+          <label className="flex items-center gap-2.5 cursor-pointer flex-shrink-0">
+            <Checkbox checked={combine} onCheckedChange={(v) => enableCombine(v === true)} className="mod-pick-check" />
+            <span style={{ color: combine ? c.ink : c.ink2, fontFamily: c.font, fontSize: 13.5, fontWeight: 600 }}>
+              Combine into one mod
+            </span>
+          </label>
+          {combine ? (
+            <>
+              <input
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Mod name…"
+                className="outline-none"
+                style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 7, background: c.bg, color: c.ink, border: `1px solid ${c.line2}`, fontFamily: c.font, fontSize: 13.5 }}
+              />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {GROUP_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setGroupCategory(cat)}
+                    className="rivals-mono cursor-pointer"
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: 6,
+                      border: 'none',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.07em',
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      background: groupCategory === cat ? tint(c.accent, 14) : 'transparent',
+                      color: groupCategory === cat ? c.accent : c.ink3,
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 12 }}>
+              One entry in your library — the rest attach as add-ons under it. Perfect for packs with many paks.
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Footer */}
       <div
         className="flex items-center gap-2.5"
@@ -478,7 +563,7 @@ function ModSelectionBody({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={selectedIndices.size === 0}
+            disabled={selectedIndices.size === 0 || (combine && selectedIndices.size > 1 && !groupName.trim())}
             className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               padding: '11px 22px',
@@ -491,8 +576,9 @@ function ModSelectionBody({
               fontWeight: 600,
             }}
           >
-            Install {selectedIndices.size} Mod
-            {selectedIndices.size !== 1 ? 's' : ''}
+            {combine && selectedIndices.size > 1
+              ? `Install as One Mod (${selectedIndices.size} paks)`
+              : `Install ${selectedIndices.size} Mod${selectedIndices.size !== 1 ? 's' : ''}`}
           </button>
         </div>
       </div>

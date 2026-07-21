@@ -62,6 +62,7 @@ export type Character =
   | 'White Fox'
   | 'Black Cat'
   | 'Devil Dinosaur'
+  | 'Jubilee'
   // Special
   | 'All Characters';
 

@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useRef, useEffect, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { PackageOpen, SearchX } from 'lucide-react';
-import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite, useModConflicts } from '../hooks/useMods';
+import { useGetMods, useGetAllCostumes, useToggleModEnabled, useToggleFavorite, useModConflicts, useSetModsEnabled, useDeleteMods } from '../hooks/useMods';
 import { useUIStore } from '../stores';
 import type { ModInfo, Costume, ModCategory, Character } from '../types/mod.types';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ModContextMenu } from './ModContextMenu';
 import { BulkActionStrip } from './BulkActionStrip';
 import { ALL_CHARACTERS } from '../shared/constants';
-import { c, tint, categoryColor, parseTitleParts, formatFileSize, getCharacterIconPath, getCostumeIconSrc, addonDisplayName } from '../shared/rivals-tokens';
+import { c, tint, categoryColor, parseTitleParts, formatFileSize, getCharacterIconPath, getCostumeIconSrc, addonDisplayName, withViewTransition } from '../shared/rivals-tokens';
 import { CategoryIcon, WarnIcon, PlusIcon, HeroChip, RingAvatar } from '../shared/rivals-design';
 import { useDominantColor } from '../hooks/useDominantColor';
 
@@ -26,6 +27,57 @@ const AnimatedCard = memo(function AnimatedCard({
       style={{ animationDelay: `${delay}s` }}
     >
       {children}
+    </div>
+  );
+});
+
+// Memoized cell for the virtualized grid. The per-mod click closures live
+// INSIDE this memo boundary and the parent passes only stable handlers, so
+// already-mounted cards skip re-rendering entirely while the virtualizer
+// updates on every scroll tick. No entrance animation: rows scrolling back
+// into view should look like they were always there, not fade in again.
+const VirtualModCard = memo(function VirtualModCard({
+  mod,
+  allCostumes,
+  sortBy,
+  addons,
+  expanded,
+  hasConflict,
+  selected,
+  highlightAddonIds,
+  onToggleExpand,
+  onSelect,
+  onCardContextMenu,
+}: {
+  mod: ModInfo;
+  allCostumes: Record<string, Costume[]> | undefined;
+  sortBy: string;
+  addons?: ModInfo[];
+  expanded: boolean;
+  hasConflict: boolean;
+  selected: boolean;
+  highlightAddonIds: Set<string>;
+  onToggleExpand: (id: string) => void;
+  onSelect: (id: string, additive?: boolean) => void;
+  onCardContextMenu: (e: React.MouseEvent, mod: ModInfo) => void;
+}) {
+  return (
+    <div className="self-start">
+      <ModCard
+        mod={mod}
+        allCostumes={allCostumes}
+        sortBy={sortBy}
+        addons={addons}
+        expanded={expanded}
+        hasConflict={hasConflict}
+        selected={selected}
+        highlightAddonIds={highlightAddonIds}
+        onToggleExpand={() => onToggleExpand(mod.id)}
+        onClick={(e) => onSelect(mod.id, e.ctrlKey || e.metaKey)}
+        onContextMenu={(e) => onCardContextMenu(e, mod)}
+        onAddonClick={(addonId) => onSelect(addonId)}
+        onAddonContextMenu={(e, addon) => onCardContextMenu(e, addon)}
+      />
     </div>
   );
 });
@@ -79,99 +131,72 @@ function useCardTilt() {
   }, []);
 }
 
-// Category pill (filled, color-coded)
-// Slim pill that fades slightly on hover.
-const fadeIn = (e: React.MouseEvent<HTMLSpanElement>) => { e.currentTarget.style.opacity = '0.65'; };
-const fadeOut = (e: React.MouseEvent<HTMLSpanElement>) => { e.currentTarget.style.opacity = '1'; };
-
-function CategoryPill({ category, size = 'sm' }: { category: ModCategory; size?: 'sm' | 'lg' }) {
-  const color = categoryColor(category);
-  const pad = size === 'lg' ? '1.5px 10px' : '1px 9px';
-  const fs = size === 'lg' ? 12 : 11.5;
+// ── Kicker tag (cards view) ──────────────────────────────────────────────────
+// Custom icon + letterspaced condensed caps — replaces pill bubbles so the
+// card reads like a poster credit block instead of a form.
+function KickerTag({ color, label, icon, tip, size }: { color: string; label: string; icon?: React.ReactNode; tip?: string; size?: number }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 transition-opacity"
-      style={{
-        padding: pad,
-        borderRadius: 999,
-        background: tint(color, 15),
-        color,
-        border: `1px solid ${tint(color, 35)}`,
-        fontFamily: c.font,
-        fontSize: fs,
-        fontWeight: 500,
-      }}
-      onMouseEnter={fadeIn}
-      onMouseLeave={fadeOut}
-    >
-      <CategoryIcon category={category} stroke={color} size={size === 'lg' ? 11 : 10} />
-      {category}
+    <span className="kicker-tag rivals-condensed" style={{ color, ...(size ? { fontSize: size, gap: 4 } : {}) }} data-tip={tip}>
+      {icon ?? <span className="kicker-notch" style={{ background: color }} />}
+      {label}
     </span>
   );
 }
 
-// Tiny category chip for add-on rows.
-function MiniCatPill({ category }: { category: ModCategory }) {
-  const color = categoryColor(category);
+// Boxless enable state for dense rows (list + add-on rows): dot + word only.
+function MiniPower({ on, disabled, label, onClick, tip }: { on: boolean; disabled?: boolean; label: string; onClick: (e: React.MouseEvent) => void; tip?: string }) {
   return (
-    <span
-      className="inline-flex items-center gap-1"
-      style={{ padding: '1px 6px', borderRadius: 999, background: tint(color, 15), color, border: `1px solid ${tint(color, 35)}`, fontFamily: c.font, fontSize: 9.5, fontWeight: 600, flex: '0 0 auto' }}
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      data-tip={tip}
+      className="rivals-mono inline-flex items-center gap-1.5"
+      style={{
+        padding: '3px 4px',
+        background: 'transparent',
+        border: 'none',
+        color: on ? c.ok : disabled ? c.muted : c.ink3,
+        fontSize: 10,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        fontWeight: 700,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.55 : 1,
+      }}
     >
-      <CategoryIcon category={category} stroke={color} size={8} />
-      {category}
-    </span>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: on ? c.ok : 'transparent', boxShadow: on ? `0 0 6px ${tint(c.ok, 90)}` : `inset 0 0 0 1.5px ${disabled ? c.muted : c.ink3}` }} />
+      {label}
+    </button>
   );
 }
 
-function NsfwPill({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
-  const pad = size === 'lg' ? '1.5px 10px' : '1px 9px';
-  const fs = size === 'lg' ? 12 : 11.5;
-  const red = 'var(--rivals-nsfw-bright)';
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 transition-opacity"
-      style={{
-        padding: pad,
-        borderRadius: 999,
-        background: tint(red, 22),
-        color: red,
-        border: `1px solid ${tint(red, 55)}`,
-        fontFamily: c.font,
-        fontSize: fs,
-        fontWeight: 600,
-      }}
-      onMouseEnter={fadeIn}
-      onMouseLeave={fadeOut}
-    >
-      <WarnIcon stroke={red} size={size === 'lg' ? 11 : 10} />
-      NSFW
-    </span>
-  );
-}
+// ── Power readout (cards view enable control) ────────────────────────────────
+// Glowing status dot + state word, no box. Hover previews the action color.
+function PowerToggle({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent) => void }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const prevEnabled = useRef(enabled);
+  useEffect(() => {
+    if (enabled && !prevEnabled.current && btnRef.current) {
+      const el = btnRef.current;
+      el.classList.add('powering-on');
+      const t = setTimeout(() => el.classList.remove('powering-on'), 1100);
+      prevEnabled.current = enabled;
+      return () => clearTimeout(t);
+    }
+    prevEnabled.current = enabled;
+  }, [enabled]);
 
-// ── Conflict badge (shown when a mod clashes with an unrelated mod) ───────────
-function ConflictPill({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
-  const pad = size === 'lg' ? '1.5px 10px' : '1px 9px';
-  const fs = size === 'lg' ? 12 : 11.5;
   return (
-    <span
-      className="inline-flex items-center gap-1.5"
-      style={{
-        padding: pad,
-        borderRadius: 999,
-        background: tint(c.warn, 20),
-        color: c.warn,
-        border: `1px solid ${tint(c.warn, 48)}`,
-        fontFamily: c.font,
-        fontSize: fs,
-        fontWeight: 600,
-      }}
-      data-tip="This mod overwrites the same files as another enabled mod"
+    <button
+      ref={btnRef}
+      onClick={onClick}
+      className={`power-toggle rivals-condensed ${enabled ? 'is-on' : 'is-off'}`}
+      data-tip={enabled ? 'Click to disable' : 'Click to enable'}
+      aria-label={enabled ? 'Disable mod' : 'Enable mod'}
     >
-      <WarnIcon stroke={c.warn} size={size === 'lg' ? 11 : 10} />
-      Conflict
-    </span>
+      <span className="power-dot" />
+      {enabled ? 'Enabled' : 'Disabled'}
+    </button>
   );
 }
 
@@ -231,6 +256,49 @@ export function ModList() {
     setContextMenu({ mod, x: e.clientX, y: e.clientY });
   }, []);
 
+  // ── Multi-select (Ctrl+click) ──
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const setModsEnabled = useSetModsEnabled();
+  const deleteMods = useDeleteMods();
+
+  const toggleBulkSelect = useCallback((id: string) => {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Stable select handler so memoized virtual cards never see a new callback.
+  // Ctrl/Cmd+click toggles multi-select; plain click opens the details panel.
+  const handleSelectMod = useCallback((id: string, additive?: boolean) => {
+    if (additive) toggleBulkSelect(id);
+    else setSelectedModId(id);
+  }, [setSelectedModId, toggleBulkSelect]);
+
+  // Esc clears the selection
+  useEffect(() => {
+    if (bulkSelected.size === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setBulkSelected(new Set());
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bulkSelected.size]);
+
+  const bulkEnable = (enabled: boolean) => {
+    setModsEnabled.mutate({ modIds: [...bulkSelected], enabled });
+    setBulkSelected(new Set());
+  };
+  const bulkDelete = () => {
+    const n = bulkSelected.size;
+    if (confirm(`Delete ${n} selected mod${n === 1 ? '' : 's'}? Their files are removed from the game folder.`)) {
+      deleteMods.mutate([...bulkSelected]);
+      setBulkSelected(new Set());
+    }
+  };
+
   // ── Filter ──
   // Per-mod predicate. NSFW lock always applies; the other criteria define
   // whether a mod "matches" the active filter (used for both parents & add-ons).
@@ -287,6 +355,8 @@ export function ModList() {
         }
         case 'updated':
           return new Date(b.metadata.updatedAt).getTime() - new Date(a.metadata.updatedAt).getTime();
+        case 'size':
+          return (b.fileSize || 0) - (a.fileSize || 0) || (a.metadata.title || a.name).localeCompare(b.metadata.title || b.name);
         case 'profile': {
           const aHas = (a.metadata.profileIds?.length || 0) > 0;
           const bHas = (b.metadata.profileIds?.length || 0) > 0;
@@ -401,23 +471,48 @@ export function ModList() {
     setAddonOverrides((prev) => (prev.size ? new Map() : prev));
   }, [filters.search, filters.category, filters.character, filters.showFavorites, activeProfileFilter]);
 
-  // Library-at-a-glance stats (whole library, not the current filter).
-  const libraryStats = useMemo(() => {
-    const all = mods ?? [];
-    const total = all.length;
-    const enabled = all.filter((m) => m.enabled).length;
-    const totalSize = all.reduce((s, m) => s + (m.fileSize || 0), 0);
-    const charCounts = all.reduce<Record<string, number>>((acc, m) => {
-      if (m.character && m.character !== 'All Characters') acc[m.character] = (acc[m.character] || 0) + 1;
-      return acc;
-    }, {});
-    let topChar: string | null = null;
-    let topCount = 0;
-    for (const [ch, n] of Object.entries(charCounts)) {
-      if (n > topCount) { topChar = ch; topCount = n; }
+  // ── Grid virtualization ──
+  // Card rows are chunked to the current column count and only the rows in
+  // (or near) the viewport are mounted. Row height = card width * 16:9 art
+  // ratio + fixed chrome; measureElement refines the estimate after render.
+  // The scroll container mounts after the loading skeleton, so track it with
+  // a callback ref (state) — a plain ref + mount effect would observe null.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+  const [scrollWidth, setScrollWidth] = useState(0);
+
+  useEffect(() => {
+    if (!scrollEl) return;
+    const ro = new ResizeObserver(() => setScrollWidth(scrollEl.clientWidth));
+    ro.observe(scrollEl);
+    setScrollWidth(scrollEl.clientWidth);
+    return () => ro.disconnect();
+  }, [scrollEl]);
+
+  // Mirror of the CSS grid the cards used before virtualization:
+  // repeat(auto-fill, minmax(340px, 1fr)) with 20px gap and 22px side padding
+  const GRID_MIN_CARD = 340;
+  const GRID_GAP = 20;
+  const GRID_SIDE_PAD = 22;
+  const gridCols = Math.max(1, Math.floor((scrollWidth - GRID_SIDE_PAD * 2 + GRID_GAP) / (GRID_MIN_CARD + GRID_GAP)));
+  const gridCardWidth = (scrollWidth - GRID_SIDE_PAD * 2 - (gridCols - 1) * GRID_GAP) / gridCols;
+
+  const gridRows = useMemo(() => {
+    const rows: ModInfo[][] = [];
+    for (let i = 0; i < parentMods.length; i += gridCols) {
+      rows.push(parentMods.slice(i, i + gridCols));
     }
-    return { total, enabled, disabled: total - enabled, totalSize, topChar, topCount };
-  }, [mods]);
+    return rows;
+  }, [parentMods, gridCols]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: gridRows.length,
+    getScrollElement: () => scrollEl,
+    // 16:9 art + ~233px of card chrome below it + the 20px row gap
+    estimateSize: () => Math.round((gridCardWidth * 9) / 16 + 233 + GRID_GAP),
+    overscan: 8,
+    enabled: viewMode === 'grid',
+  });
+
   const headerTitle = filters.showFavorites
     ? 'Favorites'
     : filters.character
@@ -492,40 +587,13 @@ export function ModList() {
               {parentMods.length} shown{addonCount > 0 ? ` · ${addonCount} add-on${addonCount > 1 ? 's' : ''}` : ''}
             </span>
           </div>
-          {/* Library-at-a-glance: one cohesive segmented bar (hidden when empty) */}
-          {libraryStats.total > 0 && (
-            <div className="ml-auto flex items-stretch flex-shrink-0 stat-strip">
-              <div className="stat-seg" data-tip={`${libraryStats.enabled} enabled · ${libraryStats.disabled} disabled`}>
-                <span className="stat-seg-bar">
-                  <span className="stat-seg-bar-fill" style={{ width: `${(libraryStats.enabled / libraryStats.total) * 100}%` }} />
-                </span>
-                <span className="rivals-mono stat-seg-val">{libraryStats.enabled} / {libraryStats.total}</span>
-                <span className="rivals-mono stat-seg-label">active</span>
-              </div>
-              <div className="stat-seg">
-                <span className="rivals-mono stat-seg-val">{formatFileSize(libraryStats.totalSize)}</span>
-                <span className="rivals-mono stat-seg-label">on disk</span>
-              </div>
-              {libraryStats.topChar && (
-                <button
-                  onClick={() => setFilters({ character: libraryStats.topChar as Character, category: null, showFavorites: false })}
-                  className="stat-seg stat-seg-char cursor-pointer"
-                  data-tip={`Most modded: ${libraryStats.topChar} (${libraryStats.topCount})`}
-                >
-                  <RingAvatar src={getCharacterIconPath(libraryStats.topChar)} alt={libraryStats.topChar} size={22} />
-                  <span className="rivals-mono stat-seg-val">{libraryStats.topCount}</span>
-                  <span className="rivals-mono stat-seg-label">top hero</span>
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Bulk action strip (Cards + Gallery only) */}
         {viewMode !== 'list' && parentMods.length > 0 && <BulkActionStrip />}
 
         {/* Content */}
-        <div className={`flex-1 overflow-auto mod-list-scroll${isGallery ? ' gallery-scroll-fade' : ''}`}>
+        <div ref={setScrollEl} className={`flex-1 overflow-auto mod-list-scroll${isGallery ? ' gallery-scroll-fade' : ''}`}>
           <div key={viewMode} className="view-swap">
           {parentMods.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full" style={{ paddingBottom: 48, animation: 'metadata-fade-in 350ms ease-out both' }}>
@@ -545,28 +613,44 @@ export function ModList() {
               </p>
             </div>
           ) : viewMode === 'grid' ? (
-            <div
-              className="grid"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20, padding: '12px 22px 18px', alignContent: 'start' }}
-            >
-              {parentMods.map((mod, index) => (
-                <AnimatedCard key={mod.id} index={index}>
-                  <ModCard
-                    mod={mod}
-                    allCostumes={allCostumes}
-                    sortBy={sortBy}
-                    addons={addonsByParent.get(mod.id)}
-                    expanded={isAddonsOpen(mod.id)}
-                    hasConflict={conflictIds.has(mod.id)}
-                    highlightAddonIds={highlightAddonIds}
-                    onToggleExpand={() => toggleExpand(mod.id)}
-                    onClick={() => setSelectedModId(mod.id)}
-                    onContextMenu={(e) => handleContextMenu(e, mod)}
-                    onAddonClick={(addonId) => setSelectedModId(addonId)}
-                    onAddonContextMenu={(e, addon) => handleContextMenu(e, addon)}
-                  />
-                </AnimatedCard>
-              ))}
+            <div style={{ padding: '12px 0 18px' }}>
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                {rowVirtualizer.getVirtualItems().map((vRow) => (
+                  <div
+                    key={vRow.key}
+                    data-index={vRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${vRow.start}px)` }}
+                  >
+                    <div
+                      className="grid"
+                      style={{
+                        gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+                        gap: GRID_GAP,
+                        padding: `0 ${GRID_SIDE_PAD}px ${GRID_GAP}px`,
+                        alignItems: 'start',
+                      }}
+                    >
+                      {gridRows[vRow.index]?.map((mod) => (
+                        <VirtualModCard
+                          key={mod.id}
+                          mod={mod}
+                          allCostumes={allCostumes}
+                          sortBy={sortBy}
+                          addons={addonsByParent.get(mod.id)}
+                          expanded={isAddonsOpen(mod.id)}
+                          hasConflict={conflictIds.has(mod.id)}
+                          selected={bulkSelected.has(mod.id)}
+                          highlightAddonIds={highlightAddonIds}
+                          onToggleExpand={toggleExpand}
+                          onSelect={handleSelectMod}
+                          onCardContextMenu={handleContextMenu}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : viewMode === 'gallery' ? (
             <div
@@ -582,9 +666,10 @@ export function ModList() {
                     addons={addonsByParent.get(mod.id)}
                     expanded={isAddonsOpen(mod.id)}
                     hasConflict={conflictIds.has(mod.id)}
+                    selected={bulkSelected.has(mod.id)}
                     highlightAddonIds={highlightAddonIds}
                     onToggleExpand={() => toggleExpand(mod.id)}
-                    onClick={() => setSelectedModId(mod.id)}
+                    onClick={(e) => handleSelectMod(mod.id, e.ctrlKey || e.metaKey)}
                     onContextMenu={(e) => handleContextMenu(e, mod)}
                     onAddonClick={(addonId) => setSelectedModId(addonId)}
                     onAddonContextMenu={(e, addon) => handleContextMenu(e, addon)}
@@ -608,6 +693,49 @@ export function ModList() {
         </div>
       </div>
 
+      {/* Multi-select action bar (Ctrl+click cards to select, Esc to clear) */}
+      {bulkSelected.size > 0 && (
+        <div
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-xl"
+          style={{ padding: '9px 10px 9px 16px', background: c.panel, border: `1px solid ${c.line2}`, boxShadow: '0 14px 40px rgba(0,0,0,0.55)' }}
+        >
+          <span className="rivals-mono" style={{ color: c.ink, fontSize: 11.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {bulkSelected.size} selected
+          </span>
+          <span style={{ width: 1.5, height: 16, background: c.line2, transform: 'skewX(-18deg)', margin: '0 4px' }} />
+          <button
+            onClick={() => bulkEnable(true)}
+            className="rivals-condensed cursor-pointer"
+            style={{ padding: '5px 12px', borderRadius: 7, background: 'transparent', color: c.ok, border: `1px solid ${tint(c.ok, 35)}`, fontSize: 12.5, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}
+          >
+            Enable
+          </button>
+          <button
+            onClick={() => bulkEnable(false)}
+            className="rivals-condensed cursor-pointer"
+            style={{ padding: '5px 12px', borderRadius: 7, background: 'transparent', color: c.ink2, border: `1px solid ${c.line2}`, fontSize: 12.5, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}
+          >
+            Disable
+          </button>
+          <button
+            onClick={bulkDelete}
+            className="rivals-condensed cursor-pointer"
+            style={{ padding: '5px 12px', borderRadius: 7, background: tint(c.err, 12), color: c.err, border: `1px solid ${tint(c.err, 40)}`, fontSize: 12.5, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => setBulkSelected(new Set())}
+            className="grid place-items-center cursor-pointer"
+            data-tip="Clear selection (Esc)"
+            aria-label="Clear selection"
+            style={{ width: 26, height: 26, borderRadius: 7, background: 'transparent', color: c.ink3, border: 'none', fontSize: 15, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {contextMenu && (
         <ModContextMenu mod={contextMenu.mod} x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)} />
       )}
@@ -615,121 +743,33 @@ export function ModList() {
   );
 }
 
-// ── Enable / Disable pill (shared) ───────────────────────────────────────────
-function EnablePill({ enabled, onClick }: { enabled: boolean; onClick: (e: React.MouseEvent) => void }) {
-  // Pulse the pill the moment it flips to enabled ("powering on"). Driven
-  // imperatively on the DOM node so we never setState during render.
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const prevEnabled = useRef(enabled);
-  useEffect(() => {
-    if (enabled && !prevEnabled.current && btnRef.current) {
-      const el = btnRef.current;
-      el.classList.add('powering-on');
-      const t = setTimeout(() => el.classList.remove('powering-on'), 520);
-      prevEnabled.current = enabled;
-      return () => clearTimeout(t);
-    }
-    prevEnabled.current = enabled;
-  }, [enabled]);
-
-  // A typographic "stamp" in the app's condensed face: state reads through the
-  // fill and lettering (solid = live, hollow = off), with hover tinting toward
-  // the action it would take (green = will enable, red = will disable).
-  return (
-    <button
-      ref={btnRef}
-      onClick={onClick}
-      className={`toggle-pill rivals-condensed cursor-pointer whitespace-nowrap ${enabled ? 'is-on' : 'is-off'}`}
-      style={{
-        padding: '3px 11px',
-        borderRadius: 6,
-        background: enabled ? tint(c.ok, 16) : 'transparent',
-        color: enabled ? c.ok : c.ink3,
-        border: `1px solid ${enabled ? tint(c.ok, 35) : c.line2}`,
-        fontSize: 13.5,
-        fontWeight: 700,
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        lineHeight: 1.45,
-      }}
-      data-tip={enabled ? 'Click to disable' : 'Click to enable'}
-    >
-      {enabled ? 'Enabled' : 'Disabled'}
-    </button>
-  );
-}
-
-// ── Add-on expand trigger (▸ +N) ─────────────────────────────────────────────
+// ── Add-on expand trigger ────────────────────────────────────────────────────
+// Custom plus icon + condensed count in the footer language; the plus rotates
+// into an × while the drawer is open (the universal "this closes it" cue).
 function AddonTrigger({ count, expanded, onClick }: { count: number; expanded: boolean; onClick: (e: React.MouseEvent) => void }) {
   return (
     <button
       onClick={onClick}
-      data-tip={`${count} attached add-on${count > 1 ? 's' : ''}`}
-      className="addon-btn inline-flex items-center gap-1 cursor-pointer"
+      data-tip={expanded ? 'Close add-ons' : `${count} attached add-on${count > 1 ? 's' : ''}`}
+      className="addon-btn rivals-condensed inline-flex items-center cursor-pointer"
       style={{
-        padding: '4px 8px',
+        gap: 4,
+        padding: '4px 7px',
         borderRadius: 6,
-        background: expanded ? tint(c.warn, 14) : 'transparent',
+        background: expanded ? tint(c.warn, 16) : 'transparent',
         color: c.warn,
-        border: `1px solid ${expanded ? tint(c.warn, 35) : c.line2}`,
-        fontFamily: c.mono,
-        fontSize: 10.5,
-        letterSpacing: '0.04em',
+        border: 'none',
+        fontSize: 13.5,
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        lineHeight: 1,
       }}
     >
-      <span style={{ fontSize: 9, transition: 'transform .15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▸</span>
-      +{count}
+      <span style={{ display: 'inline-flex', transition: 'transform 150ms ease', transform: expanded ? 'rotate(45deg)' : 'none' }}>
+        <PlusIcon stroke={c.warn} size={11} />
+      </span>
+      {count}
     </button>
-  );
-}
-
-// ── Replacement row (hero → costume/default) ─────────────────────────────────
-function ReplacementRow({ mod, costume, layout }: { mod: ModInfo; costume: Costume | null; layout: 'split' | 'inline' }) {
-  if (!mod.character) return null;
-  const targetLabel = costume?.name ?? 'Default';
-
-  if (layout === 'inline') {
-    return (
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', background: c.bg, border: `1px solid ${c.line}`, borderRadius: 9, overflow: 'hidden' }}>
-        {/* Character */}
-        <div className="flex items-center gap-2.5 min-w-0" style={{ padding: '10px 12px', borderRight: `1px solid ${c.line}` }}>
-          <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={44} />
-          <div className="min-w-0">
-            <div className="rivals-mono" style={{ color: c.ink3, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Character</div>
-            <div className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: 14, fontWeight: 600 }}>{mod.character}</div>
-          </div>
-        </div>
-        {/* Costume */}
-        <div className="flex items-center gap-2.5 min-w-0" style={{ padding: '10px 12px' }}>
-          {costume ? (
-            <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={44} />
-          ) : (
-            <span className="flex-shrink-0" style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg, ${c.line2}, ${c.line})`, display: 'grid', placeItems: 'center', color: c.ink3, fontFamily: c.mono, fontSize: 14, fontWeight: 700 }}>—</span>
-          )}
-          <div className="min-w-0">
-            <div className="rivals-mono" style={{ color: c.ink3, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Costume</div>
-            <div className="truncate" style={{ color: c.ink2, fontFamily: c.font, fontSize: 13.5, fontWeight: costume ? 500 : 400, fontStyle: costume ? 'normal' : 'italic' }}>{targetLabel}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', background: c.bg, border: `1px solid ${c.line}`, borderRadius: 9, overflow: 'hidden' }}>
-      <div className="flex items-center gap-2" style={{ padding: '8px 10px', borderRight: `1px solid ${c.line}` }}>
-        <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={30} />
-        <span className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: 12.5, fontWeight: 600 }}>{mod.character}</span>
-      </div>
-      <div className="flex items-center gap-2" style={{ padding: '8px 10px' }}>
-        {costume ? (
-          <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={30} />
-        ) : (
-          <span style={{ width: 26, height: 26, borderRadius: '50%', background: `linear-gradient(135deg, ${c.line2}, ${c.line})`, display: 'grid', placeItems: 'center', color: c.ink3, fontFamily: c.mono, fontSize: 11, fontWeight: 700, flex: '0 0 auto' }}>—</span>
-        )}
-        <span className="truncate" style={{ color: c.ink2, fontFamily: c.font, fontSize: 12.5, fontStyle: costume ? 'normal' : 'italic' }}>{targetLabel}</span>
-      </div>
-    </div>
   );
 }
 
@@ -740,9 +780,10 @@ interface CardProps {
   addons?: ModInfo[];
   expanded: boolean;
   hasConflict?: boolean;
+  selected?: boolean;
   highlightAddonIds?: Set<string>;
   onToggleExpand: () => void;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onAddonClick: (addonId: string) => void;
   onAddonContextMenu: (e: React.MouseEvent, addon: ModInfo) => void;
@@ -806,37 +847,24 @@ function AddonRows({
             onMouseLeave={(e) => { if (!hl) e.currentTarget.style.background = 'transparent'; }}
           >
             {addon.thumbnailPath ? (
-              <img src={convertFileSrc(addon.thumbnailPath)} alt="" loading="lazy" style={{ width: thumbW, height: thumbH, borderRadius: 5, objectFit: 'cover', border: `1px solid ${c.line2}`, flex: '0 0 auto' }} />
+              <img src={convertFileSrc(addon.thumbnailPath)} alt="" loading="lazy" style={{ width: thumbW, height: thumbH, borderRadius: 5, objectFit: 'cover', border: `1px solid ${c.line2}`, flex: '0 0 auto', opacity: addon.enabled ? 1 : 0.45, filter: addon.enabled ? 'none' : 'grayscale(0.7)', transition: 'opacity 200ms ease, filter 200ms ease' }} />
             ) : (
-              <span style={{ width: thumbW, height: thumbH, borderRadius: 5, border: `1px solid ${c.line2}`, display: 'grid', placeItems: 'center', color: c.ink3, flex: '0 0 auto' }}>+</span>
+              <span style={{ width: thumbW, height: thumbH, borderRadius: 5, border: `1px solid ${c.line2}`, display: 'grid', placeItems: 'center', color: c.ink3, flex: '0 0 auto', opacity: addon.enabled ? 1 : 0.45 }}>+</span>
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1" style={{ opacity: addon.enabled ? 1 : 0.5, transition: 'opacity 200ms ease' }}>
               <div className="truncate" style={{ color: c.ink, fontFamily: c.font, fontSize: titleSize, fontWeight: 600 }}>{addonDisplayName(addon.metadata.title || addon.name, parentName)}</div>
-              <div className="flex items-center gap-1.5" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11, marginTop: 2 }}>
-                <MiniCatPill category={addon.category} />
+              <div className="flex items-center gap-2" style={{ color: c.ink3, fontFamily: c.font, fontSize: 11, marginTop: 2 }}>
+                <KickerTag color={categoryColor(addon.category)} label={addon.category} size={9.5} icon={<CategoryIcon category={addon.category} stroke={categoryColor(addon.category)} size={9} />} />
                 <span>{formatFileSize(addon.fileSize)}</span>
               </div>
             </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); if (parentEnabled) toggleEnabled.mutate(addon.id); }}
+            <MiniPower
+              on={addon.enabled && parentEnabled}
               disabled={!parentEnabled}
-              data-tip={!parentEnabled ? 'Enable parent mod first' : undefined}
-              className={`toggle-pill ${addon.enabled && parentEnabled ? 'is-on' : 'is-off'}`}
-              style={{
-                padding: '3px 9px',
-                borderRadius: 5,
-                background: addon.enabled && parentEnabled ? tint(c.ok, 16) : 'transparent',
-                color: addon.enabled && parentEnabled ? c.ok : parentEnabled ? c.ink3 : c.muted,
-                border: `1px solid ${addon.enabled && parentEnabled ? tint(c.ok, 35) : c.line2}`,
-                fontFamily: c.mono,
-                fontSize: 10,
-                letterSpacing: '0.08em',
-                cursor: parentEnabled ? 'pointer' : 'not-allowed',
-                opacity: parentEnabled ? 1 : 0.5,
-              }}
-            >
-              {addon.enabled ? 'ON' : 'OFF'}
-            </button>
+              label={addon.enabled ? 'On' : 'Off'}
+              tip={!parentEnabled ? 'Enable parent mod first' : undefined}
+              onClick={(e) => { e.stopPropagation(); if (parentEnabled) toggleEnabled.mutate(addon.id); }}
+            />
           </div>
           );
         })}
@@ -893,6 +921,7 @@ const ModCard = memo(function ModCard({
   addons,
   expanded,
   hasConflict,
+  selected,
   highlightAddonIds,
   onToggleExpand,
   onClick,
@@ -916,7 +945,7 @@ const ModCard = memo(function ModCard({
       ref={tiltRef}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className="mod-card mod-card-tilt flex flex-col overflow-hidden cursor-pointer"
+      className={`mod-card mod-card-tilt flex flex-col overflow-hidden cursor-pointer${hasAddons && expanded ? ' addons-open' : ''}${selected ? ' is-selected' : ''}`}
       style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14, opacity: mod.enabled ? 1 : 0.55, ['--glow-color' as string]: glow ?? c.accent }}
     >
       {/* Image (also hosts the add-on drawer so the card never grows) */}
@@ -928,6 +957,29 @@ const ModCard = memo(function ModCard({
             no preview
           </div>
         )}
+        {/* Multi-select check badge */}
+        {selected && (
+          <div
+            className="absolute grid place-items-center"
+            style={{ top: 10, right: 12, zIndex: 11, width: 26, height: 26, borderRadius: '50%', background: c.accent, color: c.onAccent, fontSize: 14, fontWeight: 700, boxShadow: '0 2px 10px rgba(0,0,0,0.45)' }}
+          >
+            ✓
+          </div>
+        )}
+        {/* Corner plate: category/NSFW/conflict kickers on dark glass */}
+        <div className="art-tag-plate">
+          <KickerTag
+            color={categoryColor(mod.category)}
+            label={mod.category}
+            icon={<CategoryIcon category={mod.category} stroke={categoryColor(mod.category)} size={11} />}
+          />
+          {mod.metadata.isNsfw && (
+            <KickerTag color="var(--rivals-nsfw-bright)" label="NSFW" icon={<WarnIcon stroke="var(--rivals-nsfw-bright)" size={11} />} />
+          )}
+          {hasConflict && (
+            <KickerTag color={c.warn} label="Conflict" icon={<WarnIcon stroke={c.warn} size={11} />} tip="This mod overwrites the same files as another enabled mod" />
+          )}
+        </div>
         {hasAddons && (
           <AddonDrawer open={expanded} count={addonList.length} onClose={onToggleExpand}>
             <AddonRows overlay parentEnabled={mod.enabled} parentName={mod.metadata.title || mod.name} addons={addonList} highlightAddonIds={highlightAddonIds} onAddonClick={onAddonClick} onAddonContextMenu={onAddonContextMenu} />
@@ -935,46 +987,79 @@ const ModCard = memo(function ModCard({
         )}
       </div>
 
-      <div className="flex flex-col gap-2.5" style={{ padding: '14px 16px 16px' }}>
-        {/* Pill row */}
-        <div className="flex items-center gap-1.5">
-          <CategoryPill category={mod.category} size="lg" />
-          {mod.metadata.isNsfw && <NsfwPill size="lg" />}
-          {hasConflict && <ConflictPill size="lg" />}
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
-            className="fav-btn grid place-items-center cursor-pointer"
-            style={{ marginLeft: 'auto', width: 28, height: 28, borderRadius: 7, background: 'transparent', color: mod.isFavorite ? c.warn : c.ink3, fontSize: 17, lineHeight: 1 }}
-            data-tip={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            {mod.isFavorite ? '★' : '☆'}
-          </button>
+      {/* Hairline seam + artwork-tinted backlight bleeding into the body */}
+      <div aria-hidden className="card-glow-seam" />
+
+      <div className="flex flex-col" style={{ padding: '11px 16px 13px', gap: 10, position: 'relative' }}>
+        {/* Title flush under the art, full width; subtitle tucked under it */}
+        <div>
+          <div className="rivals-condensed" style={{ color: c.ink, fontSize: 30, fontWeight: 700, letterSpacing: '0.01em', lineHeight: 1.02, textTransform: 'uppercase' }}>
+            {main}
+          </div>
+          {(variant || mod.metadata.subtitle) && (
+            <div className="flex items-baseline gap-2" style={{ marginTop: 3 }}>
+              {variant && (
+                <span className="rivals-display" style={{ color: c.ink2, fontSize: 14.5, fontStyle: 'italic', fontWeight: 500 }}>
+                  {variant}
+                </span>
+              )}
+              {variant && mod.metadata.subtitle && <span style={{ color: c.muted, fontSize: 12 }}>·</span>}
+              {mod.metadata.subtitle && (
+                <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 12.5 }}>{mod.metadata.subtitle}</span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Title */}
-        <div className="rivals-condensed" style={{ color: c.ink, fontSize: 30, fontWeight: 700, letterSpacing: '0.01em', lineHeight: 1.05, textTransform: 'uppercase' }}>
-          {main}
-        </div>
-        <div style={{ marginTop: -8 }}>
-          <Subtitle variant={variant} subtitle={mod.metadata.subtitle} fontSize={13} />
-        </div>
+        {/* Credits line: hero portrait(s) + NAME ⫽ costume */}
+        {mod.character && (
+          <div className="card-credits">
+            {mod.character === 'All Characters' ? (
+              <span
+                className="rivals-mono"
+                style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center', background: tint(c.accent, 13), border: `1.5px solid ${tint(c.accent, 38)}`, color: c.accent, fontSize: 12, fontWeight: 700 }}
+              >
+                AC
+              </span>
+            ) : (
+              <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={36} />
+            )}
+            {costume && !costume.isDefault && costume.name !== 'Default' && (
+              <span style={{ marginLeft: -15, flexShrink: 0, display: 'inline-flex' }}>
+                <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={36} />
+              </span>
+            )}
+            <span className="rivals-condensed truncate" style={{ color: c.ink2, fontSize: 16.5, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0 }}>
+              {mod.character}
+            </span>
+            <span className="card-credits-slash" />
+            <span className="rivals-display truncate" style={{ color: c.ink3, fontSize: 14, fontStyle: 'italic' }}>
+              {costume?.name ?? 'Default'}
+            </span>
+          </div>
+        )}
 
-        {/* Replacement */}
-        <ReplacementRow mod={mod} costume={costume} layout="split" />
-
-        {/* Footer */}
-        <div className="flex items-center gap-2" style={{ paddingTop: 10, marginTop: 2, borderTop: `1px solid ${c.line}` }}>
-          <span style={{ color: c.ink3, fontFamily: c.font, fontSize: 12.5 }} className="truncate">
-            By <span style={{ color: c.ink2, fontWeight: 500 }}>{mod.metadata.author || 'Unknown'}</span>
+        {/* Footer rail: mono credits, favorite, add-ons, power readout */}
+        <div className="flex items-center" style={{ gap: 8, paddingTop: 9, marginTop: 1, borderTop: `1px solid ${c.line}` }}>
+          <span className="truncate rivals-mono" style={{ color: c.ink3, fontSize: 10.5, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            {mod.metadata.author || 'Unknown'}
             <span style={{ color: c.muted }}> · </span>
             {formatFileSize(mod.fileSize)}
             <span style={{ color: c.muted }}> · </span>
             {dateStr}
           </span>
-          <div className="flex items-center gap-2" style={{ marginLeft: 'auto' }}>
+          <div className="flex items-center" style={{ gap: 6, marginLeft: 'auto', flexShrink: 0 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
+              className="fav-btn grid place-items-center cursor-pointer"
+              style={{ width: 26, height: 26, borderRadius: 7, background: 'transparent', color: mod.isFavorite ? c.warn : c.ink3, fontSize: 16, lineHeight: 1 }}
+              data-tip={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={mod.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              {mod.isFavorite ? '★' : '☆'}
+            </button>
             {hasAddons && <AddonTrigger count={addonList.length} expanded={expanded} onClick={(e) => { e.stopPropagation(); onToggleExpand(); }} />}
-            <EnablePill enabled={mod.enabled} onClick={(e) => { e.stopPropagation(); toggleEnabled.mutate(mod.id); }} />
+            <PowerToggle enabled={mod.enabled} onClick={(e) => { e.stopPropagation(); toggleEnabled.mutate(mod.id); }} />
           </div>
         </div>
       </div>
@@ -991,6 +1076,7 @@ const GalleryCard = memo(function GalleryCard({
   addons,
   expanded,
   hasConflict,
+  selected,
   highlightAddonIds,
   onToggleExpand,
   onClick,
@@ -1014,7 +1100,7 @@ const GalleryCard = memo(function GalleryCard({
       ref={tiltRef}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className="mod-card mod-card-tilt gallery-hero flex flex-col overflow-hidden cursor-pointer relative"
+      className={`mod-card mod-card-tilt gallery-hero flex flex-col overflow-hidden cursor-pointer relative${hasAddons && expanded ? ' addons-open' : ''}${selected ? ' is-selected' : ''}`}
       style={{ background: c.panel, border: `1px solid ${c.line}`, borderRadius: 14, ['--glow-color' as string]: glow ?? c.accent }}
     >
       {/* Full-bleed artwork with overlaid title + meta. The art box owns the
@@ -1032,9 +1118,30 @@ const GalleryCard = memo(function GalleryCard({
         {/* Scrim so overlaid text stays readable over any art */}
         <div className="gallery-hero-scrim" aria-hidden />
 
-        {/* Favorite only on the art (its glass background keeps it readable);
-            category/NSFW/version pills live in the body where they're always
-            legible against the solid panel, not over busy artwork. */}
+        {/* Multi-select check badge (left of the favorite button) */}
+        {selected && (
+          <div
+            className="absolute z-10 grid place-items-center"
+            style={{ top: 12, right: 56, width: 26, height: 26, borderRadius: '50%', background: c.accent, color: c.onAccent, fontSize: 14, fontWeight: 700, boxShadow: '0 2px 10px rgba(0,0,0,0.45)' }}
+          >
+            ✓
+          </div>
+        )}
+        {/* Corner plate top-left (the title owns the bottom of the art) */}
+        <div className="art-tag-plate is-top">
+          <KickerTag
+            color={categoryColor(mod.category)}
+            label={mod.category}
+            icon={<CategoryIcon category={mod.category} stroke={categoryColor(mod.category)} size={11} />}
+          />
+          {mod.metadata.isNsfw && (
+            <KickerTag color="var(--rivals-nsfw-bright)" label="NSFW" icon={<WarnIcon stroke="var(--rivals-nsfw-bright)" size={11} />} />
+          )}
+          {hasConflict && (
+            <KickerTag color={c.warn} label="Conflict" icon={<WarnIcon stroke={c.warn} size={11} />} tip="This mod overwrites the same files as another enabled mod" />
+          )}
+        </div>
+
         <button
           onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(mod.id); }}
           className="fav-btn absolute z-10 grid place-items-center cursor-pointer"
@@ -1067,59 +1174,55 @@ const GalleryCard = memo(function GalleryCard({
         )}
       </div>
 
-      <div className="flex flex-col gap-3.5" style={{ padding: '14px 20px 18px' }}>
-        {/* Tag row (moved off the art for legibility) */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <CategoryPill category={mod.category} size="lg" />
-          {mod.metadata.isNsfw && <NsfwPill size="lg" />}
-          {hasConflict && <ConflictPill size="lg" />}
-          {mod.metadata.version && (
-            <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              v{mod.metadata.version}
+      {/* Hairline seam + artwork-tinted backlight bleeding into the body */}
+      <div aria-hidden className="card-glow-seam" />
+
+      <div className="flex flex-col" style={{ padding: '13px 20px 15px', gap: 11, position: 'relative' }}>
+        {/* Credits line: hero portrait(s) + NAME ⫽ costume, gallery-scaled */}
+        {mod.character && (
+          <div className="card-credits">
+            {mod.character === 'All Characters' ? (
+              <span
+                className="rivals-mono"
+                style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, display: 'grid', placeItems: 'center', background: tint(c.accent, 13), border: `1.5px solid ${tint(c.accent, 38)}`, color: c.accent, fontSize: 13, fontWeight: 700 }}
+              >
+                AC
+              </span>
+            ) : (
+              <RingAvatar src={getCharacterIconPath(mod.character)} alt={mod.character} size={42} />
+            )}
+            {costume && !costume.isDefault && costume.name !== 'Default' && (
+              <span style={{ marginLeft: -17, flexShrink: 0, display: 'inline-flex' }}>
+                <RingAvatar src={getCostumeIconSrc(costume)} alt={costume.name} size={42} />
+              </span>
+            )}
+            <span className="rivals-condensed truncate" style={{ color: c.ink2, fontSize: 18, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0 }}>
+              {mod.character}
             </span>
-          )}
-        </div>
+            <span className="card-credits-slash" style={{ height: 19 }} />
+            <span className="rivals-display truncate" style={{ color: c.ink3, fontSize: 15, fontStyle: 'italic' }}>
+              {costume?.name ?? 'Default'}
+            </span>
+          </div>
+        )}
 
-        {/* Replacement */}
-        <ReplacementRow mod={mod} costume={costume} layout="inline" />
-
-        {/* Enable row */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleEnabled.mutate(mod.id); }}
-            className={`enable-btn flex-1 cursor-pointer rivals-condensed ${mod.enabled ? '' : 'is-off'}`}
-            style={{
-              padding: '6px 0',
-              background: mod.enabled ? c.accent : 'transparent',
-              color: mod.enabled ? c.onAccent : c.ink,
-              border: `1px solid ${mod.enabled ? c.accent : c.line2}`,
-              borderRadius: 8,
-              fontWeight: 700,
-              fontSize: 12.5,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {mod.enabled ? '● Enabled' : '○ Enable'}
-          </button>
-          {hasAddons && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-              data-tip={`${addonList.length} attached add-on${addonList.length > 1 ? 's' : ''}`}
-              className="addon-btn inline-flex items-center gap-1.5 cursor-pointer"
-              style={{ height: 29, padding: '0 10px', borderRadius: 8, background: expanded ? tint(c.warn, 14) : 'transparent', color: c.warn, border: `1px solid ${expanded ? tint(c.warn, 55) : c.line2}`, fontFamily: c.mono, fontSize: 11, letterSpacing: '0.04em' }}
-            >
-              <span style={{ fontSize: 9, transition: 'transform .15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▸</span>
-              +{addonList.length}
-            </button>
-          )}
-        </div>
-
-        {/* Footer meta — size · date (readable) */}
-        <div className="flex items-center gap-2" style={{ paddingTop: 4, fontFamily: c.mono, fontSize: 12 }}>
-          <span style={{ color: c.ink2 }}>{formatFileSize(mod.fileSize)}</span>
-          <span style={{ color: c.muted }}>·</span>
-          <span style={{ color: c.ink3 }}>{dateStr}</span>
+        {/* Footer rail: mono credits + add-ons + power readout */}
+        <div className="flex items-center" style={{ gap: 8, paddingTop: 10, borderTop: `1px solid ${c.line}` }}>
+          <span className="truncate rivals-mono" style={{ color: c.ink3, fontSize: 11, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            {formatFileSize(mod.fileSize)}
+            <span style={{ color: c.muted }}> · </span>
+            {dateStr}
+            {mod.metadata.version && (
+              <>
+                <span style={{ color: c.muted }}> · </span>
+                v{mod.metadata.version}
+              </>
+            )}
+          </span>
+          <div className="flex items-center" style={{ gap: 6, marginLeft: 'auto', flexShrink: 0 }}>
+            {hasAddons && <AddonTrigger count={addonList.length} expanded={expanded} onClick={(e) => { e.stopPropagation(); onToggleExpand(); }} />}
+            <PowerToggle enabled={mod.enabled} onClick={(e) => { e.stopPropagation(); toggleEnabled.mutate(mod.id); }} />
+          </div>
         </div>
 
       </div>
@@ -1260,15 +1363,18 @@ const ListRow = memo(function ListRow({
           <div className="flex items-center gap-2 flex-wrap">
             <span style={{ color: c.ink, fontFamily: c.font, fontWeight: 600, fontSize: 12.5 }} className="truncate">{mod.metadata.title || mod.name}</span>
             {mod.metadata.isNsfw && (
-              <span style={{ padding: '2px 8px', borderRadius: 999, background: 'transparent', color: c.nsfw, border: `1px solid ${tint(c.nsfw, 55)}`, fontFamily: c.mono, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>nsfw</span>
+              <KickerTag color="var(--rivals-nsfw-bright)" label="NSFW" size={9.5} icon={<WarnIcon stroke="var(--rivals-nsfw-bright)" size={9} />} />
             )}
             {hasAddons && (
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-                style={{ padding: '2px 8px', borderRadius: 999, background: expanded ? tint(c.warn, 25) : tint(c.warn, 14), color: c.warn, border: `1px solid ${expanded ? tint(c.warn, 60) : tint(c.warn, 35)}`, fontFamily: c.mono, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}
+                className="addon-btn rivals-condensed inline-flex items-center cursor-pointer"
+                style={{ gap: 4, padding: '2px 7px', borderRadius: 5, background: expanded ? tint(c.warn, 16) : 'transparent', color: c.warn, border: 'none', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.4 }}
               >
-                <span style={{ fontSize: 8, transition: 'transform .15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block', marginRight: 3 }}>▸</span>
-                +{addonList.length} add-on{addonList.length > 1 ? 's' : ''}
+                <span style={{ display: 'inline-flex', transition: 'transform 150ms ease', transform: expanded ? 'rotate(45deg)' : 'none' }}>
+                  <PlusIcon stroke={c.warn} size={9} />
+                </span>
+                {addonList.length} add-on{addonList.length > 1 ? 's' : ''}
               </button>
             )}
           </div>
@@ -1277,17 +1383,17 @@ const ListRow = memo(function ListRow({
           )}
         </div>
         <span className="truncate" style={{ color: c.ink2 }}>{costume?.name ?? (mod.character ? 'Default' : '—')}</span>
-        <span style={{ color: c.ink2, fontSize: 10.5, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{mod.category}</span>
+        <span className="inline-flex items-center gap-1.5" style={{ color: categoryColor(mod.category), fontSize: 10.5, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <CategoryIcon category={mod.category} stroke={categoryColor(mod.category)} size={9} />
+          {mod.category}
+        </span>
         <span className="truncate" style={{ color: c.ink2 }}>{mod.metadata.author || 'Unknown'}</span>
         <span style={{ color: c.ink3, textAlign: 'right' }}>{formatFileSize(mod.fileSize)}</span>
-        <button
+        <MiniPower
+          on={mod.enabled}
+          label={mod.enabled ? 'Active' : 'Off'}
           onClick={(e) => { e.stopPropagation(); toggleEnabled.mutate(mod.id); }}
-          className="flex items-center gap-1.5 cursor-pointer"
-          style={{ padding: '3px 8px', background: mod.enabled ? tint(c.ok, 13) : 'transparent', color: mod.enabled ? c.ok : c.ink3, border: `1px solid ${mod.enabled ? tint(c.ok, 25) : c.line2}`, borderRadius: 4, fontFamily: c.mono, fontSize: 10, letterSpacing: '0.06em' }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: mod.enabled ? c.ok : c.muted, boxShadow: mod.enabled ? `0 0 6px ${tint(c.ok, 90)}` : 'none' }} />
-          {mod.enabled ? 'ACTIVE' : 'OFF'}
-        </button>
+        />
       </div>
 
       {expanded && hasAddons && (
@@ -1306,22 +1412,21 @@ const ListRow = memo(function ListRow({
                 className={`grid cursor-pointer ${hl ? 'addon-hl' : ''}`}
                 style={{ gridTemplateColumns: '60px 28px 1fr 110px 80px 100px', gap: 10, padding: '4px 6px 4px 60px', alignItems: 'center', color: c.ink3, fontFamily: c.mono, fontSize: 11, borderRadius: 5, ['--hl-color' as string]: hlColor }}
               >
-                <div style={{ width: 38, height: 24, overflow: 'hidden', border: `1px solid ${c.line2}`, borderRadius: 3, background: c.bg }}>
-                  {a.thumbnailPath && <img src={convertFileSrc(a.thumbnailPath)} alt="" loading="lazy" className="w-full h-full object-cover" />}
+                <div style={{ width: 38, height: 24, overflow: 'hidden', border: `1px solid ${c.line2}`, borderRadius: 3, background: c.bg, opacity: a.enabled ? 1 : 0.45 }}>
+                  {a.thumbnailPath && <img src={convertFileSrc(a.thumbnailPath)} alt="" loading="lazy" className="w-full h-full object-cover" style={{ filter: a.enabled ? 'none' : 'grayscale(0.7)' }} />}
                 </div>
                 <span style={{ color: c.muted, fontSize: 10 }}>↳</span>
-                <span className="truncate" style={{ color: mod.enabled ? c.ink : c.muted, fontFamily: c.font, fontSize: 12, fontWeight: 500 }}>{addonDisplayName(a.metadata.title || a.name, mod.metadata.title || mod.name)}</span>
-                <span><MiniCatPill category={a.category} /></span>
+                <span className="truncate" style={{ color: a.enabled && mod.enabled ? c.ink : c.muted, fontFamily: c.font, fontSize: 12, fontWeight: 500, opacity: a.enabled ? 1 : 0.6 }}>{addonDisplayName(a.metadata.title || a.name, mod.metadata.title || mod.name)}</span>
+                <span>
+                  <KickerTag color={categoryColor(a.category)} label={a.category} size={9.5} icon={<CategoryIcon category={a.category} stroke={categoryColor(a.category)} size={9} />} />
+                </span>
                 <span style={{ color: c.ink3, textAlign: 'right' }}>{formatFileSize(a.fileSize)}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); if (mod.enabled) toggleEnabled.mutate(a.id); }}
+                <MiniPower
+                  on={on}
                   disabled={!mod.enabled}
-                  className="flex items-center gap-1.5"
-                  style={{ padding: '3px 8px', background: on ? tint(c.ok, 13) : 'transparent', color: on ? c.ok : mod.enabled ? c.ink3 : c.muted, border: `1px solid ${on ? tint(c.ok, 25) : c.line2}`, borderRadius: 4, fontFamily: c.mono, fontSize: 10, letterSpacing: '0.06em', cursor: mod.enabled ? 'pointer' : 'not-allowed', opacity: mod.enabled ? 1 : 0.5 }}
-                >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: on ? c.ok : c.muted, boxShadow: on ? `0 0 6px ${tint(c.ok, 90)}` : 'none' }} />
-                  {a.enabled ? 'ACTIVE' : 'OFF'}
-                </button>
+                  label={a.enabled ? 'Active' : 'Off'}
+                  onClick={(e) => { e.stopPropagation(); if (mod.enabled) toggleEnabled.mutate(a.id); }}
+                />
               </div>
             );
           })}
@@ -1374,23 +1479,23 @@ function GalleryRibbon({
   const allActive = !filters.showFavorites && filters.category === null && filters.character === null;
 
   return (
-    <div className="flex flex-col gap-2.5" style={{ margin: '14px 28px 0', padding: '12px 16px', background: c.panel, border: `1px solid ${c.line}`, borderRadius: 12 }}>
-      {/* Row 1: quick filters + categories */}
-      <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col" style={{ margin: '10px 28px 0', gap: 4 }}>
+      {/* Row 1: condensed underline tabs + kicker-style category filters */}
+      <div className="flex items-center flex-wrap" style={{ gap: 18 }}>
         <button
-          onClick={() => setFilters({ showFavorites: false, category: null, character: null })}
-          style={{ padding: '6px 12px', borderRadius: 7, background: allActive ? c.panelHi : 'transparent', color: allActive ? c.ink : c.ink2, border: `1px solid ${allActive ? c.line2 : 'transparent'}`, boxShadow: allActive ? `inset 0 -2px 0 ${c.accent}` : 'none', fontFamily: c.font, fontSize: 12.5, fontWeight: allActive ? 600 : 400, cursor: 'pointer' }}
+          onClick={() => withViewTransition(() => setFilters({ showFavorites: false, category: null, character: null }))}
+          className={`ribbon-tab rivals-condensed ${allActive ? 'is-active' : ''}`}
         >
           All Mods
         </button>
         <button
-          onClick={() => setFilters({ showFavorites: true, category: null, character: null })}
-          style={{ padding: '6px 12px', borderRadius: 7, background: filters.showFavorites ? c.panelHi : 'transparent', color: filters.showFavorites ? c.ink : c.ink2, border: `1px solid ${filters.showFavorites ? c.line2 : 'transparent'}`, boxShadow: filters.showFavorites ? `inset 0 -2px 0 ${c.accent}` : 'none', fontFamily: c.font, fontSize: 12.5, fontWeight: filters.showFavorites ? 600 : 400, cursor: 'pointer' }}
+          onClick={() => withViewTransition(() => setFilters({ showFavorites: true, category: null, character: null }))}
+          className={`ribbon-tab rivals-condensed ${filters.showFavorites ? 'is-active' : ''}`}
         >
           Favorites
         </button>
 
-        <span style={{ width: 1, height: 20, background: c.line, margin: '0 2px' }} />
+        <span className="card-credits-slash" style={{ height: 16 }} />
 
         {CATS.map((cat) => {
           const active = filters.category === cat;
@@ -1398,45 +1503,51 @@ function GalleryRibbon({
           return (
             <button
               key={cat}
-              onClick={() => setFilters({ category: active ? null : cat, character: null, showFavorites: false })}
-              className="inline-flex items-center gap-1.5"
-              style={{ padding: '6px 11px', borderRadius: 7, background: active ? tint(col, 16) : 'transparent', color: active ? col : c.ink2, border: `1px solid ${active ? tint(col, 50) : c.line2}`, fontFamily: c.font, fontSize: 12.5, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
+              onClick={() => withViewTransition(() => setFilters({ category: active ? null : cat, character: null, showFavorites: false }))}
+              className={`ribbon-tab rivals-condensed ${active ? 'is-active' : ''}`}
+              style={active ? { color: col, ['--tab-accent' as string]: col } : undefined}
             >
-              <CategoryIcon category={cat} stroke={active ? col : c.ink3} size={11} />
+              <CategoryIcon category={cat} stroke={active ? col : 'currentColor'} size={11} />
               {cat}
-              <span style={{ color: active ? col : c.muted, fontFamily: c.mono, fontSize: 10.5 }}>{catCounts[cat] || 0}</span>
+              <span className="rivals-mono" style={{ color: active ? col : c.muted, fontSize: 10, fontWeight: 400, letterSpacing: 0 }}>
+                {catCounts[cat] || 0}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Row 2: character rail — wheel scrolls horizontally, accent scrollbar */}
+      {/* Row 2: cast rail — portraits only, active hero ringed in accent */}
       <div
         ref={railRef}
         onWheel={onRailWheel}
-        className="gallery-rail flex items-center gap-1.5 overflow-x-auto overflow-y-visible"
-        style={{ paddingTop: 8, paddingBottom: 8 }}
+        className="gallery-rail flex items-center overflow-x-auto overflow-y-visible"
+        style={{ gap: 11, paddingTop: 10, paddingBottom: 12 }}
       >
         <button
-          onClick={() => setFilters({ character: null })}
-          className="flex items-center gap-1.5 flex-shrink-0"
-          style={{ padding: '4px 10px 4px 6px', borderRadius: 999, background: !filters.character ? c.accent : 'transparent', color: !filters.character ? c.onAccent : c.ink2, border: `1px solid ${!filters.character ? c.accent : c.line2}`, fontFamily: c.font, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          onClick={() => withViewTransition(() => setFilters({ character: null }))}
+          className={`cast-chip rivals-mono ${!filters.character ? 'is-active' : ''}`}
+          data-tip="All characters"
+          aria-label="All characters"
         >
-          <span style={{ width: 18, height: 18, borderRadius: '50%', background: !filters.character ? c.onAccent : c.line, color: !filters.character ? c.accent : c.ink3, display: 'grid', placeItems: 'center', fontFamily: c.mono, fontSize: 10, fontWeight: 700 }}>∗</span>
-          All
+          <span
+            style={{ width: 44, height: 44, borderRadius: '50%', display: 'grid', placeItems: 'center', background: tint(c.accent, 13), border: `1.5px solid ${tint(c.accent, 38)}`, color: c.accent, fontSize: 11, fontWeight: 700 }}
+          >
+            ALL
+          </span>
         </button>
         {railChars.map((ch) => {
           const active = filters.character === ch;
           return (
             <button
               key={ch}
-              onClick={() => setFilters({ character: active ? null : ch, category: null, showFavorites: false })}
-              className={`gallery-pill flex items-center gap-1.5 flex-shrink-0 ${active ? 'is-active' : ''}`}
-              style={{ padding: '4px 11px 4px 4px', borderRadius: 999, background: active ? c.panelHi : 'transparent', color: active ? c.ink : c.ink2, border: `1px solid ${active ? c.accent : c.line2}`, fontFamily: c.font, fontSize: 12, cursor: 'pointer' }}
+              onClick={() => withViewTransition(() => setFilters({ character: active ? null : ch, category: null, showFavorites: false }))}
+              className={`cast-chip ${active ? 'is-active' : ''}`}
+              data-tip={ch}
+              aria-label={ch}
             >
-              <RingAvatar src={getCharacterIconPath(ch)} alt={ch} size={24} />
-              <span style={{ fontWeight: active ? 600 : 500 }}>{ch}</span>
-              <span style={{ color: c.ink3, fontFamily: c.mono, fontSize: 10 }}>{charCounts[ch]}</span>
+              <RingAvatar src={getCharacterIconPath(ch)} alt={ch} size={44} />
+              <span className="cast-badge rivals-mono">{charCounts[ch]}</span>
             </button>
           );
         })}

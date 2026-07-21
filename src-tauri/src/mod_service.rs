@@ -1215,6 +1215,174 @@ impl ModService {
         Ok(())
     }
 
+    /// Delete many mods in one pass. A single scan resolves every id (per-id
+    /// delete_mod would rescan the library once per mod), individual failures
+    /// are logged and skipped, and empty folders are swept once at the end.
+    /// Returns how many mods were fully deleted.
+    pub fn delete_mods(&self, mod_ids: &[String]) -> Result<usize, String> {
+        let all_mods = self.get_all_mods()?;
+        let wanted: HashSet<&str> = mod_ids.iter().map(|s| s.as_str()).collect();
+        let mut deleted = 0;
+
+        for mod_info in all_mods.into_iter().filter(|m| wanted.contains(m.id.as_str())) {
+            let mut failed = false;
+            for file_path in &mod_info.associated_files {
+                if let Err(e) = fs::remove_file(file_path) {
+                    log::warn!("[bulk-delete] Failed to delete {:?}: {}", file_path, e);
+                    failed = true;
+                }
+            }
+            let _ = self.delete_metadata(&mod_info.id);
+            if let Some(thumbnail_path) = mod_info.thumbnail_path {
+                let _ = fs::remove_file(thumbnail_path);
+            }
+            if !failed {
+                deleted += 1;
+            }
+        }
+
+        if let Ok(cleaned) = self.cleanup_empty_mod_folders() {
+            if cleaned > 0 {
+                log::info!("Cleaned up {} empty folder(s) after bulk deletion", cleaned);
+            }
+        }
+
+        log::info!("[bulk-delete] Deleted {} of {} requested mod(s)", deleted, mod_ids.len());
+        Ok(deleted)
+    }
+
+    /// Install many paks from one archive as a single mod entry: every pak
+    /// lands in one folder, the first becomes the parent, and the rest are
+    /// attached as add-ons under it — one card instead of hundreds.
+    pub fn install_mod_group(
+        &self,
+        pak_files: &[String],
+        group_name: &str,
+        category: ModCategory,
+    ) -> Result<ModInfo, String> {
+        if pak_files.is_empty() {
+            return Err("No files to install".to_string());
+        }
+
+        let folder_path = self
+            .mods_directory
+            .join(sanitize_folder_name(&category.to_string()))
+            .join(sanitize_folder_name(group_name));
+        self.ensure_directory_exists(&folder_path)?;
+
+        // Stable order so the parent choice is deterministic
+        let mut sorted: Vec<&String> = pak_files.iter().collect();
+        sorted.sort();
+
+        let now = Utc::now();
+        let base_metadata = |title: String, parent: Option<String>| ModMetadata {
+            title,
+            subtitle: None,
+            description: String::new(),
+            author: None,
+            version: None,
+            tags: Vec::new(),
+            category: category.clone(),
+            character: None,
+            costume: None,
+            is_favorite: false,
+            is_nsfw: false,
+            created_at: now,
+            updated_at: now,
+            install_date: now,
+            profile_ids: None,
+            nexus_mod_id: None,
+            nexus_file_id: None,
+            nexus_version: None,
+            original_folder_path: folder_path
+                .strip_prefix(&self.mods_directory)
+                .ok()
+                .map(|p| p.to_string_lossy().to_string()),
+            parent_mod_id: parent,
+        };
+
+        let mut parent_id: Option<String> = None;
+        let mut parent_dest: Option<PathBuf> = None;
+
+        for source in sorted {
+            let source_path = Path::new(source);
+            let file_name = source_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or("Invalid file name in group")?;
+            let dest_path = folder_path.join(file_name);
+
+            fs::copy(source_path, &dest_path)
+                .map_err(|e| format!("Failed to copy {file_name}: {e}"))?;
+
+            // Companion .ucas/.utoc travel with their pak
+            if let (Some(base_name), Some(source_dir)) = (
+                source_path.file_stem().and_then(|s| s.to_str()),
+                source_path.parent(),
+            ) {
+                for ext in &[".ucas", ".utoc"] {
+                    let companion = source_dir.join(format!("{base_name}{ext}"));
+                    if companion.exists() {
+                        fs::copy(&companion, folder_path.join(format!("{base_name}{ext}")))
+                            .map_err(|e| format!("Failed to copy companion: {e}"))?;
+                    }
+                }
+            }
+
+            let mod_id = self.generate_mod_id_from_path(&dest_path, file_name);
+            let metadata = match &parent_id {
+                None => base_metadata(group_name.to_string(), None),
+                Some(pid) => base_metadata(self.extract_mod_name(file_name), Some(pid.clone())),
+            };
+            self.save_metadata(&mod_id, &metadata)?;
+
+            if parent_id.is_none() {
+                parent_id = Some(mod_id);
+                parent_dest = Some(dest_path);
+            }
+        }
+
+        let parent_path = parent_dest.ok_or("Group install produced no parent")?;
+        let parent_name = parent_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(group_name)
+            .to_string();
+        let metadata_fs = fs::metadata(&parent_path)
+            .map_err(|e| format!("Failed to read parent metadata: {e}"))?;
+        let associated_files = self.find_associated_files(&parent_path).unwrap_or_default();
+        let parent_id = parent_id.ok_or("Group install produced no parent id")?;
+        let metadata = self
+            .load_metadata(&parent_id)
+            .ok()
+            .flatten()
+            .ok_or("Parent metadata missing after group install")?;
+
+        log::info!(
+            "[group-install] Installed {} pak(s) as \"{}\" ({} add-ons)",
+            pak_files.len(),
+            group_name,
+            pak_files.len().saturating_sub(1)
+        );
+
+        Ok(ModInfo {
+            id: parent_id.clone(),
+            name: metadata.title.clone(),
+            category: metadata.category.clone(),
+            character: None,
+            enabled: true,
+            is_favorite: false,
+            file_path: parent_path,
+            thumbnail_path: self.find_thumbnail(&parent_id, &parent_name),
+            file_size: metadata_fs.len(),
+            install_date: metadata.install_date,
+            last_modified: metadata_fs.modified().ok().map(|t| t.into()).unwrap_or(now),
+            original_file_name: parent_name,
+            associated_files,
+            metadata,
+        })
+    }
+
     /// Migrate metadata and thumbnails from old filename-based IDs to new path-based IDs
     /// This is a one-time migration for existing mods when switching ID generation methods
     /// Returns the number of mods migrated
