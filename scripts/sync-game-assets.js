@@ -48,6 +48,7 @@ const FOLDER_TO_CHARACTER = {
   49: 'Black Cat',
   50: 'Devil Dinosaur',
   51: 'Cyclops',
+  52: 'Jubilee',
 };
 
 // Character slug used for the default costume icon (when it differs from the folder slug)
@@ -81,6 +82,8 @@ const CHAR_ICON_FILENAME = {
 const COSTUME_NAME_OVERRIDES = {
   'growth-decay': 'Growth & Decay',
   'cloak-dagger': 'Cloak & Dagger',
+  // rivalskins serves Elsa's "Silver Stalker" icon under a mangled "-2" slug
+  '-2': 'Silver Stalker',
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
