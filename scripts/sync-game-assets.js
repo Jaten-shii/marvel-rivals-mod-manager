@@ -237,14 +237,46 @@ async function syncCostumeIcons(dryRun) {
     }
   }
 
-  // Write costume-data.json
-  if (!dryRun) {
-    const sorted = {};
-    for (const key of Object.keys(costumeData).sort()) {
-      sorted[key] = costumeData[key];
+  // MERGE into the existing costume-data.json — never drop costumes we already
+  // have. rivalskins.com only serves the most recent costumes per character on
+  // the listing page, so `costumeData` is a PARTIAL scrape. Replacing the file
+  // with it would wipe every older costume (this happened once and nuked the DB
+  // from ~40 chars to ~24). So we load what's there and only add/update.
+  let existing = {};
+  try {
+    existing = JSON.parse(fs.readFileSync(COSTUME_DATA_PATH, 'utf8'));
+  } catch {
+    console.log('  (no existing costume-data.json — writing fresh)');
+  }
+
+  let added = 0;
+  const merged = { ...existing };
+  for (const [char, scraped] of Object.entries(costumeData)) {
+    const current = merged[char] || [];
+    const byId = new Map(current.map(c => [c.id, c]));
+    for (const cost of scraped) {
+      if (!byId.has(cost.id)) added++;
+      byId.set(cost.id, { ...byId.get(cost.id), ...cost }); // add new, refresh known
     }
+    merged[char] = [...byId.values()].sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  // safety net: refuse to write if the merge somehow shrank the DB a lot
+  const existingCount = Object.values(existing).reduce((n, v) => n + v.length, 0);
+  const mergedCount = Object.values(merged).reduce((n, v) => n + v.length, 0);
+  if (existingCount > 20 && mergedCount < existingCount * 0.75) {
+    console.log(`  ABORT WRITE: merged DB (${mergedCount}) is much smaller than existing (${existingCount}). Not overwriting.`);
+  } else if (!dryRun) {
+    const sorted = {};
+    for (const key of Object.keys(merged).sort()) sorted[key] = merged[key];
     fs.writeFileSync(COSTUME_DATA_PATH, JSON.stringify(sorted, null, 2) + '\n');
-    console.log(`\nWrote ${COSTUME_DATA_PATH}`);
+    console.log(`\nWrote ${COSTUME_DATA_PATH} (${mergedCount} costumes, ${added} new this run)`);
+  } else {
+    console.log(`\n(dry run) would write ${mergedCount} costumes (${added} new)`);
   }
 
   console.log(`\nCostume icons: ${downloaded} downloaded, ${skipped} existing, ${failed} failed`);

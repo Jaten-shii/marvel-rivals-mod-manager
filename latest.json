@@ -1,11 +1,11 @@
 {
-  "version": "v8.1.0",
-  "notes": "# Marvel Rivals Mod Manager v8.1.0\n\n## What's New\n\nSee full release notes on GitHub!\n\n## Installation\n- Download and run the installer\n- Existing users will receive automatic update notifications",
-  "pub_date": "2026-07-19T01:22:43.476Z",
+  "version": "v8.1.2",
+  "notes": "# Marvel Rivals Mod Manager v8.1.2\n\n## What's New\n\nSee full release notes on GitHub!\n\n## Installation\n- Download and run the installer\n- Existing users will receive automatic update notifications",
+  "pub_date": "2026-07-22T19:52:56.437Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWFByakFPOXJYbkVNbE95Vmp4T2ZZU21ESENBdERBRytjQ1lzcS9NaE10Z3RuaFpzT2NBQktnUXRmTDFaQllzVmROTURDOXQzOEJwdG1ZRzFUNERuYXdsU1ViTW5DYWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NDI0MTYxCWZpbGU6TWFydmVsLVJpdmFscy1Nb2QtTWFuYWdlcl84LjEuMF94NjQtc2V0dXAuZXhlClJXbnVIVThRZGgzRzAweS82M0pkYWhpTkRaVzZBOWhrUTRIN0hQVnVXdHJzUnFsb3kzQi9NV2xHVUFwbHVaNm1VaS9odHVKSzdNWEVvemM1bXZMR0R3PT0K",
-      "url": "https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases/download/v8.1.0/Marvel-Rivals-Mod-Manager_8.1.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSWFByakFPOXJYbkdSN0J5bkdnTWlPUVErMXBDNkFQeUFPRzJqWHZxTkdaeE9ENGFSY3BPbkl5cHFhMUp5S3dUMkZzMG02cDZuWnp4a1FGZ2xTbnpnMGRxTkQxZW1lT1FnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NzQ5OTc0CWZpbGU6TWFydmVsLVJpdmFscy1Nb2QtTWFuYWdlcl84LjEuMl94NjQtc2V0dXAuZXhlCjhPNVlVdmlOUDllWHhETjh1K1RCd3ZYNlRZT1FGMVNyb0lrV1hidVB3RFdlNEZPVHFYZkxYNW1zV1VWMzFXcUlUMnZXNXhPdHVPVm1SUlh4VDlmb0NBPT0K",
+      "url": "https://github.com/Jaten-shii/marvel-rivals-mod-manager/releases/download/v8.1.2/Marvel-Rivals-Mod-Manager_8.1.2_x64-setup.exe"
     }
   }
 }
