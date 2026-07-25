@@ -484,6 +484,11 @@
       "imagePath": "daredevil/img_icon_fearless-origin.png"
     },
     {
+      "id": "ignite-daredevil-2026",
+      "name": "Ignite Daredevil 2026",
+      "imagePath": "daredevil/img_icon_ignite-daredevil-2026.png"
+    },
+    {
       "id": "not-daredevil",
       "name": "Not Daredevil",
       "imagePath": "daredevil/img_icon_not-daredevil.png"
@@ -1021,6 +1026,11 @@
       "isDefault": true
     },
     {
+      "id": "consort-of-khonshu",
+      "name": "Consort Of Khonshu",
+      "imagePath": "hela/img_icon_consort-of-khonshu.png"
+    },
+    {
       "id": "disco-of-the-dead",
       "name": "Disco Of The Dead",
       "imagePath": "hela/img_icon_disco-of-the-dead.png"
@@ -1046,6 +1056,11 @@
       "imagePath": "hela/img_icon_merciful-queen.png"
     },
     {
+      "id": "midnight-moon",
+      "name": "Midnight Moon",
+      "imagePath": "hela/img_icon_midnight-moon.png"
+    },
+    {
       "id": "queen-in-black",
       "name": "Queen In Black",
       "imagePath": "hela/img_icon_queen-in-black.png"
@@ -1054,6 +1069,11 @@
       "id": "ruby-revolt",
       "name": "Ruby Revolt",
       "imagePath": "hela/img_icon_ruby-revolt.png"
+    },
+    {
+      "id": "sapphire-shadow",
+      "name": "Sapphire Shadow",
+      "imagePath": "hela/img_icon_sapphire-shadow.png"
     },
     {
       "id": "savage-monarch",
@@ -1671,6 +1691,11 @@
       "id": "blueberry-ice",
       "name": "Blueberry Ice",
       "imagePath": "luna-snow/img_icon_blueberry-ice.png"
+    },
+    {
+      "id": "carmine-cassette",
+      "name": "Carmine Cassette",
+      "imagePath": "luna-snow/img_icon_carmine-cassette.png"
     },
     {
       "id": "cherry-delight",
@@ -2372,6 +2397,11 @@
       "id": "phantom-purple",
       "name": "Phantom Purple",
       "imagePath": "psylocke/img_icon_phantom-purple.png"
+    },
+    {
+      "id": "pinned-butterfly",
+      "name": "Pinned Butterfly",
+      "imagePath": "psylocke/img_icon_pinned-butterfly.png"
     },
     {
       "id": "psychedelic-pulse",
