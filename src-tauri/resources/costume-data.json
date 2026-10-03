@@ -23,7 +23,7 @@
     },
     {
       "id": "guardians-of-the-galaxy-vol-3",
-      "name": "Guardians Of The Galaxy Vol 3",
+      "name": "Guardians of the Galaxy Vol. 3",
       "imagePath": "adam-warlock/img_icon_guardians-of-the-galaxy-vol-3.png"
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "id": "king-in-white",
-      "name": "King In White",
+      "name": "King in White",
       "imagePath": "adam-warlock/img_icon_king-in-white.png"
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "adam-warlock/img_icon_will-of-galacta.png"
     }
   ],
@@ -66,7 +66,7 @@
     },
     {
       "id": "ace-of-spades",
-      "name": "Ace Of Spades",
+      "name": "Ace of Spades",
       "imagePath": "angela/img_icon_ace-of-spades.png"
     },
     {
@@ -81,12 +81,17 @@
     },
     {
       "id": "odins-beautiful-daughter",
-      "name": "Odins Beautiful Daughter",
+      "name": "Odin's Beautiful Daughter",
       "imagePath": "angela/img_icon_odins-beautiful-daughter.png"
     },
     {
+      "id": "queen-of-hel",
+      "name": "Queen of Hel",
+      "imagePath": "angela/img_icon_queen-of-hel.png"
+    },
+    {
       "id": "sirianas-silver",
-      "name": "Sirianas Silver",
+      "name": "Siriana's Silver",
       "imagePath": "angela/img_icon_sirianas-silver.png"
     },
     {
@@ -108,9 +113,24 @@
       "imagePath": "black-cat/img_icon_beguiling-blue.png"
     },
     {
+      "id": "coastal-cat",
+      "name": "Coastal Cat",
+      "imagePath": "black-cat/img_icon_coastal-cat.png"
+    },
+    {
       "id": "gilded-shadow",
       "name": "Gilded Shadow",
       "imagePath": "black-cat/img_icon_gilded-shadow.png"
+    },
+    {
+      "id": "golden-claws",
+      "name": "Golden Claws",
+      "imagePath": "black-cat/img_icon_golden-claws.png"
+    },
+    {
+      "id": "pearl-paws",
+      "name": "Pearl Paws",
+      "imagePath": "black-cat/img_icon_pearl-paws.png"
     },
     {
       "id": "pink-purr",
@@ -162,7 +182,7 @@
     },
     {
       "id": "king-of-wakanda",
-      "name": "King Of Wakanda",
+      "name": "King of Wakanda",
       "imagePath": "black-panther/img_icon_king-of-wakanda.png"
     },
     {
@@ -272,6 +292,11 @@
       "imagePath": "blade/img_icon_restful-recovery.png"
     },
     {
+      "id": "silvered-slayer",
+      "name": "Silvered Slayer",
+      "imagePath": "blade/img_icon_silvered-slayer.png"
+    },
+    {
       "id": "starlit-shadow",
       "name": "Starlit Shadow",
       "imagePath": "blade/img_icon_starlit-shadow.png"
@@ -283,7 +308,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "blade/img_icon_will-of-galacta.png"
     }
   ],
@@ -295,13 +320,18 @@
       "isDefault": true
     },
     {
+      "id": "astral-aegis",
+      "name": "Astral Aegis",
+      "imagePath": "captain-america/img_icon_astral-aegis.png"
+    },
+    {
       "id": "avengers-infinity-war",
       "name": "Avengers Infinity War",
       "imagePath": "captain-america/img_icon_avengers-infinity-war.png"
     },
     {
       "id": "brett-hendrick-the-star",
-      "name": "Brett Hendrick The Star",
+      "name": "Brett Hendrick the Star",
       "imagePath": "captain-america/img_icon_brett-hendrick-the-star.png"
     },
     {
@@ -356,7 +386,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "captain-america/img_icon_will-of-galacta.png"
     }
   ],
@@ -388,6 +418,16 @@
       "imagePath": "cloak-and-dagger/img_icon_darkened-day.png"
     },
     {
+      "id": "dreamy-daze",
+      "name": "Dreamy Daze",
+      "imagePath": "cloak-and-dagger/img_icon_dreamy-daze.png"
+    },
+    {
+      "id": "dreamy-duo",
+      "name": "Dreamy Duo",
+      "imagePath": "cloak-and-dagger/img_icon_dreamy-duo.png"
+    },
+    {
       "id": "growth-decay",
       "name": "Growth & Decay",
       "imagePath": "cloak-and-dagger/img_icon_growth-decay.png"
@@ -401,6 +441,11 @@
       "id": "lemon-lime",
       "name": "Lemon Lime",
       "imagePath": "cloak-and-dagger/img_icon_lemon-lime.png"
+    },
+    {
+      "id": "pastel-peace",
+      "name": "Pastel Peace",
+      "imagePath": "cloak-and-dagger/img_icon_pastel-peace.png"
     },
     {
       "id": "polarity-bond",
@@ -441,6 +486,11 @@
       "isDefault": true
     },
     {
+      "id": "elegant-eye",
+      "name": "Elegant Eye",
+      "imagePath": "cyclops/img_icon_elegant-eye.png"
+    },
+    {
       "id": "futuristic-focus",
       "name": "Futuristic Focus",
       "imagePath": "cyclops/img_icon_futuristic-focus.png"
@@ -464,9 +514,19 @@
       "isDefault": true
     },
     {
+      "id": "attorney-at-law",
+      "name": "Attorney at Law",
+      "imagePath": "daredevil/img_icon_attorney-at-law.png"
+    },
+    {
       "id": "aurora-twilight",
       "name": "Aurora Twilight",
       "imagePath": "daredevil/img_icon_aurora-twilight.png"
+    },
+    {
+      "id": "dare-dragon",
+      "name": "Dare Dragon",
+      "imagePath": "daredevil/img_icon_dare-dragon.png"
     },
     {
       "id": "daredevil-born-again-season-2",
@@ -510,7 +570,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "daredevil/img_icon_will-of-galacta.png"
     }
   ],
@@ -608,7 +668,7 @@
     },
     {
       "id": "wade-wilson-the-spirit-squad",
-      "name": "Wade Wilson The Spirit Squad",
+      "name": "Wade Wilson the Spirit Squad",
       "imagePath": "deadpool/img_icon_wade-wilson-the-spirit-squad.png"
     },
     {
@@ -618,7 +678,7 @@
     },
     {
       "id": "x-force",
-      "name": "X Force",
+      "name": "X-Force",
       "imagePath": "deadpool/img_icon_x-force.png"
     },
     {
@@ -646,7 +706,7 @@
     },
     {
       "id": "jeff-the-dinosaur",
-      "name": "Jeff The Dinosaur",
+      "name": "Jeff the Dinosaur",
       "imagePath": "devil-dinosaur/img_icon_jeff-the-dinosaur.png"
     },
     {
@@ -673,6 +733,11 @@
       "isDefault": true
     },
     {
+      "id": "astral-arcana",
+      "name": "Astral Arcana",
+      "imagePath": "doctor-strange/img_icon_astral-arcana.png"
+    },
+    {
       "id": "astral-wanderer",
       "name": "Astral Wanderer",
       "imagePath": "doctor-strange/img_icon_astral-wanderer.png"
@@ -689,12 +754,12 @@
     },
     {
       "id": "doctor-strange-in-the-multiverse-of-madness",
-      "name": "Doctor Strange In The Multiverse Of Madness",
+      "name": "Doctor Strange in the Multiverse of Madness",
       "imagePath": "doctor-strange/img_icon_doctor-strange-in-the-multiverse-of-madness.png"
     },
     {
       "id": "god-of-magic",
-      "name": "God Of Magic",
+      "name": "God of Magic",
       "imagePath": "doctor-strange/img_icon_god-of-magic.png"
     },
     {
@@ -704,7 +769,7 @@
     },
     {
       "id": "master-of-black-magic",
-      "name": "Master Of Black Magic",
+      "name": "Master of Black Magic",
       "imagePath": "doctor-strange/img_icon_master-of-black-magic.png"
     },
     {
@@ -729,12 +794,12 @@
     },
     {
       "id": "sorcerer-supreme-of-the-galaxy",
-      "name": "Sorcerer Supreme Of The Galaxy",
+      "name": "Sorcerer Supreme of the Galaxy",
       "imagePath": "doctor-strange/img_icon_sorcerer-supreme-of-the-galaxy.png"
     },
     {
       "id": "stephen-sanders-the-doctor",
-      "name": "Stephen Sanders The Doctor",
+      "name": "Stephen Sanders the Doctor",
       "imagePath": "doctor-strange/img_icon_stephen-sanders-the-doctor.png"
     }
   ],
@@ -781,6 +846,11 @@
       "imagePath": "elsa-bloodstone/img_icon_-2.png"
     },
     {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "elsa-bloodstone/img_icon_will-of-galacta.png"
+    },
+    {
       "id": "young-blood",
       "name": "Young Blood",
       "imagePath": "elsa-bloodstone/img_icon_young-blood.png"
@@ -795,7 +865,7 @@
     },
     {
       "id": "black-queen-of-the-marauders",
-      "name": "Black Queen Of The Marauders",
+      "name": "Black Queen of the Marauders",
       "imagePath": "emma-frost/img_icon_black-queen-of-the-marauders.png"
     },
     {
@@ -809,14 +879,29 @@
       "imagePath": "emma-frost/img_icon_caviar-black.png"
     },
     {
+      "id": "dark-diamond",
+      "name": "Dark Diamond",
+      "imagePath": "emma-frost/img_icon_dark-diamond.png"
+    },
+    {
       "id": "gala-glam",
       "name": "Gala Glam",
       "imagePath": "emma-frost/img_icon_gala-glam.png"
     },
     {
+      "id": "glittering-goddess",
+      "name": "Glittering Goddess",
+      "imagePath": "emma-frost/img_icon_glittering-goddess.png"
+    },
+    {
       "id": "golden-diamond",
       "name": "Golden Diamond",
       "imagePath": "emma-frost/img_icon_golden-diamond.png"
+    },
+    {
+      "id": "golden-grace",
+      "name": "Golden Grace",
+      "imagePath": "emma-frost/img_icon_golden-grace.png"
     },
     {
       "id": "hellfire-protocol",
@@ -830,7 +915,7 @@
     },
     {
       "id": "queen-of-diamonds",
-      "name": "Queen Of Diamonds",
+      "name": "Queen of Diamonds",
       "imagePath": "emma-frost/img_icon_queen-of-diamonds.png"
     },
     {
@@ -845,12 +930,12 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "emma-frost/img_icon_will-of-galacta.png"
     },
     {
       "id": "x-revolution",
-      "name": "X Revolution",
+      "name": "X-Revolution",
       "imagePath": "emma-frost/img_icon_x-revolution.png"
     }
   ],
@@ -898,8 +983,36 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "gambit/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "x-men-97-season-2",
+      "name": "X-Men '97 Season 2",
+      "imagePath": "gambit/img_icon_x-men-97-season-2.png"
+    }
+  ],
+  "Gorr the God Butcher": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "gorr-the-god-butcher/img_icon_gorr-the-god-butcher.png",
+      "isDefault": true
+    },
+    {
+      "id": "blue-requiem",
+      "name": "Blue Requiem",
+      "imagePath": "gorr-the-god-butcher/img_icon_blue-requiem.png"
+    },
+    {
+      "id": "divine-destroyer",
+      "name": "Divine Destroyer",
+      "imagePath": "gorr-the-god-butcher/img_icon_divine-destroyer.png"
+    },
+    {
+      "id": "gods-graveyard",
+      "name": "God's Graveyard",
+      "imagePath": "gorr-the-god-butcher/img_icon_gods-graveyard.png"
     }
   ],
   "Groot": [
@@ -925,8 +1038,13 @@
       "imagePath": "groot/img_icon_carved-traveler.png"
     },
     {
+      "id": "grootlactus",
+      "name": "Grootlactus",
+      "imagePath": "groot/img_icon_grootlactus.png"
+    },
+    {
       "id": "guardians-of-the-galaxy-vol-3",
-      "name": "Guardians Of The Galaxy Vol 3",
+      "name": "Guardians of the Galaxy Vol. 3",
       "imagePath": "groot/img_icon_guardians-of-the-galaxy-vol-3.png"
     },
     {
@@ -1008,13 +1126,18 @@
       "imagePath": "hawkeye/img_icon_teal-trend.png"
     },
     {
+      "id": "thunderbolts",
+      "name": "Thunderbolts",
+      "imagePath": "hawkeye/img_icon_thunderbolts.png"
+    },
+    {
       "id": "tigers-eye",
       "name": "Tigers Eye",
       "imagePath": "hawkeye/img_icon_tigers-eye.png"
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "hawkeye/img_icon_will-of-galacta.png"
     }
   ],
@@ -1027,27 +1150,27 @@
     },
     {
       "id": "consort-of-khonshu",
-      "name": "Consort Of Khonshu",
+      "name": "Consort of Khonshu",
       "imagePath": "hela/img_icon_consort-of-khonshu.png"
     },
     {
       "id": "disco-of-the-dead",
-      "name": "Disco Of The Dead",
+      "name": "Disco of the Dead",
       "imagePath": "hela/img_icon_disco-of-the-dead.png"
     },
     {
       "id": "empress-of-the-cosmos",
-      "name": "Empress Of The Cosmos",
+      "name": "Empress of the Cosmos",
       "imagePath": "hela/img_icon_empress-of-the-cosmos.png"
     },
     {
       "id": "goddess-of-death",
-      "name": "Goddess Of Death",
+      "name": "Goddess of Death",
       "imagePath": "hela/img_icon_goddess-of-death.png"
     },
     {
       "id": "helen-angerboda-the-rebel",
-      "name": "Helen Angerboda The Rebel",
+      "name": "Helen Angerboda the Rebel",
       "imagePath": "hela/img_icon_helen-angerboda-the-rebel.png"
     },
     {
@@ -1062,7 +1185,7 @@
     },
     {
       "id": "queen-in-black",
-      "name": "Queen In Black",
+      "name": "Queen in Black",
       "imagePath": "hela/img_icon_queen-in-black.png"
     },
     {
@@ -1097,7 +1220,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "hela/img_icon_will-of-galacta.png"
     },
     {
@@ -1142,6 +1265,11 @@
       "id": "punk-rage",
       "name": "Punk Rage",
       "imagePath": "hulk/img_icon_punk-rage.png"
+    },
+    {
+      "id": "spider-man-brand-new-day",
+      "name": "Spider-Man: Brand New Day",
+      "imagePath": "hulk/img_icon_spider-man-brand-new-day.png"
     }
   ],
   "Human Torch": [
@@ -1173,7 +1301,7 @@
     },
     {
       "id": "jack-of-hearts",
-      "name": "Jack Of Hearts",
+      "name": "Jack of Hearts",
       "imagePath": "human-torch/img_icon_jack-of-hearts.png"
     },
     {
@@ -1276,7 +1404,7 @@
     },
     {
       "id": "pretty-in-pink",
-      "name": "Pretty In Pink",
+      "name": "Pretty in Pink",
       "imagePath": "invisible-woman/img_icon_pretty-in-pink.png"
     },
     {
@@ -1291,7 +1419,7 @@
     },
     {
       "id": "riann-landau-the-debater",
-      "name": "Riann Landau The Debater",
+      "name": "Riann Landau the Debater",
       "imagePath": "invisible-woman/img_icon_riann-landau-the-debater.png"
     },
     {
@@ -1321,7 +1449,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "invisible-woman/img_icon_will-of-galacta.png"
     }
   ],
@@ -1338,13 +1466,28 @@
       "imagePath": "iron-fist/img_icon_binary-fist.png"
     },
     {
+      "id": "blackened-rage",
+      "name": "Blackened Rage",
+      "imagePath": "iron-fist/img_icon_blackened-rage.png"
+    },
+    {
+      "id": "cobalt-cruiser",
+      "name": "Cobalt Cruiser",
+      "imagePath": "iron-fist/img_icon_cobalt-cruiser.png"
+    },
+    {
+      "id": "furious-flow",
+      "name": "Furious Flow",
+      "imagePath": "iron-fist/img_icon_furious-flow.png"
+    },
+    {
       "id": "immortal-weapon-of-agamotto",
-      "name": "Immortal Weapon Of Agamotto",
+      "name": "Immortal Weapon of Agamotto",
       "imagePath": "iron-fist/img_icon_immortal-weapon-of-agamotto.png"
     },
     {
       "id": "lin-shao-the-knockout",
-      "name": "Lin Shao The Knockout",
+      "name": "Lin Shao the Knockout",
       "imagePath": "iron-fist/img_icon_lin-shao-the-knockout.png"
     },
     {
@@ -1389,7 +1532,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "iron-fist/img_icon_will-of-galacta.png"
     }
   ],
@@ -1519,6 +1662,16 @@
       "imagePath": "jeff-the-land-shark/img_icon_green-bill.png"
     },
     {
+      "id": "gwenpool",
+      "name": "Gwenpool",
+      "imagePath": "jeff-the-land-shark/img_icon_gwenpool.png"
+    },
+    {
+      "id": "incognito-blue",
+      "name": "Incognito Blue",
+      "imagePath": "jeff-the-land-shark/img_icon_incognito-blue.png"
+    },
+    {
       "id": "incognito-dolphin",
       "name": "Incognito Dolphin",
       "imagePath": "jeff-the-land-shark/img_icon_incognito-dolphin.png"
@@ -1529,13 +1682,18 @@
       "imagePath": "jeff-the-land-shark/img_icon_jeff-olantern.png"
     },
     {
+      "id": "jeff-pool",
+      "name": "Jeff-Pool",
+      "imagePath": "jeff-the-land-shark/img_icon_jeff-pool.png"
+    },
+    {
       "id": "magma-menace",
       "name": "Magma Menace",
       "imagePath": "jeff-the-land-shark/img_icon_magma-menace.png"
     },
     {
       "id": "maid-to-chomp",
-      "name": "Maid To Chomp",
+      "name": "Maid to Chomp",
       "imagePath": "jeff-the-land-shark/img_icon_maid-to-chomp.png"
     },
     {
@@ -1547,6 +1705,11 @@
       "id": "rosy-ruin",
       "name": "Rosy Ruin",
       "imagePath": "jeff-the-land-shark/img_icon_rosy-ruin.png"
+    },
+    {
+      "id": "shark-in-sheeps-clothing",
+      "name": "Shark in Sheep's Clothing",
+      "imagePath": "jeff-the-land-shark/img_icon_shark-in-sheeps-clothing.png"
     },
     {
       "id": "sunshine-land-shark",
@@ -1572,6 +1735,11 @@
       "isDefault": true
     },
     {
+      "id": "blue-breezes",
+      "name": "Blue Breezes",
+      "imagePath": "jubilee/img_icon_blue-breezes.png"
+    },
+    {
       "id": "cool-combustion",
       "name": "Cool Combustion",
       "imagePath": "jubilee/img_icon_cool-combustion.png"
@@ -1585,6 +1753,16 @@
       "id": "midnight-mutant",
       "name": "Midnight Mutant",
       "imagePath": "jubilee/img_icon_midnight-mutant.png"
+    },
+    {
+      "id": "vampy-jammies",
+      "name": "Vampy Jammies",
+      "imagePath": "jubilee/img_icon_vampy-jammies.png"
+    },
+    {
+      "id": "viridian-vibes",
+      "name": "Viridian Vibes",
+      "imagePath": "jubilee/img_icon_viridian-vibes.png"
     }
   ],
   "Loki": [
@@ -1636,7 +1814,7 @@
     },
     {
       "id": "robe-of-relaxation",
-      "name": "Robe Of Relaxation",
+      "name": "Robe of Relaxation",
       "imagePath": "loki/img_icon_robe-of-relaxation.png"
     },
     {
@@ -1663,6 +1841,11 @@
       "id": "the-avengers",
       "name": "The Avengers",
       "imagePath": "loki/img_icon_the-avengers.png"
+    },
+    {
+      "id": "the-chronicler",
+      "name": "The Chronicler",
+      "imagePath": "loki/img_icon_the-chronicler.png"
     },
     {
       "id": "tidal-trickery",
@@ -1713,6 +1896,11 @@
       "imagePath": "luna-snow/img_icon_cool-summer.png"
     },
     {
+      "id": "dark-nebula",
+      "name": "Dark Nebula",
+      "imagePath": "luna-snow/img_icon_dark-nebula.png"
+    },
+    {
       "id": "disco-pop",
       "name": "Disco Pop",
       "imagePath": "luna-snow/img_icon_disco-pop.png"
@@ -1726,6 +1914,11 @@
       "id": "jade-jewel",
       "name": "Jade Jewel",
       "imagePath": "luna-snow/img_icon_jade-jewel.png"
+    },
+    {
+      "id": "lunar-luna",
+      "name": "Lunar Luna",
+      "imagePath": "luna-snow/img_icon_lunar-luna.png"
     },
     {
       "id": "minty-beats",
@@ -1749,8 +1942,13 @@
     },
     {
       "id": "park-sun-young-the-dancer",
-      "name": "Park Sun Young The Dancer",
+      "name": "Park Sun Young the Dancer",
       "imagePath": "luna-snow/img_icon_park-sun-young-the-dancer.png"
+    },
+    {
+      "id": "pink-planets",
+      "name": "Pink Planets",
+      "imagePath": "luna-snow/img_icon_pink-planets.png"
     },
     {
       "id": "plasma-pulse",
@@ -1799,6 +1997,11 @@
       "id": "blue-blitz",
       "name": "Blue Blitz",
       "imagePath": "magik/img_icon_blue-blitz.png"
+    },
+    {
+      "id": "blue-breaker",
+      "name": "Blue Breaker",
+      "imagePath": "magik/img_icon_blue-breaker.png"
     },
     {
       "id": "eldritch-armor",
@@ -1852,7 +2055,7 @@
     },
     {
       "id": "retro-x-uniform",
-      "name": "Retro X Uniform",
+      "name": "Retro X-Uniform",
       "imagePath": "magik/img_icon_retro-x-uniform.png"
     },
     {
@@ -1861,13 +2064,23 @@
       "imagePath": "magik/img_icon_rosy-resilience.png"
     },
     {
+      "id": "soul-surfer",
+      "name": "Soul Surfer",
+      "imagePath": "magik/img_icon_soul-surfer.png"
+    },
+    {
       "id": "soulless-sword",
       "name": "Soulless Sword",
       "imagePath": "magik/img_icon_soulless-sword.png"
     },
     {
+      "id": "sunset-surf",
+      "name": "Sunset Surf",
+      "imagePath": "magik/img_icon_sunset-surf.png"
+    },
+    {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "magik/img_icon_will-of-galacta.png"
     }
   ],
@@ -1889,6 +2102,16 @@
       "imagePath": "magneto/img_icon_black-gold.png"
     },
     {
+      "id": "clouded-comfort",
+      "name": "Clouded Comfort",
+      "imagePath": "magneto/img_icon_clouded-comfort.png"
+    },
+    {
+      "id": "jade-jammies",
+      "name": "Jade Jammies",
+      "imagePath": "magneto/img_icon_jade-jammies.png"
+    },
+    {
       "id": "king-magnus",
       "name": "King Magnus",
       "imagePath": "magneto/img_icon_king-magnus.png"
@@ -1900,12 +2123,17 @@
     },
     {
       "id": "master-of-magnetism",
-      "name": "Master Of Magnetism",
+      "name": "Master of Magnetism",
       "imagePath": "magneto/img_icon_master-of-magnetism.png"
     },
     {
+      "id": "master-of-slumber",
+      "name": "Master of Slumber",
+      "imagePath": "magneto/img_icon_master-of-slumber.png"
+    },
+    {
       "id": "seat-of-autumn",
-      "name": "Seat Of Autumn",
+      "name": "Seat of Autumn",
       "imagePath": "magneto/img_icon_seat-of-autumn.png"
     },
     {
@@ -1915,7 +2143,7 @@
     },
     {
       "id": "the-trial-of-magneto",
-      "name": "The Trial Of Magneto",
+      "name": "The Trial of Magneto",
       "imagePath": "magneto/img_icon_the-trial-of-magneto.png"
     },
     {
@@ -1930,7 +2158,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "magneto/img_icon_will-of-galacta.png"
     }
   ],
@@ -1962,6 +2190,11 @@
       "imagePath": "mantis/img_icon_citrus-sunrise.png"
     },
     {
+      "id": "dreamy-dew",
+      "name": "Dreamy Dew",
+      "imagePath": "mantis/img_icon_dreamy-dew.png"
+    },
+    {
       "id": "flora-maiden",
       "name": "Flora Maiden",
       "imagePath": "mantis/img_icon_flora-maiden.png"
@@ -1978,7 +2211,7 @@
     },
     {
       "id": "guardians-of-the-galaxy-vol-3",
-      "name": "Guardians Of The Galaxy Vol 3",
+      "name": "Guardians of the Galaxy Vol. 3",
       "imagePath": "mantis/img_icon_guardians-of-the-galaxy-vol-3.png"
     },
     {
@@ -1993,8 +2226,13 @@
     },
     {
       "id": "mandy-celestine-the-greeter",
-      "name": "Mandy Celestine The Greeter",
+      "name": "Mandy Celestine the Greeter",
       "imagePath": "mantis/img_icon_mandy-celestine-the-greeter.png"
+    },
+    {
+      "id": "morning-dew",
+      "name": "Morning Dew",
+      "imagePath": "mantis/img_icon_morning-dew.png"
     },
     {
       "id": "oceanic-harmony",
@@ -2007,8 +2245,13 @@
       "imagePath": "mantis/img_icon_starlit-madonna.png"
     },
     {
+      "id": "sunny-snooze",
+      "name": "Sunny Snooze",
+      "imagePath": "mantis/img_icon_sunny-snooze.png"
+    },
+    {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "mantis/img_icon_will-of-galacta.png"
     }
   ],
@@ -2026,7 +2269,7 @@
     },
     {
       "id": "danum-ket-the-professor",
-      "name": "Danum Ket The Professor",
+      "name": "Danum Ket the Professor",
       "imagePath": "mister-fantastic/img_icon_danum-ket-the-professor.png"
     },
     {
@@ -2066,7 +2309,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "mister-fantastic/img_icon_will-of-galacta.png"
     }
   ],
@@ -2088,8 +2331,18 @@
       "imagePath": "moon-knight/img_icon_eclipse-knight.png"
     },
     {
+      "id": "eternity-knight",
+      "name": "Eternity Knight",
+      "imagePath": "moon-knight/img_icon_eternity-knight.png"
+    },
+    {
+      "id": "fist-of-khonshu",
+      "name": "Fist of Khonshu",
+      "imagePath": "moon-knight/img_icon_fist-of-khonshu.png"
+    },
+    {
       "id": "fist-of-vengeance",
-      "name": "Fist Of Vengeance",
+      "name": "Fist of Vengeance",
       "imagePath": "moon-knight/img_icon_fist-of-vengeance.png"
     },
     {
@@ -2099,7 +2352,7 @@
     },
     {
       "id": "king-of-clubs",
-      "name": "King Of Clubs",
+      "name": "King of Clubs",
       "imagePath": "moon-knight/img_icon_king-of-clubs.png"
     },
     {
@@ -2142,7 +2395,7 @@
     },
     {
       "id": "lord-of-atlantis",
-      "name": "Lord Of Atlantis",
+      "name": "Lord of Atlantis",
       "imagePath": "namor/img_icon_lord-of-atlantis.png"
     },
     {
@@ -2167,7 +2420,7 @@
     },
     {
       "id": "retro-x-uniform",
-      "name": "Retro X Uniform",
+      "name": "Retro X-Uniform",
       "imagePath": "namor/img_icon_retro-x-uniform.png"
     },
     {
@@ -2182,7 +2435,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "namor/img_icon_will-of-galacta.png"
     }
   ],
@@ -2218,6 +2471,11 @@
       "imagePath": "peni-parker/img_icon_frosty-fall.png"
     },
     {
+      "id": "liquid-shell",
+      "name": "Liquid Shell",
+      "imagePath": "peni-parker/img_icon_liquid-shell.png"
+    },
+    {
       "id": "olive-skimmer",
       "name": "Olive Skimmer",
       "imagePath": "peni-parker/img_icon_olive-skimmer.png"
@@ -2229,7 +2487,7 @@
     },
     {
       "id": "peni-parker-the-freshman",
-      "name": "Peni Parker The Freshman",
+      "name": "Peni Parker the Freshman",
       "imagePath": "peni-parker/img_icon_peni-parker-the-freshman.png"
     },
     {
@@ -2276,6 +2534,11 @@
       "imagePath": "phoenix/img_icon_chaos-phoenix.png"
     },
     {
+      "id": "cosmic-spark",
+      "name": "Cosmic Spark",
+      "imagePath": "phoenix/img_icon_cosmic-spark.png"
+    },
+    {
       "id": "dark-phoenix",
       "name": "Dark Phoenix",
       "imagePath": "phoenix/img_icon_dark-phoenix.png"
@@ -2292,12 +2555,12 @@
     },
     {
       "id": "seat-of-spring",
-      "name": "Seat Of Spring",
+      "name": "Seat of Spring",
       "imagePath": "phoenix/img_icon_seat-of-spring.png"
     },
     {
       "id": "the-return-of-jean-grey",
-      "name": "The Return Of Jean Grey",
+      "name": "The Return of Jean Grey",
       "imagePath": "phoenix/img_icon_the-return-of-jean-grey.png"
     },
     {
@@ -2306,13 +2569,18 @@
       "imagePath": "phoenix/img_icon_verdant-vogue.png"
     },
     {
+      "id": "viridian-vogue",
+      "name": "Viridian Vogue",
+      "imagePath": "phoenix/img_icon_viridian-vogue.png"
+    },
+    {
       "id": "white-crown-phoenix",
       "name": "White Crown Phoenix",
       "imagePath": "phoenix/img_icon_white-crown-phoenix.png"
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "phoenix/img_icon_will-of-galacta.png"
     }
   ],
@@ -2344,8 +2612,13 @@
       "imagePath": "psylocke/img_icon_breezy-butterfly.png"
     },
     {
+      "id": "business-elite",
+      "name": "Business Elite",
+      "imagePath": "psylocke/img_icon_business-elite.png"
+    },
+    {
       "id": "chouko-takahashi-the-prodigy",
-      "name": "Chouko Takahashi The Prodigy",
+      "name": "Chouko Takahashi the Prodigy",
       "imagePath": "psylocke/img_icon_chouko-takahashi-the-prodigy.png"
     },
     {
@@ -2410,7 +2683,7 @@
     },
     {
       "id": "retro-x-uniform",
-      "name": "Retro X Uniform",
+      "name": "Retro X-Uniform",
       "imagePath": "psylocke/img_icon_retro-x-uniform.png"
     },
     {
@@ -2463,7 +2736,7 @@
     },
     {
       "id": "guardians-of-the-galaxy-vol-3",
-      "name": "Guardians Of The Galaxy Vol 3",
+      "name": "Guardians of the Galaxy Vol. 3",
       "imagePath": "rocket-raccoon/img_icon_guardians-of-the-galaxy-vol-3.png"
     },
     {
@@ -2473,7 +2746,7 @@
     },
     {
       "id": "rocket-of-the-rafters",
-      "name": "Rocket Of The Rafters",
+      "name": "Rocket of the Rafters",
       "imagePath": "rocket-raccoon/img_icon_rocket-of-the-rafters.png"
     },
     {
@@ -2483,7 +2756,7 @@
     },
     {
       "id": "rocky-the-transfer",
-      "name": "Rocky The Transfer",
+      "name": "Rocky the Transfer",
       "imagePath": "rocket-raccoon/img_icon_rocky-the-transfer.png"
     },
     {
@@ -2503,7 +2776,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "rocket-raccoon/img_icon_will-of-galacta.png"
     }
   ],
@@ -2550,14 +2823,24 @@
       "imagePath": "rogue/img_icon_searing-spellstripe.png"
     },
     {
+      "id": "slumber-sugah",
+      "name": "Slumber Sugah",
+      "imagePath": "rogue/img_icon_slumber-sugah.png"
+    },
+    {
       "id": "starlit-rebel",
       "name": "Starlit Rebel",
       "imagePath": "rogue/img_icon_starlit-rebel.png"
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "rogue/img_icon_will-of-galacta.png"
+    },
+    {
+      "id": "x-men-97-season-2",
+      "name": "X-Men '97 Season 2",
+      "imagePath": "rogue/img_icon_x-men-97-season-2.png"
     }
   ],
   "Scarlet Witch": [
@@ -2566,6 +2849,11 @@
       "name": "Default",
       "imagePath": "scarlet-witch/img_icon_scarlet-witch.png",
       "isDefault": true
+    },
+    {
+      "id": "avengers-age-of-ultron",
+      "name": "Avengers: Age of Ultron",
+      "imagePath": "scarlet-witch/img_icon_avengers-age-of-ultron.png"
     },
     {
       "id": "chaos-gown",
@@ -2579,7 +2867,7 @@
     },
     {
       "id": "doctor-strange-in-the-multiverse-of-madness",
-      "name": "Doctor Strange In The Multiverse Of Madness",
+      "name": "Doctor Strange in the Multiverse of Madness",
       "imagePath": "scarlet-witch/img_icon_doctor-strange-in-the-multiverse-of-madness.png"
     },
     {
@@ -2618,8 +2906,23 @@
       "imagePath": "scarlet-witch/img_icon_phoenix-chaos.png"
     },
     {
+      "id": "pitch-petal",
+      "name": "Pitch Petal",
+      "imagePath": "scarlet-witch/img_icon_pitch-petal.png"
+    },
+    {
+      "id": "purple-petal",
+      "name": "Purple Petal",
+      "imagePath": "scarlet-witch/img_icon_purple-petal.png"
+    },
+    {
+      "id": "seaside-sorceress",
+      "name": "Seaside Sorceress",
+      "imagePath": "scarlet-witch/img_icon_seaside-sorceress.png"
+    },
+    {
       "id": "the-queen-of-the-dead",
-      "name": "The Queen Of The Dead",
+      "name": "The Queen of the Dead",
       "imagePath": "scarlet-witch/img_icon_the-queen-of-the-dead.png"
     },
     {
@@ -2634,12 +2937,12 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "scarlet-witch/img_icon_will-of-galacta.png"
     },
     {
       "id": "witch-of-the-evil-eye",
-      "name": "Witch Of The Evil Eye",
+      "name": "Witch of the Evil Eye",
       "imagePath": "scarlet-witch/img_icon_witch-of-the-evil-eye.png"
     }
   ],
@@ -2692,7 +2995,7 @@
     },
     {
       "id": "man-spider",
-      "name": "Man Spider",
+      "name": "Man-Spider",
       "imagePath": "spider-man/img_icon_man-spider.png"
     },
     {
@@ -2702,12 +3005,12 @@
     },
     {
       "id": "marvels-spider-man-2",
-      "name": "Marvels Spider Man 2",
+      "name": "Marvel's Spider-Man 2",
       "imagePath": "spider-man/img_icon_marvels-spider-man-2.png"
     },
     {
       "id": "peter-parker-the-photographer",
-      "name": "Peter Parker The Photographer",
+      "name": "Peter Parker the Photographer",
       "imagePath": "spider-man/img_icon_peter-parker-the-photographer.png"
     },
     {
@@ -2716,18 +3019,23 @@
       "imagePath": "spider-man/img_icon_scarlet-spider.png"
     },
     {
+      "id": "spider-man-brand-new-day",
+      "name": "Spider-Man: Brand New Day",
+      "imagePath": "spider-man/img_icon_spider-man-brand-new-day.png"
+    },
+    {
       "id": "spider-man-no-way-home",
-      "name": "Spider Man No Way Home",
+      "name": "Spider-Man: No Way Home",
       "imagePath": "spider-man/img_icon_spider-man-no-way-home.png"
     },
     {
       "id": "spider-oni",
-      "name": "Spider Oni",
+      "name": "Spider-Oni",
       "imagePath": "spider-man/img_icon_spider-oni.png"
     },
     {
       "id": "spider-punk-2099",
-      "name": "Spider Punk 2099",
+      "name": "Spider-Punk 2099",
       "imagePath": "spider-man/img_icon_spider-punk-2099.png"
     }
   ],
@@ -2737,6 +3045,11 @@
       "name": "Default",
       "imagePath": "squirrel-girl/img_icon_squirrel-girl.png",
       "isDefault": true
+    },
+    {
+      "id": "acorn-divinity",
+      "name": "Acorn Divinity",
+      "imagePath": "squirrel-girl/img_icon_acorn-divinity.png"
     },
     {
       "id": "arctic-lemmus",
@@ -2750,7 +3063,7 @@
     },
     {
       "id": "maureen-allene-the-programmer",
-      "name": "Maureen Allene The Programmer",
+      "name": "Maureen Allene the Programmer",
       "imagePath": "squirrel-girl/img_icon_maureen-allene-the-programmer.png"
     },
     {
@@ -2762,6 +3075,11 @@
       "id": "red-panda",
       "name": "Red Panda",
       "imagePath": "squirrel-girl/img_icon_red-panda.png"
+    },
+    {
+      "id": "savage-squirrel",
+      "name": "Savage Squirrel",
+      "imagePath": "squirrel-girl/img_icon_savage-squirrel.png"
     },
     {
       "id": "sunshine-squirrel",
@@ -2787,6 +3105,11 @@
       "id": "urban-hunter",
       "name": "Urban Hunter",
       "imagePath": "squirrel-girl/img_icon_urban-hunter.png"
+    },
+    {
+      "id": "will-of-galacta",
+      "name": "Will of Galacta",
+      "imagePath": "squirrel-girl/img_icon_will-of-galacta.png"
     }
   ],
   "Star-Lord": [
@@ -2808,7 +3131,7 @@
     },
     {
       "id": "guardians-of-the-galaxy-vol-3",
-      "name": "Guardians Of The Galaxy Vol 3",
+      "name": "Guardians of the Galaxy Vol. 3",
       "imagePath": "star-lord/img_icon_guardians-of-the-galaxy-vol-3.png"
     },
     {
@@ -2823,7 +3146,7 @@
     },
     {
       "id": "king-of-spartax",
-      "name": "King Of Spartax",
+      "name": "King of Spartax",
       "imagePath": "star-lord/img_icon_king-of-spartax.png"
     },
     {
@@ -2838,8 +3161,13 @@
     },
     {
       "id": "master-of-the-sun",
-      "name": "Master Of The Sun",
+      "name": "Master of the Sun",
       "imagePath": "star-lord/img_icon_master-of-the-sun.png"
+    },
+    {
+      "id": "star-swimmer",
+      "name": "Star Swimmer",
+      "imagePath": "star-lord/img_icon_star-swimmer.png"
     },
     {
       "id": "starcracker",
@@ -2850,6 +3178,11 @@
       "id": "starlit-outlaw",
       "name": "Starlit Outlaw",
       "imagePath": "star-lord/img_icon_starlit-outlaw.png"
+    },
+    {
+      "id": "stellar-splash",
+      "name": "Stellar Splash",
+      "imagePath": "star-lord/img_icon_stellar-splash.png"
     }
   ],
   "Storm": [
@@ -2860,8 +3193,13 @@
       "isDefault": true
     },
     {
+      "id": "crimson-clouds",
+      "name": "Crimson Clouds",
+      "imagePath": "storm/img_icon_crimson-clouds.png"
+    },
+    {
       "id": "goddess-of-thunder",
-      "name": "Goddess Of Thunder",
+      "name": "Goddess of Thunder",
       "imagePath": "storm/img_icon_goddess-of-thunder.png"
     },
     {
@@ -2881,8 +3219,13 @@
     },
     {
       "id": "queen-of-wakanda",
-      "name": "Queen Of Wakanda",
+      "name": "Queen of Wakanda",
       "imagePath": "storm/img_icon_queen-of-wakanda.png"
+    },
+    {
+      "id": "sacred-skies",
+      "name": "Sacred Skies",
+      "imagePath": "storm/img_icon_sacred-skies.png"
     },
     {
       "id": "symbiote-storm",
@@ -2896,8 +3239,31 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "storm/img_icon_will-of-galacta.png"
+    }
+  ],
+  "The Hood": [
+    {
+      "id": "default",
+      "name": "Default",
+      "imagePath": "the-hood/img_icon_the-hood.png",
+      "isDefault": true
+    },
+    {
+      "id": "oblivions-whisper",
+      "name": "Oblivion's Whisper",
+      "imagePath": "the-hood/img_icon_oblivions-whisper.png"
+    },
+    {
+      "id": "sapphire-sands",
+      "name": "Sapphire Sands",
+      "imagePath": "the-hood/img_icon_sapphire-sands.png"
+    },
+    {
+      "id": "sinful-blackout",
+      "name": "Sinful Blackout",
+      "imagePath": "the-hood/img_icon_sinful-blackout.png"
     }
   ],
   "The Punisher": [
@@ -2953,9 +3319,19 @@
       "imagePath": "the-punisher/img_icon_punisher-2099.png"
     },
     {
+      "id": "sandstorm-soldier",
+      "name": "Sandstorm Soldier",
+      "imagePath": "the-punisher/img_icon_sandstorm-soldier.png"
+    },
+    {
       "id": "thunderbolts",
       "name": "Thunderbolts",
       "imagePath": "the-punisher/img_icon_thunderbolts.png"
+    },
+    {
+      "id": "vengeful-vigilante",
+      "name": "Vengeful Vigilante",
+      "imagePath": "the-punisher/img_icon_vengeful-vigilante.png"
     }
   ],
   "The Thing": [
@@ -3045,13 +3421,18 @@
     },
     {
       "id": "god-of-winter",
-      "name": "God Of Winter",
+      "name": "God of Winter",
       "imagePath": "thor/img_icon_god-of-winter.png"
     },
     {
       "id": "herald-of-thunder",
-      "name": "Herald Of Thunder",
+      "name": "Herald of Thunder",
       "imagePath": "thor/img_icon_herald-of-thunder.png"
+    },
+    {
+      "id": "king-thor",
+      "name": "King Thor",
+      "imagePath": "thor/img_icon_king-thor.png"
     },
     {
       "id": "lightning-fast",
@@ -3095,7 +3476,7 @@
     },
     {
       "id": "thor-love-and-thunder",
-      "name": "Thor Love And Thunder",
+      "name": "Thor: Love and Thunder",
       "imagePath": "thor/img_icon_thor-love-and-thunder.png"
     },
     {
@@ -3115,6 +3496,21 @@
       "name": "Default",
       "imagePath": "ultron/img_icon_ultron.png",
       "isDefault": true
+    },
+    {
+      "id": "avengers-age-of-ultron",
+      "name": "Avengers: Age of Ultron",
+      "imagePath": "ultron/img_icon_avengers-age-of-ultron.png"
+    },
+    {
+      "id": "b-boy-prime",
+      "name": "B-Boy Prime",
+      "imagePath": "ultron/img_icon_b-boy-prime.png"
+    },
+    {
+      "id": "caramel-crew",
+      "name": "Caramel Crew",
+      "imagePath": "ultron/img_icon_caramel-crew.png"
     },
     {
       "id": "cybernetic-drip",
@@ -3137,6 +3533,11 @@
       "imagePath": "ultron/img_icon_mechanical-phantom.png"
     },
     {
+      "id": "mustard-beat",
+      "name": "Mustard Beat",
+      "imagePath": "ultron/img_icon_mustard-beat.png"
+    },
+    {
       "id": "odinforce-ultron",
       "name": "Odinforce Ultron",
       "imagePath": "ultron/img_icon_odinforce-ultron.png"
@@ -3153,12 +3554,12 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "ultron/img_icon_will-of-galacta.png"
     },
     {
       "id": "x-tron",
-      "name": "X Tron",
+      "name": "X-Tron",
       "imagePath": "ultron/img_icon_x-tron.png"
     }
   ],
@@ -3215,8 +3616,13 @@
       "imagePath": "venom/img_icon_pink-bubble.png"
     },
     {
+      "id": "president-ozzy",
+      "name": "President Ozzy",
+      "imagePath": "venom/img_icon_president-ozzy.png"
+    },
+    {
       "id": "reborn-king-in-black",
-      "name": "Reborn King In Black",
+      "name": "Reborn King in Black",
       "imagePath": "venom/img_icon_reborn-king-in-black.png"
     },
     {
@@ -3241,7 +3647,7 @@
     },
     {
       "id": "war-of-the-realms",
-      "name": "War Of The Realms",
+      "name": "War of the Realms",
       "imagePath": "venom/img_icon_war-of-the-realms.png"
     }
   ],
@@ -3256,6 +3662,11 @@
       "id": "coastal-kumiho",
       "name": "Coastal Kumiho",
       "imagePath": "white-fox/img_icon_coastal-kumiho.png"
+    },
+    {
+      "id": "cosmic-kumiho",
+      "name": "Cosmic Kumiho",
+      "imagePath": "white-fox/img_icon_cosmic-kumiho.png"
     },
     {
       "id": "magical-mint",
@@ -3279,7 +3690,7 @@
     },
     {
       "id": "yoon-ji-woo-the-leader",
-      "name": "Yoon Ji Woo The Leader",
+      "name": "Yoon Ji Woo the Leader",
       "imagePath": "white-fox/img_icon_yoon-ji-woo-the-leader.png"
     }
   ],
@@ -3299,6 +3710,16 @@
       "id": "bucky",
       "name": "Bucky",
       "imagePath": "winter-soldier/img_icon_bucky.png"
+    },
+    {
+      "id": "captain-america-the-winter-soldier",
+      "name": "Captain America: The Winter Soldier",
+      "imagePath": "winter-soldier/img_icon_captain-america-the-winter-soldier.png"
+    },
+    {
+      "id": "chill-current",
+      "name": "Chill Current",
+      "imagePath": "winter-soldier/img_icon_chill-current.png"
     },
     {
       "id": "navy-trooper",
@@ -3324,6 +3745,11 @@
       "id": "starlit-gunslinger",
       "name": "Starlit Gunslinger",
       "imagePath": "winter-soldier/img_icon_starlit-gunslinger.png"
+    },
+    {
+      "id": "summer-soldier",
+      "name": "Summer Soldier",
+      "imagePath": "winter-soldier/img_icon_summer-soldier.png"
     },
     {
       "id": "tawny-tracker",
@@ -3370,7 +3796,7 @@
     },
     {
       "id": "deadpool-wolverine",
-      "name": "Deadpool Wolverine",
+      "name": "Deadpool & Wolverine",
       "imagePath": "wolverine/img_icon_deadpool-wolverine.png"
     },
     {
@@ -3400,7 +3826,7 @@
     },
     {
       "id": "will-of-galacta",
-      "name": "Will Of Galacta",
+      "name": "Will of Galacta",
       "imagePath": "wolverine/img_icon_will-of-galacta.png"
     },
     {
@@ -3410,7 +3836,7 @@
     },
     {
       "id": "x-2099",
-      "name": "X 2099",
+      "name": "X-2099",
       "imagePath": "wolverine/img_icon_x-2099.png"
     }
   ]
